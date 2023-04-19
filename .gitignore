@@ -3,6 +3,8 @@ typechain
 typechain-types
 dist
 deployments
+yarn.lock
+package-lock.json
 
 #Hardhat files
 cache
