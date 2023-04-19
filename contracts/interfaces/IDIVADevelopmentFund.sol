@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: agpl-3.0
+pragma solidity 0.8.19;
+
+import {IDIVAOwnershipShared} from "./IDIVAOwnershipShared.sol";
+
+interface IDIVADevelopmentFund {
+    // Thrown in `withdraw` if `msg.sender` is not the owner of DIVA protocol
+    error NotDIVAOwner(address _user, address _divaOwner);
+
+    // Thrown in `withdraw` if token addresses for indices passed are
+    // different
+    error DifferentTokens();
+
+    // Struct for deposits
+    struct Deposit {
+        address token; // Address of deposited token (zero address for native asset)
+        uint256 amount; // Deposit amount
+        uint256 startTime; // Timestamp in seconds since epoch when user can start claiming the deposit
+        uint256 endTime; // Timestamp in seconds since epoch when release period ends at
+        uint256 lastClaimedAt; // Timestamp in seconds since epoch when user last claimed deposit at
+    }
+
+    /**
+     * @notice Emitted when a user deposits a token or a native asset via
+     * one of the two `deposit` functions.
+     * @param sender Address of user who deposits token (`msg.sender`).
+     * @param depositIndex Index of deposit in deposits array variable.
+     */
+    event Deposited(address indexed sender, uint256 indexed depositIndex);
+
+    /**
+     * @notice Emitted when a user withdraws a token via `withdraw`
+     * or `withdrawDirectDeposit`.
+     * @param withdrawnBy Address of user who withdraws token (same as
+     * current DIVA owner).
+     * @param token Address of withdrawn token.
+     * @param amount Token amount withdrawn.
+     */
+    event Withdrawn(
+        address indexed withdrawnBy,
+        address indexed token,
+        uint256 amount
+    );
+
+    /**
+     * @notice Function to deposit the native asset, such as ETH on
+     * Ethereum.
+     * @dev Creates a new entry in the `Deposit` struct array with the
+     * `token` parameter set to `address(0)` and the `amount` parameter to
+     * `msg.value`. Emits a `Deposited` event on success.
+     * @param _releasePeriodInSeconds Release period of deposit in seconds.
+     */
+    function deposit(uint256 _releasePeriodInSeconds) external payable;
+
+    /**
+     * @notice Function to deposit ERC20 token.
+     * @dev Creates a new entry in the `Deposit` struct array with the
+     * `token` and `amount` parameters set equal to the ones provided by the user.
+     * Emits a `Deposited` event on success.
+     * @param _token Address of token to deposit.
+     * @param _amount ERC20 token amount to deposit.
+     * @param _releasePeriodInSeconds Release period of deposit in seconds.
+     */
+    function deposit(
+        address _token,
+        uint256 _amount,
+        uint256 _releasePeriodInSeconds
+    ) external;
+
+    /**
+     * @notice Function to withdraw a deposited `_token`.
+     * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
+     * @param _token Address of token to withdraw.
+     * @param _indices Array of deposit indices to withdraw (indices can be
+     * obtained via `getDepositIndices`).
+     */
+    function withdraw(address _token, uint256[] calldata _indices)
+        external
+        payable;
+
+    /**
+     * @notice Function to withdraw a given `_token` that has been sent
+     * to the contract directly without calling the deposit function.
+     * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
+     * @param _token Address of token to withdraw.
+     */
+    function withdrawDirectDeposit(address _token) external payable;
+
+    /**
+     * @notice Function to return the number of deposits.
+     */
+    function getDepositsLength() external view returns (uint256);
+
+    /**
+     * @notice Function to return the DIVAOwnership contract address on
+     * the corresponding chain.
+     */
+    function getDivaOwnership() external view returns (IDIVAOwnershipShared);
+
+    /**
+     * @notice Function to get the deposit info for a given `_index`.
+     * @param _index Deposit index.
+     */
+    function getDepositInfo(uint256 _index)
+        external
+        view
+        returns (Deposit memory);
+
+    /**
+     * @notice Function to get the deposit indices for a given `_token`.
+     * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
+     * `_startIndex` and `_endIndex` allow the caller to control the array
+     * range to return to avoid exceeding the gas limit. Returns an empty
+     * array if `_endIndex <= _startIndex`.
+     * @param _token Token address.
+     * @param _startIndex Start index of deposit indices list to get.
+     * @param _endIndex End index of deposit indices list to get.
+     */
+    function getDepositIndices(
+        address _token,
+        uint256 _startIndex,
+        uint256 _endIndex
+    ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Function to get the length of deposit indices for a given `_token`.
+     * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
+     * @param _token Token address.
+     */
+    function getDepositIndicesLengthForToken(address _token)
+        external
+        view
+        returns (uint256);
+
+    /**
+     * @notice Function to get the unclaimed deposit amount for a given `_token`.
+     * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
+     * @param _token Token address.
+     */
+    function getUnclaimedDepositAmount(address _token)
+        external
+        view
+        returns (uint256);
+}
