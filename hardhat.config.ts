@@ -87,6 +87,7 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: MNEMONIC,
       },
+      gasPrice: 7000000000,
     },
     polygon: {
       url: process.env.RPC_URL_POLYGON,
@@ -155,6 +156,8 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       goerli: process.env.ETHERSCAN_API_KEY || "",
       sepolia: process.env.ETHERSCAN_API_KEY || "",
+      gnosis: process.env.GNOSISSCAN_API_KEY || "",
+      chiado: process.env.GNOSISSCAN_API_KEY || "",
       polygon: process.env.POLYGON_API_KEY || "",
       polygonMumbai: process.env.POLYGON_API_KEY || "",
     },
