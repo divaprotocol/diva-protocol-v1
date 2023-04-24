@@ -48,7 +48,7 @@ interface IDIVAOwnershipSecondary is IDIVAOwnershipShared {
      * for reporting values to Tellor protocol.
      * @dev The query data is an encoded string consisting of the query type
      * string "EVMCall", the main chain Id (1 for Ethereum), the address of
-     * the ownership contract on main chain as well as the function signature of the main
+     * the ownership contract on main chain as well as the encoded function signature of the main
      * chain function `getCurrentOwner()` (`0xa18a186b`). The query Id is the `keccak256`
      * hash of the query Data. Refer to the Tellor specs
      * (https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md)
