@@ -405,8 +405,8 @@ contract GovernanceFacet is IGovernance {
     function _isValidFee(uint96 _fee) private pure {
         if (_fee > 0) {
             // Min fee of 0.01% introduced to have a minimum non-zero fee in `removeLiquidity`
-            if (_fee < 100000000000000) revert FeeBelowMinimum(); // 0.01% = 0.0001
-            if (_fee > 15000000000000000) revert FeeAboveMaximum(); // 1.5% = 0.015
+            if (_fee < 1e14) revert FeeBelowMinimum(); // 0.01% = 0.0001
+            if (_fee > 1.5e16) revert FeeAboveMaximum(); // 1.5% = 0.015
         }
     }
 

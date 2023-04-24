@@ -1485,7 +1485,7 @@ Function to update the protocol and settlement fee. Activation is restricted to 
 
 Reverts if:
 * `msg.sender` is not contract owner.
-* one of the new fee parameters is smaller than 0.01% (100000000000000 in integer terms with 18 decimals) or greater than 1.5% (15000000000000000 in integer terms with 18 decimals) if fee > 0; 0% is possible though.
+* one of the new fee parameters is smaller than 0.01% (`1e14` in integer terms with 18 decimals) or greater than 1.5% (`1.5e16` in integer terms with 18 decimals) if fee > 0; 0% is possible though.
 * there is already a pending fee update.
 
 ```js
@@ -2774,7 +2774,7 @@ function getMainChainId()
 
 ### getQueryDataAndId
 
-Function to return the Tellor query data and Id which are required for reporting values to Tellor protocol. The query data is an encoded string consisting of the query type string "EVMCall", the main chain Id (1 for Ethereum), the address of the ownership contract on main chain as well as the function signature of the main chain function `getCurrentOwner()` (`0xa18a186b`). The query Id is the `keccak256` hash of the query Data. Refer to the [Tellor specs](https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md) for details.
+Function to return the Tellor query data and Id which are required for reporting values to Tellor protocol. The query data is an encoded string consisting of the query type string "EVMCall", the main chain Id (1 for Ethereum), the address of the ownership contract on main chain as well as the encoded function signature of the main chain function `getCurrentOwner()` (`0xa18a186b`). The query Id is the `keccak256` hash of the query Data. Refer to the [Tellor specs](https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md) for details.
 
 ```js
 function getQueryDataAndId()
