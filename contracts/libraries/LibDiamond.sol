@@ -35,19 +35,13 @@ library LibDiamond {
         bytes memory _calldata
     ) internal {
         for (uint256 facetIndex; facetIndex < _facetCut.length; facetIndex++) {
-            bytes4[] memory functionSelectors = _facetCut[facetIndex]
-                .functionSelectors;
-            address facetAddress = _facetCut[facetIndex].facetAddress;
-            if (functionSelectors.length == 0) {
-                revert NoSelectorsProvidedForFacetForCut(facetAddress);
-            }
             IDiamondCut.FacetCutAction action = _facetCut[facetIndex].action;
             if (action == IDiamondCut.FacetCutAction.Add) {
-                _addFunctions(facetAddress, functionSelectors);
+                _addFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
-                _replaceFunctions(facetAddress, functionSelectors);
+                _replaceFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else if (action == IDiamondCut.FacetCutAction.Remove) {
-                _removeFunctions(facetAddress, functionSelectors);
+                _removeFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
             }
