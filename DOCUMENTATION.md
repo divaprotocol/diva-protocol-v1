@@ -2348,7 +2348,6 @@ If the owner manages to maintain the highest support at the end of the showdown 
 * To reduce the likelihood of an election cycle, owner's are incentivized to stake DIVA tokens themselves.
 * The ownership claim submission period is the only period where staking/unstaking is disabled.
 * To protect against flash-loan attacks, a minimum staking period of 7 days applies.
-* During the election cycle, some functionality reserved for the owner is disabled to prevent harmful actions. This includes updating fees, settlement periods and the fallback data provider. This also applies to the new owner in that they have to wait until the end of the election cycle in order to perform the corresponding actions.
 * DIVA token holders can stake for multiple candidates.
 
 ## Function overview
@@ -3050,7 +3049,6 @@ The use of any DeFi protocol comes with certain risks. Be responsible when inter
 - **Hack risk**: Despite following best practices in Solidity coding and conducting smart contract audits, there is still a chance that the protocol might get hacked. Only deposit amounts that you can afford to lose.
 - **Oracle risk**: Data providers may intentionally or mistakenly submit an incorrect final value which may result in incorrect payoffs for short and long position tokens. To mitigate this risk, choose pools with trusted and reputable data providers (e.g., those that are on the [whitelist][whitelistgithub]). For data feeds that can be easily manipulated (e.g., the floor price of an NFT collection), choose pools that have a reasonable capacity limit in place to reduce the incentive to manipulate.
 - **App risk**: Malicious actors may take over control of apps/frontends built on top of DIVA Protocol and change how values are submitted to the underlying smart contract functions. In case of doubt, don't interact with the app.
-- **Upgradeability risk**: In order to be able to react to bugs, the DIVA Protocol team will retain the possibility to update the smart contract in the early phase of the protocol's lifetime. This functionality will be abolished once there is sufficient confidence that the smart contracts are stable and bug-free.
 
 
 [eip2535]: https://eips.ethereum.org/EIPS/eip-2535
