@@ -25,4 +25,12 @@ interface IPositionTokenFactory {
      * @return The implementation address.
      */
     function positionTokenImplementation() external view returns (address);
+
+    /**
+     * @notice Address where the permissioned position token implementation contract
+     * is stored.
+     * @dev This is needed since we are using a clone proxy.
+     * @return The implementation address.
+     */
+    function permissionedPositionTokenImplementation() external view returns (address);
 }

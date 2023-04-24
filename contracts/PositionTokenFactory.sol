@@ -60,4 +60,8 @@ contract PositionTokenFactory is IPositionTokenFactory {
     function positionTokenImplementation() external view override returns (address) {
         return _POSITION_TOKEN_IMPLEMENTATION;
     }
+
+    function permissionedPositionTokenImplementation() external view override returns (address) {
+        return _PERMISSIONED_POSITION_TOKEN_IMPLEMENTATION;
+    }
 }

@@ -408,6 +408,7 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - The long and short token supply are set equal to `collateralAmount` which implies a maximum payoff per short and long position token of 1 unit of the underlying collateral token (e.g., `1e6` in case of USDC, `1e18` in case of WETH). 
 - Position tokens have the same amount of decimals as the collateral token to mitigate the risk bugs due to rounding in decimal conversions.
 - Short and long tokens have different addresses.
+- To obtain the implementation contract addresses for position tokens, you can call the functions `positionTokenImplementation()` and `permissionedPositionTokenImplementation()` on the `PositionTokenFactory` contract.
 - The `owner` of the position tokens is set equal to the DIVA smart contract address at creation and cannot be modified afterwards. Only the `owner` is authorized to execute the `mint` and `burn` functions inside the `PositionToken` contract.
 - The `capacity` field allows to cap the size of a pool which can be useful for private pools or when dealing with metrics that are at risk of being manipulated.
 - Final reference value cannot be negative. Metrics that can go negative (e.g., interest rates) should be transformed into something that will remain positive (e.g., current interest rate + 100) before being used as a reference asset.
