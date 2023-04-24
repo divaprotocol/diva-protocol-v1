@@ -110,11 +110,14 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
     {
         // Construct Tellor queryData and queryId:
         // https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md
-        // 0xa18a186b = bytes4(keccak256(abi.encodePacked("getCurrentOwner()")));
         queryData = 
                 abi.encode(
                     "EVMCall",
-                    abi.encode(_mainChainId, _ownershipContractMainChain, 0xa18a186b)
+                    abi.encode(
+                        _mainChainId,
+                        _ownershipContractMainChain,
+                        abi.encodeWithSignature("getCurrentOwner()")
+                    )
                 );
 
         queryId = keccak256(queryData);        

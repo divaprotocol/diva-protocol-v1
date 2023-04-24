@@ -22,17 +22,19 @@ const network = "goerli"; // for tellorPlayground address; should be the same as
 const mainChainId = 5;
 
 const getQueryDataAndId = (chainId: number, ownershipContractAddressMain: string): [string, string] => {
-    // 0xa18a186b = bytes4(keccak256(abi.encodePacked("getCurrentOwner")));
-    // Encode bytes4 value according to the Ethereum ABI specification, i.e. pad it with leading zeros
-    // to fill an entire 32-byte (64 bits) slot.
-    const hexValue = 'a18a186b';
-    const paddedHexValue = hexValue.padStart(64, '0');
-    const prefixedHexValue = '0x' + paddedHexValue; // 00000000000000000000000000000000000000000000000000000000a18a186b
+   
+    // Perform equivalent of `abi.encodeWithSignature("getCurrentOwner()")` in Solidity using ethers
+    const ABI = [
+        "function getCurrentOwner()"
+    ];
+    const iface = new ethers.utils.Interface(ABI);
+    const encodedFunctionSignature = iface.encodeFunctionData("getCurrentOwner"); // 0xa18a186b
     
+    // Generate `queryData` and `queryId`
     const abiCoder = new ethers.utils.AbiCoder();
     const queryDataArgs = abiCoder.encode(
-      ["uint256", "address", "bytes32"],
-      [chainId, ownershipContractAddressMain, prefixedHexValue] // 0xa18a186b = bytes4(keccak256(abi.encodePacked("getCurrentOwner")));
+      ["uint256", "address", "bytes"],
+      [chainId, ownershipContractAddressMain, encodedFunctionSignature]
     );
     const queryData = abiCoder.encode(
       ["string", "bytes"],
