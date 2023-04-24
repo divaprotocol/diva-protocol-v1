@@ -70,7 +70,7 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
             revert NoOracleSubmission();
         }
 
-        // Check that value is not older than 36 days
+        // Check that value is not older than 36 hours
         uint256 _maxAllowedTimestampRetrieved = block.timestamp - _maxAllowedAgeOfReportedValue;
         if (_timestampRetrieved < _maxAllowedTimestampRetrieved) {
             revert ValueTooOld(_timestampRetrieved, _maxAllowedTimestampRetrieved);
