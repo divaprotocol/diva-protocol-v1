@@ -57,9 +57,11 @@ interface IPool {
          Choose a large number (e.g., `2**256 - 1`) for unlimited size. Input expects
          an integer with collateral token decimals.
      * - longRecipient: Address that shall receive the long position token.
-         Zero address is a valid input to enable conditional burn use cases.
+         Any burn address except for the zero address is a valid recipient to enable conditional
+         burn use cases.
      * - shortRecipient: Address that shall receive the short position token.
-     *   Zero address is a valid input to enable conditional burn use cases.
+         Any burn address except for the zero address is a valid recipient to enable conditional
+         burn use cases.
      * - permissionedERC721Token: Address of the ERC721 token that transfers are restricted to.
          Use zero address to render the position tokens permissionless.
      * @return poolId

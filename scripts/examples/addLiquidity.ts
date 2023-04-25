@@ -27,13 +27,13 @@ const _checkConditions = async (
   // Get current time (proxy for block timestamp)
   const now = Math.floor(Date.now() / 1000);
 
-  // Check that longRecipient and shortRecipient are not both zero
+  // Check that neither longRecipient nor shortRecipient equal to the zero address
   if (
-    longRecipient === ethers.constants.AddressZero &&
+    longRecipient === ethers.constants.AddressZero ||
     shortRecipient === ethers.constants.AddressZero
   ) {
     throw new Error(
-      "Long and short token recipient cannot be both zero address"
+      "Long or short token recipient cannot be both zero address"
     );
   }
 

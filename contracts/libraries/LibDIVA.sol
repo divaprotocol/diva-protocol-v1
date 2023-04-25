@@ -613,18 +613,7 @@ library LibDIVA {
             return false;
         }
 
-        // `longRecipient` and `shortRecipient` should not be both zero address
-        if (
-            _poolParams.longRecipient == address(0) &&
-            _poolParams.shortRecipient == address(0)
-        ) {
-            return false;
-        }
-
         return true;
-
-        // Note: Conscious decision to allow either `longRecipient` or `shortRecipient` to
-        // to be equal to the zero address to enable conditional burn use cases.
     }
 
     // Function to transfer collateral from msg.sender/maker to `this` and mint position token

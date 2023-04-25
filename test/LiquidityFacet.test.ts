@@ -645,12 +645,13 @@ describe("LiquidityFacet", async function () {
         ).to.be.reverted;
       });
 
-      it("Reverts if both longRecipient and shortRecipient are zero address", async () => {
+      it("Reverts if longRecipient is the zero address", async () => {
         // ---------
-        // Arrange: Set longRecipient and shortRecipient to zero address
-        // ---------
-        const zeroXLongRecipient = ethers.constants.AddressZero;
-        const zeroXShortRecipient = ethers.constants.AddressZero;
+      // Arrange: Set longRecipient to zero address
+      // ---------
+      const zeroXLongRecipient = ethers.constants.AddressZero;
+      const shortRecipient = user3.address;
+      expect(shortRecipient).to.not.eq(ethers.constants.AddressZero);
 
         // ---------
         // Act & Assert: Check that adding liquidity fails
@@ -660,9 +661,30 @@ describe("LiquidityFacet", async function () {
             poolId,
             additionalCollateralAmount,
             zeroXLongRecipient, // longRecipient
+            shortRecipient // shortRecipient
+          )
+        ).to.be.revertedWith("ERC20: mint to the zero address");
+      });
+
+      it("Reverts if shortRecipient is the zero address", async () => {
+        // ---------
+        // Arrange: Set shortRecipient to zero address
+        // ---------
+        const zeroXShortRecipient = ethers.constants.AddressZero;
+        const longRecipient = user2.address;
+        expect(longRecipient).to.not.eq(ethers.constants.AddressZero);
+
+        // ---------
+        // Act & Assert: Check that adding liquidity fails
+        // ---------
+        await expect(
+          liquidityFacet.connect(user2).addLiquidity(
+            poolId,
+            additionalCollateralAmount,
+            longRecipient, // longRecipient
             zeroXShortRecipient // shortRecipient
           )
-        ).to.be.revertedWith("ZeroLongAndShortRecipients()");
+        ).to.be.revertedWith("ERC20: mint to the zero address");
       });
     });
 

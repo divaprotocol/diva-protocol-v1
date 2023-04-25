@@ -73,11 +73,11 @@ const _checkConditions = (
   }
 
   if (
-    longRecipient === ethers.constants.AddressZero &&
+    longRecipient === ethers.constants.AddressZero ||
     shortRecipient === ethers.constants.AddressZero
   ) {
     throw new Error(
-      "Long and short token recipient cannot be both zero address"
+      "Long or short token recipient cannot be both zero address"
     );
   }
 
