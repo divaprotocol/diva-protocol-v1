@@ -484,7 +484,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
                     _poolId,
                     _pool,
                     _treasury,
-                    _gs.fallbackDataProvider,
+                    msg.sender,
                     _finalReferenceValue,
                     _gs
                 );

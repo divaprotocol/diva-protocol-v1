@@ -1225,7 +1225,8 @@ describe("LiquidityFacet", async function () {
         // Define a new treasury address and make sure it's not equal to the current one
         const newTreasuryAddress = user2.address;
         const govParamsBefore = await getterFacet.getGovernanceParameters();
-        expect(newTreasuryAddress).to.not.eq(await govParamsBefore.treasury)
+        const currentTreasuryAddress = govParamsBefore.treasury;
+        expect(newTreasuryAddress).to.not.eq(currentTreasuryAddress)
         
         // Confirm that new treasury address has zero fee claim balance
         expect(
@@ -1237,8 +1238,8 @@ describe("LiquidityFacet", async function () {
         
         // Get current treasury's fee claim balance
         const currentTreasuryFeeClaimBalanceBefore = await getterFacet.getClaim(
-            poolParamsBefore.collateralToken,
-            treasury.address
+          poolParamsBefore.collateralToken,
+          currentTreasuryAddress
         );
 
         // Contract owner triggers an update of the treasury address
@@ -1248,7 +1249,7 @@ describe("LiquidityFacet", async function () {
 
         // ---------
         // Act: Remove liquidity shortly after `updateTreasury` (we can be sure that
-        // the update has not been activated yet)
+        // the new treasury address has not been activated yet at this stage)
         // ---------
         await liquidityFacet
           .connect(user1)
@@ -1265,11 +1266,11 @@ describe("LiquidityFacet", async function () {
           )
         ).to.eq(0);
 
-        // Get treasury's fee claim balance after liquidity was removed
+        // Get current treasury's fee claim balance after liquidity was removed
         expect(
           await getterFacet.getClaim(
             poolParamsBefore.collateralToken,
-            treasury.address
+            currentTreasuryAddress
           )
         ).to.eq(currentTreasuryFeeClaimBalanceBefore.add(protocolFee));
         
