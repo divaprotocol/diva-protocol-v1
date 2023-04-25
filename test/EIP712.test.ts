@@ -865,7 +865,7 @@ describe("EIP712", async function () {
               signature,
               offerCreateContingentPool.takerCollateralAmount
             )
-        ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
+        ).to.be.revertedWith("ECDSA: invalid signature");
       });
 
       it("Reverts if offerExpiry has passed (offer status = EXPIRED)", async () => {
@@ -3234,7 +3234,7 @@ describe("EIP712", async function () {
               signature,
               offerAddLiquidity.takerCollateralAmount
             )
-        ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
+        ).to.be.revertedWith("ECDSA: invalid signature");
       });
 
       it("Reverts if offerExpiry has passed (offer status = EXPIRED)", async () => {
@@ -5668,7 +5668,7 @@ describe("EIP712", async function () {
               signature,
               offerRemoveLiquidity.positionTokenAmount
             )
-        ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
+        ).to.be.revertedWith("ECDSA: invalid signature");
       });
 
       it("Reverts if offerExpiry has passed (offer status = EXPIRED)", async () => {
