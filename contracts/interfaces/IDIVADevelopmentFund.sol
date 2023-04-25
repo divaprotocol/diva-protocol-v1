@@ -7,6 +7,10 @@ interface IDIVADevelopmentFund {
     // Thrown in `withdraw` if `msg.sender` is not the owner of DIVA protocol
     error NotDIVAOwner(address _user, address _divaOwner);
 
+    // Thrown in `deposit` if `_releasePeriodInSeconds` argument is zero or
+    // exceeds 30 years    
+    error InvalidReleasePeriod();
+
     // Thrown in `withdraw` if token addresses for indices passed are
     // different
     error DifferentTokens();

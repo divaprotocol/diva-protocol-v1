@@ -2840,11 +2840,18 @@ The `DIVADevelopmentFund` contract implements the following functions:
 The contract implements two `deposit` functions, one for native assets and one for ERC20 tokens. Deposits vest linearly over a specified period and can be claimed by the DIVA owner using the [`withdraw`](#withdraw) function. Direct deposits, made by sending native assets or ERC20 tokens directly to the contract address, are not subject to vesting and can be claimed immediately using the [`withdrawDirectDeposit`](#withdrawdirectdeposit) function. A variable called `_tokenToUnclaimedDepositAmount` (readable via [`getUnclaimedDepositAmount`](#getunclaimeddepositamount)) is used to track deposits and withdrawals made through the implemented functions. The difference between the contract balance and this variable represents the amount of direct deposits that can be claimed.
 
 The `deposit` functions execute the following steps in the following order:
+1. Confirm that `_releasePeriodInSeconds` is non-zero and does not exceed 30 years.
 1. Create a new [`Deposit` struct](#deposit-struct) entry in the `_deposits` array. Note that for [native asset deposits](#native-asset), the `token` parameter is set to `address(0)` and the `amount` to `msg.value`.
 1. Update the `_tokenToDepositIndices` mapping to include the new index. The indices for a given token can be obtained via the [`getDepositIndices`](#getdepositindices) function.
 1. Update the `_tokenToUnclaimedDepositAmount` variable.
 1. For ERC20 tokens, transfer the token from `msg.sender` to `address(this)` via `safeTransferFrom`. Requires prior user approval.
 1. Emit a [`Deposited`](#deposited) event on success.
+
+The function reverts under the following conditions:
+- `_releasePeriodInSeconds` is zero or exceeds 30 years.
+- `msg.sender` has insufficient allowance or balance to execute the `safeTransferFrom` function. This condition is only applicable to ERC20 token deposits.
+
+>**Note:** The `deposit` functions deliberately disallow direct deposits with `_releasePeriodInSeconds = 0`. Users who want their deposits to be unlocked immediately should send the tokens or native asset (ETH) directly to the `DIVADevelopmentFund` contract address.
 
 ### deposit
 
@@ -3040,6 +3047,7 @@ The following errors may be emitted when interacting with DIVA Development Fund 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `NotDIVAOwner(address _user, address _divaOwner)`                      | `withdraw` | Thrown if `msg.sender` is not the owner of DIVA Protocol                                                                                                                   |
+| `InvalidReleasePeriod()`                      | `deposit` | Thrown if `_releasePeriodInSeconds` argument is zero or exceeds 30 years|
 | `DifferentTokens()`                      | `withdraw` | Thrown if token addresses for indices passed are different                                                                                                                   |
 
 # Risk disclaimer
