@@ -780,7 +780,7 @@ library LibDIVA {
         _allocateFeeClaim(
             _removeLiquidityParams.poolId,
             _pool,
-            LibDIVAStorage._governanceStorage().treasury,
+            _getCurrentTreasury(gs),
             _protocolFee
         );
 
