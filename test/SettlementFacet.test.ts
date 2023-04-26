@@ -139,6 +139,17 @@ describe("SettlementFacet", async function () {
     reviewPeriod = govParams.currentSettlementPeriods.reviewPeriod; // 5d (initial value)
     fallbackSubmissionPeriod =
       govParams.currentSettlementPeriods.fallbackSubmissionPeriod; // 10d (initial value)
+
+    // Fast forward in time to activate any changes done in previous tests outside of this file
+    nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
+    await mineBlock(nextBlockTimestamp);
+
+    // Use fallbackOracle as the fallback data provider in these tests instead of first account
+    await governanceFacet
+        .connect(contractOwner)
+        .updateFallbackDataProvider(fallbackOracle.address);
+    nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
+    await mineBlock(nextBlockTimestamp);
   });
 
   describe("settlement related functions", async () => {
@@ -152,11 +163,7 @@ describe("SettlementFacet", async function () {
     let proposedFinalReferenceValue2: BigNumber;
     let tokensToRedeem: BigNumber;
 
-    beforeEach(async () => {
-      // Fast forward in time to activate any changes done in previous tests (including tests outside of this file)
-      nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
-      await mineBlock(nextBlockTimestamp);
-
+    beforeEach(async () => {      
       // ---------
       // Arrange: Equip user1 with collateral tokens, approve collateral token for diamond contract, and specify default parameters for test
       // ---------
@@ -217,20 +224,18 @@ describe("SettlementFacet", async function () {
     describe("setFinalReferenceValue", async () => {
       beforeEach(async () => {
         // ---------
-        // Arrange: Create a contingent pool that expires shortly
+        // Arrange: Create a contingent pool and fast forward in time post pool expiration
         // ---------
-        nextBlockTimestamp = (await getLastTimestamp()) + 1;
-        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           expireInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
+                
+        // Fast forward in time past pool expiration
+        nextBlockTimestamp = Number(poolParamsBefore.expiryTime) + 1;
+        await mineBlock(nextBlockTimestamp);
 
-        // Set fallbackOracle as the fallback data provider
-        await governanceFacet
-          .connect(contractOwner)
-          .updateFallbackDataProvider(fallbackOracle.address);
         currentBlockTimestamp = await getLastTimestamp();
       });
 
@@ -756,6 +761,81 @@ describe("SettlementFacet", async function () {
               fallbackOracle.address
             )
           ).to.eq(settlementFee);
+        });
+
+        it("Should allocate settlement fees to the previous fallback data provider if a fallback data provider update was just triggered by the contract owner", async () => {
+          // ---------
+          // Arrange: Prepare and trigger update of fallback data provider address with contract owner's account
+          // ---------
+          // Define a new fallback data provider address and make sure it's not equal to the current one
+          const newFallbackDataProvider = user1.address;
+          const govParamsBefore = await getterFacet.getGovernanceParameters();
+          const currentFallbackDataProvider = govParamsBefore.fallbackDataProvider;
+          expect(newFallbackDataProvider).to.not.eq(currentFallbackDataProvider);
+
+          // Confirm that new fallback data provider has zero fee claim balance
+          expect(
+            await getterFacet.getClaim(
+              poolParamsBefore.collateralToken,
+              newFallbackDataProvider
+            )
+          ).to.eq(0);
+
+          // Get current fallback data provider's fee claim balance
+          const currentFallbackDataProviderClaimBalanceBefore = await getterFacet.getClaim(
+            poolParamsBefore.collateralToken,
+            currentFallbackDataProvider
+          );
+
+          // Contract owner triggers an update of the treasury address
+          await governanceFacet
+            .connect(contractOwner)
+            .updateFallbackDataProvider(newFallbackDataProvider);
+
+          // ---------
+          // Act: Submit final reference with previous fallback provider shortly after `updateFallbackDataProvider`
+          // (we can be sure that the new fallback data provider has not been activated yet at this stage)
+          // ---------
+          await settlementFacet
+            .connect(fallbackOracle)
+            .setFinalReferenceValue(
+              poolId,
+              finalReferenceValue,
+              allowChallenge
+            );
+
+          // ---------
+          // Assert: Confirm that the settlement fees have been allocated to the previous fallback data provider
+          // and not to the pending one
+          // ---------
+          feesParams = await getterFacet.getFees(poolParamsBefore.indexFees);
+          settlementFee = calcFee(
+            feesParams.settlementFee,
+            poolParamsBefore.collateralBalance,
+            decimals
+          );
+          expect(settlementFee).to.be.gt(0);
+          expect(
+            await getterFacet.getClaim(
+              poolParamsBefore.collateralToken,
+              newFallbackDataProvider
+            )
+          ).to.eq(0);
+          
+          // Get current fallback data provider's fee claim balance after the final value submission
+          expect(
+            await getterFacet.getClaim(
+              poolParamsBefore.collateralToken,
+              fallbackOracle.address
+            )
+          ).to.eq(currentFallbackDataProviderClaimBalanceBefore.add(settlementFee));
+
+          // ---------
+          // Reset: Revoke fallback data provider address update to avoid any impact on the tests below
+          // ---------
+          await governanceFacet
+            .connect(contractOwner)
+            .revokePendingFallbackDataProviderUpdate();
         });
       });
 
