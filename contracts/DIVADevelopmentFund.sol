@@ -46,6 +46,9 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
         override
         nonReentrant
     {
+        if (!_isValidReleasePeriod(_releasePeriodInSeconds)) {
+            revert InvalidReleasePeriod();
+        }
         uint256 _depositIndex = _addNewDeposit(
             address(0),
             msg.value,
@@ -60,6 +63,9 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
         uint256 _amount,
         uint256 _releasePeriodInSeconds
     ) external override nonReentrant {
+        if (!_isValidReleasePeriod(_releasePeriodInSeconds)) {
+            revert InvalidReleasePeriod();
+        }
         uint256 _depositIndex = _addNewDeposit(
             _token,
             _amount,
@@ -239,5 +245,9 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
                 (_deposit.amount * (block.timestamp - _deposit.lastClaimedAt)) /
                 (_deposit.endTime - _deposit.startTime);
         }
+    }
+
+    function _isValidReleasePeriod(uint256 _releasePeriodInSeconds) private pure returns (bool) {
+        return (_releasePeriodInSeconds != 0 && _releasePeriodInSeconds <= 30*365 days);
     }
 }

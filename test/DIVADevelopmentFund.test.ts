@@ -467,6 +467,90 @@ describe("DIVADevelopmentFund", async function () {
       expect(depositedEvent?.args?.sender).to.eq(user1.address);
       expect(depositedEvent?.args?.depositIndex).to.eq(expectedDepositIndex);
     });
+
+    // -------------------------------------------
+    // Reverts
+    // -------------------------------------------
+
+    it("Reverts with `InvalidReleasePeriod()` if `_releasePeriodInSeconds = 0` in native asset deposits", async () => {
+      // ---------
+      // Arrange: Set invalid `_releasePeriodInSeconds`
+      // ---------
+      const releasePeriodInSecondsTest = 0;
+
+      // Set `depositAmount`
+      depositAmount = user1DepositTokenBalance.div(10);
+
+      // ---------
+      // Act & Assert: Check that the deposit operation fails
+      // ---------
+      await expect(divaDevelopmentFund
+        .connect(user1)
+        ["deposit(uint256)"](releasePeriodInSecondsTest, {
+          value: depositAmount,
+        })).to.be.revertedWith("InvalidReleasePeriod()");
+    });
+
+    it("Reverts with `InvalidReleasePeriod()` if `_releasePeriodInSeconds > 30*365 days` in native asset deposits", async () => {
+      // ---------
+      // Arrange: Set invalid `_releasePeriodInSeconds`
+      // ---------
+      const releasePeriodInSecondsTest = 30*365*86400 + 1; // 30 years + 1 second
+
+      // Set `depositAmount`
+      depositAmount = user1DepositTokenBalance.div(10);
+
+      // ---------
+      // Act & Assert: Check that the deposit operation fails
+      // ---------
+      await expect(divaDevelopmentFund
+        .connect(user1)
+        ["deposit(uint256)"](releasePeriodInSecondsTest, {
+          value: depositAmount,
+        })).to.be.revertedWith("InvalidReleasePeriod()");
+    });
+
+    it("Reverts with `InvalidReleasePeriod()` if `_releasePeriodInSeconds = 0` in ERC20 token deposits", async () => {
+      // ---------
+      // Arrange: Set invalid `_releasePeriodInSeconds`
+      // ---------
+      const releasePeriodInSecondsTest = 0;
+
+      // Set `depositAmount`
+      depositAmount = user1DepositTokenBalance.div(10);
+
+      // ---------
+      // Act & Assert: Check that the deposit operation fails
+      // ---------
+      await expect(divaDevelopmentFund
+        .connect(user1)
+        ["deposit(address,uint256,uint256)"](
+          depositTokenInstance.address,
+          depositAmount,
+          releasePeriodInSecondsTest
+        )).to.be.revertedWith("InvalidReleasePeriod()");
+    });
+
+    it("Reverts with `InvalidReleasePeriod()` if `_releasePeriodInSeconds > 30*365 days` in ERC20 token deposits", async () => {
+      // ---------
+      // Arrange: Set invalid `_releasePeriodInSeconds`
+      // ---------
+      const releasePeriodInSecondsTest = 30*365*86400 + 1; // 30 years + 1 second
+
+      // Set `depositAmount`
+      depositAmount = user1DepositTokenBalance.div(10);
+
+      // ---------
+      // Act & Assert: Check that the deposit operation fails
+      // ---------
+      await expect(divaDevelopmentFund
+        .connect(user1)
+        ["deposit(address,uint256,uint256)"](
+          depositTokenInstance.address,
+          depositAmount,
+          releasePeriodInSecondsTest
+        )).to.be.revertedWith("InvalidReleasePeriod()");
+    });
   });
 
   describe("withdraw", async () => {

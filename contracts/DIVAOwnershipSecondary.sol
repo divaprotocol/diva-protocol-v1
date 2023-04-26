@@ -63,7 +63,6 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
         // 12 hours as well as the reporting timestamp
         (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = 
             getDataBefore(_queryId, block.timestamp - _MIN_UNDISPUTED_PERIOD);
-
         
         // Check that data exists
         if (_timestampRetrieved == 0) {
