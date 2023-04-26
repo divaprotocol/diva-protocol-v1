@@ -1215,7 +1215,70 @@ describe("LiquidityFacet", async function () {
             poolParamsBefore.collateralToken,
             treasury.address
           )
-        ).to.eq(protocolFee);
+        ).to.eq(protocolFee);        
+      });
+
+      it("Allocates the protocol fee to the previous treasury address if a treasury address update was just triggered by the contract owner", async () => {
+        // ---------
+        // Arrange: Prepare and trigger update of treasury address with contract owner's account
+        // ---------      
+        // Define a new treasury address and make sure it's not equal to the current one
+        const newTreasuryAddress = user2.address;
+        const govParamsBefore = await getterFacet.getGovernanceParameters();
+        expect(newTreasuryAddress).to.not.eq(await govParamsBefore.treasury)
+        
+        // Confirm that new treasury address has zero fee claim balance
+        expect(
+          await getterFacet.getClaim(
+            poolParamsBefore.collateralToken,
+            newTreasuryAddress
+          )
+        ).to.eq(0);
+        
+        // Get current treasury's fee claim balance
+        const currentTreasuryFeeClaimBalanceBefore = await getterFacet.getClaim(
+            poolParamsBefore.collateralToken,
+            treasury.address
+        );
+
+        // Contract owner triggers an update of the treasury address
+        await governanceFacet
+          .connect(contractOwner)
+          .updateTreasury(newTreasuryAddress);
+
+        // ---------
+        // Act: Remove liquidity shortly after `updateTreasury` (we can be sure that
+        // the update has not been activated yet)
+        // ---------
+        await liquidityFacet
+          .connect(user1)
+          .removeLiquidity(poolId, positionTokensToRedeem);
+
+        // ---------
+        // Assert: Check that the fee claim amount was allocated to the previous treasury
+        // and not to the pending one
+        // ---------
+        expect(
+          await getterFacet.getClaim(
+            poolParamsBefore.collateralToken,
+            newTreasuryAddress
+          )
+        ).to.eq(0);
+
+        // Get treasury's fee claim balance after liquidity was removed
+        expect(
+          await getterFacet.getClaim(
+            poolParamsBefore.collateralToken,
+            treasury.address
+          )
+        ).to.eq(currentTreasuryFeeClaimBalanceBefore.add(protocolFee));
+        
+        // ---------
+        // Reset: Revoke treasury address update to avoid any impact on the following tests
+        // ---------
+        await governanceFacet
+          .connect(contractOwner)
+          .revokePendingTreasuryUpdate();
       });
 
       it("Allocates the settlement fee to the data provider", async () => {
