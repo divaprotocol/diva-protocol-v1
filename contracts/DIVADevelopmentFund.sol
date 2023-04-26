@@ -11,7 +11,7 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // DIVA ownership contract
-    IDIVAOwnershipShared private immutable _divaOwnership;
+    IDIVAOwnershipShared private immutable _DIVA_OWNERSHIP;
 
     // Deposit related storage variables
     Deposit[] private _deposits;
@@ -26,15 +26,15 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
     mapping(address => uint256) private _tokenToUnclaimedDepositAmount;
 
     modifier onlyDIVAOwner() {
-        address _currentOwner = _divaOwnership.getCurrentOwner();
+        address _currentOwner = _DIVA_OWNERSHIP.getCurrentOwner();
         if (_currentOwner != msg.sender) {
             revert NotDIVAOwner(msg.sender, _currentOwner);
         }
         _;
     }
 
-    constructor(IDIVAOwnershipShared divaOwnership_) payable {
-        _divaOwnership = divaOwnership_;
+    constructor(IDIVAOwnershipShared _divaOwnership) payable {
+        _DIVA_OWNERSHIP = _divaOwnership;
     }
 
     // Function to receive native asset. msg.data must be empty, otherwise it will fail.
@@ -147,7 +147,7 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
         override
         returns (IDIVAOwnershipShared divaOwnership)
     {
-        divaOwnership = _divaOwnership;
+        divaOwnership = _DIVA_OWNERSHIP;
     }
 
     function getDepositInfo(uint256 _index)

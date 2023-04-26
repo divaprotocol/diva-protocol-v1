@@ -34,20 +34,20 @@ import {IDIVAOwnershipSecondary} from "./interfaces/IDIVAOwnershipSecondary.sol"
 contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
 
     address private _owner;
-    address private immutable _ownershipContractMainChain;
-    uint256 private immutable _mainChainId;
-    uint256 private constant _minUndisputedPeriod = 12 hours;
-    uint256 private constant _maxAllowedAgeOfReportedValue = 36 hours;
+    address private immutable _OWNERSHIP_CONTRACT_MAIN_CHAIN;
+    uint256 private immutable _MAIN_CHAIN_ID;
+    uint256 private constant _MIN_UNDISPUTED_PERIOD = 12 hours;
+    uint256 private constant _MAX_ALLOWED_AGE_OF_REPORTED_VALUE = 36 hours;
 
     constructor(
         address _initialOwner,
         address payable _tellorAddress,
-        uint256 mainChainId_,
-        address ownershipContractMainChain_
+        uint256 _mainChainId,
+        address _ownershipContractMainChain
     ) payable UsingTellor(_tellorAddress) {
         _owner = _initialOwner; 
-        _mainChainId = mainChainId_;
-        _ownershipContractMainChain = ownershipContractMainChain_;
+        _MAIN_CHAIN_ID = _mainChainId;
+        _OWNERSHIP_CONTRACT_MAIN_CHAIN = _ownershipContractMainChain;
     }
     
     function setOwner() external override {
@@ -62,7 +62,7 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
         // Retrieve the latest value (encoded owner address) that remained undisputed for at least
         // 12 hours as well as the reporting timestamp
         (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = 
-            getDataBefore(_queryId, block.timestamp - _minUndisputedPeriod);
+            getDataBefore(_queryId, block.timestamp - _MIN_UNDISPUTED_PERIOD);
 
         
         // Check that data exists
@@ -70,8 +70,8 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
             revert NoOracleSubmission();
         }
 
-        // Check that value is not older than 36 days
-        uint256 _maxAllowedTimestampRetrieved = block.timestamp - _maxAllowedAgeOfReportedValue;
+        // Check that value is not older than 36 hours
+        uint256 _maxAllowedTimestampRetrieved = block.timestamp - _MAX_ALLOWED_AGE_OF_REPORTED_VALUE;
         if (_timestampRetrieved < _maxAllowedTimestampRetrieved) {
             revert ValueTooOld(_timestampRetrieved, _maxAllowedTimestampRetrieved);
         }
@@ -92,11 +92,11 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
     }
 
     function getOwnershipContractMainChain() external view override returns (address) {
-        return _ownershipContractMainChain;
+        return _OWNERSHIP_CONTRACT_MAIN_CHAIN;
     }
 
     function getMainChainId() external view override returns (uint256) {
-        return _mainChainId;
+        return _MAIN_CHAIN_ID;
     }
 
     function getQueryDataAndId()
@@ -114,8 +114,8 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
                 abi.encode(
                     "EVMCall",
                     abi.encode(
-                        _mainChainId,
-                        _ownershipContractMainChain,
+                        _MAIN_CHAIN_ID,
+                        _OWNERSHIP_CONTRACT_MAIN_CHAIN,
                         abi.encodeWithSignature("getCurrentOwner()")
                     )
                 );

@@ -222,8 +222,8 @@ interface IGovernance {
      *
      * Reverts if:
      * - `msg.sender` is not contract owner.
-     * - one of the new fee parameters is smaller than 0.01% (100000000000000
-     *   in integer terms with 18 decimals) or greater than 1.5% (15000000000000000
+     * - one of the new fee parameters is smaller than 0.01% (`1e14`
+     *   in integer terms with 18 decimals) or greater than 1.5% (`1.5e16`
      *   in integer terms with 18 decimals) if fee > 0; 0% is possible though.
      * - there is already a pending fee update.
      * @param _protocolFee New protocol fee.

@@ -42,7 +42,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
     address private _previousOwner;
 
     // DIVA token address used for staking
-    IERC20Metadata private immutable _divaToken;
+    IERC20Metadata private immutable _DIVA_TOKEN;
 
     // Staking related storage variables
     mapping(address => uint256) private _candidateToStakedAmount;
@@ -55,17 +55,17 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
     uint256 private _cooldownPeriodEnd;
     
     // Relevant period lengths
-    uint256 private constant _showdownPeriod = 30 days;
-    uint256 private constant _submitOwnershipClaimPeriod = 7 days;
-    uint256 private constant _cooldownPeriod = 7 days;
-    uint256 private constant _minStakingPeriod = 7 days;
+    uint256 private constant _SHOWDOWN_PERIOD = 30 days;
+    uint256 private constant _SUBMIT_OWNERSHIP_CLAIM_PERIOD = 7 days;
+    uint256 private constant _COOLDOWN_PERIOD = 7 days;
+    uint256 private constant _MIN_STAKING_PERIOD = 7 days;
 
     constructor(
         address _initialOwner,
-        IERC20Metadata divaToken_
+        IERC20Metadata _divaToken
     ) payable {
         _owner = _initialOwner;
-        _divaToken = divaToken_;
+        _DIVA_TOKEN = _divaToken;
     }
 
     function stake(address _candidate, uint256 _amount) external override nonReentrant {
@@ -76,8 +76,8 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         
         // Transfer DIVA token from `msg.sender` to `this`. Requires prior approval
         // from `msg.sender` to succeed. No security risk of executing this external function as 
-        // `_divaToken` is initialized in the constructor and the functionality is known.
-        _divaToken.safeTransferFrom(
+        // `_DIVA_TOKEN` is initialized in the constructor and the functionality is known.
+        _DIVA_TOKEN.safeTransferFrom(
             msg.sender,
             address(this),
             _amount
@@ -118,9 +118,9 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         _previousOwner = _owner;
         
         // Set end times for election cycle related periods
-        _showdownPeriodEnd = block.timestamp + _showdownPeriod;
-        _submitOwnershipClaimPeriodEnd = _showdownPeriodEnd + _submitOwnershipClaimPeriod;
-        _cooldownPeriodEnd = _submitOwnershipClaimPeriodEnd + _cooldownPeriod;
+        _showdownPeriodEnd = block.timestamp + _SHOWDOWN_PERIOD;
+        _submitOwnershipClaimPeriodEnd = _showdownPeriodEnd + _SUBMIT_OWNERSHIP_CLAIM_PERIOD;
+        _cooldownPeriodEnd = _submitOwnershipClaimPeriodEnd + _COOLDOWN_PERIOD;
 
         // Log account that triggered the election cycle as well as the block timestamp
         emit ElectionCycleTriggered(msg.sender, block.timestamp);
@@ -147,7 +147,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
 
     function unstake(address _candidate, uint256 _amount) external override nonReentrant {
         // Check whether the 7 day minimum staking period has been respected
-        uint _minStakingPeriodEnd = _voterToTimestampLastStake[msg.sender] + _minStakingPeriod;
+        uint _minStakingPeriodEnd = _voterToTimestampLastStake[msg.sender] + _MIN_STAKING_PERIOD;
         if (block.timestamp < _minStakingPeriodEnd) {
             revert MinStakingPeriodNotExpired(block.timestamp, _minStakingPeriodEnd);
         }
@@ -163,7 +163,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         _candidateToStakedAmount[_candidate] -= _amount;
         
         // Transfer DIVA token to `msg.sender`
-        _divaToken.safeTransfer(msg.sender, _amount);
+        _DIVA_TOKEN.safeTransfer(msg.sender, _amount);
 
         // Log candidate and amount
         emit Unstaked(_candidate, _amount);
@@ -207,23 +207,23 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
     }
 
     function getDIVAToken() external view override returns (address) {
-        return address(_divaToken);
+        return address(_DIVA_TOKEN);
     }
 
     function getShowdownPeriod() external pure returns (uint256) {
-        return _showdownPeriod;
+        return _SHOWDOWN_PERIOD;
     }
 
     function getSubmitOwnershipClaimPeriod() external pure returns (uint256) {
-        return _submitOwnershipClaimPeriod;
+        return _SUBMIT_OWNERSHIP_CLAIM_PERIOD;
     }
 
     function getCooldownPeriod() external pure returns (uint256) {
-        return _cooldownPeriod;
+        return _COOLDOWN_PERIOD;
     }
 
     function getMinStakingPeriod() external pure returns (uint256) {
-        return _minStakingPeriod;
+        return _MIN_STAKING_PERIOD;
     }
 
     function _isWithinSubmitOwnershipClaimPeriod() private view returns (bool) {

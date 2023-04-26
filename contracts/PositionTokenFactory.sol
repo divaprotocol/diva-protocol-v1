@@ -13,14 +13,14 @@ import {IPermissionedPositionToken} from "./interfaces/IPermissionedPositionToke
  * @dev Factory contract to create position token clones
  */
 contract PositionTokenFactory is IPositionTokenFactory {
-    address private immutable _positionTokenImplementation;
-    address private immutable _permissionedPositionTokenImplementation;
+    address private immutable _POSITION_TOKEN_IMPLEMENTATION;
+    address private immutable _PERMISSIONED_POSITION_TOKEN_IMPLEMENTATION;
 
     constructor() payable {
         // Using payable to reduce deployment costs
 
-        _positionTokenImplementation = address(new PositionToken());
-        _permissionedPositionTokenImplementation = address(new PermissionedPositionToken());
+        _POSITION_TOKEN_IMPLEMENTATION = address(new PositionToken());
+        _PERMISSIONED_POSITION_TOKEN_IMPLEMENTATION = address(new PermissionedPositionToken());
     }
 
     function createPositionToken(
@@ -36,7 +36,7 @@ contract PositionTokenFactory is IPositionTokenFactory {
         // Initialize position token contract as implementation contract
         // doesn't have a constructor
         if (permissionedERC721Token_ == address(0)) {
-            clone = Clones.clone(_positionTokenImplementation);
+            clone = Clones.clone(_POSITION_TOKEN_IMPLEMENTATION);
             IPositionToken(clone).initialize(
                 symbol_,
                 poolId_,
@@ -44,7 +44,7 @@ contract PositionTokenFactory is IPositionTokenFactory {
                 owner_
             );
         } else {
-            clone = Clones.clone(_permissionedPositionTokenImplementation);
+            clone = Clones.clone(_PERMISSIONED_POSITION_TOKEN_IMPLEMENTATION);
             IPermissionedPositionToken(clone).initialize(
                 symbol_,
                 poolId_,
@@ -58,6 +58,10 @@ contract PositionTokenFactory is IPositionTokenFactory {
     }
 
     function positionTokenImplementation() external view override returns (address) {
-        return _positionTokenImplementation;
+        return _POSITION_TOKEN_IMPLEMENTATION;
+    }
+
+    function permissionedPositionTokenImplementation() external view override returns (address) {
+        return _PERMISSIONED_POSITION_TOKEN_IMPLEMENTATION;
     }
 }

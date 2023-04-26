@@ -20,14 +20,6 @@ error InitializationFunctionReverted(
     address _initializationContractAddress,
     bytes _calldata
 );
-error ZeroInitAddressNonEmptyCalldata(
-    address _initializationContractAddress,
-    bytes _calldata
-);
-error EmptyCalldataNonZeroInitAddress(
-    address _initializationContractAddress,
-    bytes _calldata
-);
 
 library LibDiamond {
     event DiamondCut(
@@ -43,19 +35,13 @@ library LibDiamond {
         bytes memory _calldata
     ) internal {
         for (uint256 facetIndex; facetIndex < _facetCut.length; facetIndex++) {
-            bytes4[] memory functionSelectors = _facetCut[facetIndex]
-                .functionSelectors;
-            address facetAddress = _facetCut[facetIndex].facetAddress;
-            if (functionSelectors.length == 0) {
-                revert NoSelectorsProvidedForFacetForCut(facetAddress);
-            }
             IDiamondCut.FacetCutAction action = _facetCut[facetIndex].action;
             if (action == IDiamondCut.FacetCutAction.Add) {
-                _addFunctions(facetAddress, functionSelectors);
+                _addFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
-                _replaceFunctions(facetAddress, functionSelectors);
+                _replaceFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else if (action == IDiamondCut.FacetCutAction.Remove) {
-                _removeFunctions(facetAddress, functionSelectors);
+                _removeFunctions(_facetCut[facetIndex].facetAddress, _facetCut[facetIndex].functionSelectors);
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
             }
@@ -263,31 +249,20 @@ library LibDiamond {
         internal
     {
         if (_init == address(0)) {
-            if (_calldata.length > 0) {
-                revert ZeroInitAddressNonEmptyCalldata(_init, _calldata);
-            }
-        } else {
-            if (_calldata.length == 0) {
-                revert EmptyCalldataNonZeroInitAddress(_init, _calldata);
-            }
-            if (_init != address(this)) {
-                _enforceHasContractCode(
-                    _init,
-                    "LibDiamondCut: _init address has no code"
-                );
-            }
-            (bool success, bytes memory error) = _init.delegatecall(_calldata);
-            if (!success) {
-                if (error.length > 0) {
-                    // bubble up error
-                    /// @solidity memory-safe-assembly
-                    assembly {
-                        let returndata_size := mload(error)
-                        revert(add(32, error), returndata_size)
-                    }
-                } else {
-                    revert InitializationFunctionReverted(_init, _calldata);
+            return;
+        }
+        _enforceHasContractCode(_init, "LibDiamondCut: _init address has no code");
+        (bool success, bytes memory error) = _init.delegatecall(_calldata);
+        if (!success) {
+            if (error.length > 0) {
+                // bubble up error
+                /// @solidity memory-safe-assembly
+                assembly {
+                    let returndata_size := mload(error)
+                    revert(add(32, error), returndata_size)
                 }
+            } else {
+                revert InitializationFunctionReverted(_init, _calldata);
             }
         }
     }
