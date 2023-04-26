@@ -623,6 +623,34 @@ describe("PoolFacet", async function () {
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
 
+    it("Reverts if cap exceeds 1e59", async () => {
+      // ---------
+      // Arrange: Set invalid cap
+      // ---------
+      const invalidCap = parseUnits("1", 59).add(1);
+
+      // ---------
+      // Act & Assert: Check that contingent pool creation fails
+      // ---------
+      await expect(
+        poolFacet.connect(user1).createContingentPool({
+          referenceAsset,
+          expiryTime,
+          floor,
+          inflection,
+          cap: invalidCap,
+          gradient,
+          collateralAmount,
+          collateralToken,
+          dataProvider,
+          capacity,
+          longRecipient,
+          shortRecipient,
+          permissionedERC721Token,
+        })
+      ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
+    });
+
     it("Reverts if total collateral amount is less than 10**6", async () => {
       // ---------
       // Arrange: Set collateralAmount < 10**6
