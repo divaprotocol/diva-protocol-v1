@@ -212,7 +212,7 @@ describe("SettlementFacet", async function () {
         expiryTime: await getExpiryTime(expireInSeconds),
         floor: parseUnits(floor.toString()),
         inflection: parseUnits(inflection.toString()),
-        cap,
+        cap: cap,
         gradient: parseUnits(gradient.toString(), decimals),
         collateralAmount: parseUnits(collateralAmount.toString(), decimals),
         collateralToken,
