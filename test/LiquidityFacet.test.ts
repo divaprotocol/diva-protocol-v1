@@ -919,7 +919,7 @@ describe("LiquidityFacet", async function () {
       beforeEach(async function () {
         if (
           this.currentTest?.title !==
-          "Removes liquidity from an existing pool and updates the pool parameters"
+          "Removes liquidity from an existing pool and updates the pool parameters and fee claims"
         ) {
           // ---------
           // Arrange: Create a contingent pool, set amount of position tokens to redeem and calculate fees to be paid
@@ -968,7 +968,7 @@ describe("LiquidityFacet", async function () {
         const tx = await createContingentPool();
         poolId = await getPoolIdFromTx(tx);
 
-        // Get status before removing liquidity (after the pool has been created)
+        // Get status before removing liquidity (after the pool has been created)        
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         shortTokenInstance = await positionTokenAttachFixture(
           poolParamsBefore.shortToken
@@ -1019,7 +1019,8 @@ describe("LiquidityFacet", async function () {
           .removeLiquidity(poolId, positionTokensToRedeem);
 
         // ---------
-        // Assert: Check that relevant pool parameters were updated and others remained unchanged
+        // Assert: Check that relevant pool parameters and balances were updated as expected and others
+        // remained unchanged
         // ---------
         poolParamsAfter = await getterFacet.getPoolParameters(poolId);
 
@@ -1034,7 +1035,22 @@ describe("LiquidityFacet", async function () {
           poolParamsBefore.collateralBalance.sub(collateralToReturnGross)
         );
 
-        // Fee related parameters are as expected
+        // Check that user1's short and long token balance got reduced
+        expect(await shortTokenInstance.balanceOf(user1.address)).to.eq(
+          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
+        );
+        expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
+          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
+        );
+
+        // Check that diamond contract's collateral token balance reduced.
+        // Note that protocol and settlement fees remain inside DIVA contract until
+        // claimed by treasury and data provider.
+        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+          poolParamsBefore.collateralBalance.sub(collateralToReturnNet)
+        );
+
+        // Fee related parameters updated are as expected
         expect(
           await getterFacet.getClaim(
             collateralTokenInstance.address,
@@ -1073,93 +1089,170 @@ describe("LiquidityFacet", async function () {
           poolParamsBefore.dataProvider
         );
         expect(poolParamsAfter.capacity).to.eq(poolParamsBefore.capacity);
-      });
 
-      it("Decreases the short and long token supply", async () => {
-        // ---------
-        // Arrange: Confirm that the total short and long token supply equals those stored in the pool parameters
-        // ---------
-        expect(await shortTokenInstance.totalSupply()).to.eq(
-          poolParamsBefore.collateralBalance
-        );
-        expect(await longTokenInstance.totalSupply()).to.eq(
-          poolParamsBefore.collateralBalance
-        );
+        
+        // ========================
+        // Treasury claims protocol fee
+        // ========================
 
         // ---------
-        // Act: Remove liquidity
+        // Act: Claim protocol fee with treasury
         // ---------
-        await liquidityFacet
+        await claimFacet.claimFee(
+          poolParamsBefore.collateralToken,
+          treasury.address
+        );
+
+        // ---------
+        // Assert: Confirm that DIVA contract's collateral token balance is reduced by
+        // the protocol fee amount and data provider claim amount and reserve remains unchanged
+        // ---------
+        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+          poolParamsBefore.collateralBalance.sub(collateralToReturnNet).sub(protocolFee)
+        );
+        expect(await getterFacet.getTip(poolId)).to.eq(settlementFee);
+        expect(
+          await getterFacet.getClaim(
+            collateralTokenInstance.address,
+            treasury.address
+          )
+        ).to.eq(0);
+        expect(
+          await getterFacet.getClaim(
+            collateralTokenInstance.address,
+            oracle.address
+          )
+        ).to.eq(0);
+
+        // ========================
+        // Submit final reference value and enable the possibility to challenge
+        // ========================
+
+        // ---------
+        // Arrange: Fast forward in time post pool expiration
+        // ---------
+        nextBlockTimestamp = Number(poolParamsBefore.expiryTime) + 1;
+        await mineBlock(nextBlockTimestamp);
+
+        // ---------
+        // Act: Confirm final reference value and claim with data provider
+        // ---------
+        const finalReferenceValue = parseUnits("1605.33");
+        const allowChallenge = true;
+        await settlementFacet
+          .connect(oracle)
+          .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge);
+        
+        // ---------
+        // Assert: Confirm that DIVA contract's collateral token balance, fee claim and reserve
+        // for data provider are unchanged
+        // ---------
+        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+          poolParamsBefore.collateralBalance.sub(collateralToReturnNet).sub(protocolFee)
+        );
+        expect(await getterFacet.getTip(poolId)).to.eq(settlementFee);
+        expect(await getterFacet.getClaim(
+          collateralTokenInstance.address,
+          oracle.address
+          )
+        ).to.eq(0);
+
+        // ========================
+        // Challenge submitted value
+        // ========================
+
+        // ---------
+        // Act: Challenge final reference value
+        // ---------
+        await settlementFacet
           .connect(user1)
-          .removeLiquidity(poolId, positionTokensToRedeem);
+          .challengeFinalReferenceValue(poolId, finalReferenceValue.add(1));
 
         // ---------
-        // Assert: Check total supply of short and long tokens
+        // Assert: Confirm that DIVA contract's collateral token balance, fee claim and reserve
+        // for data provider are unchanged
         // ---------
-        poolParamsAfter = await getterFacet.getPoolParameters(poolId);
-        expect(await shortTokenInstance.totalSupply()).to.eq(
-          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
+        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+          poolParamsBefore.collateralBalance.sub(collateralToReturnNet).sub(protocolFee)
         );
-        expect(await longTokenInstance.totalSupply()).to.eq(
-          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
-        );
-      });
+        expect(await getterFacet.getTip(poolId)).to.eq(settlementFee);
+        expect(await getterFacet.getClaim(
+          collateralTokenInstance.address,
+          oracle.address
+          )
+        ).to.eq(0);
 
-      it("Decreases user1`s short and long token balance", async () => {
-        // ---------
-        // Arrange: Confirm that user1's short and long token balances equals those stored in the pool parameters
-        // ---------
-        expect(await shortTokenInstance.balanceOf(user1.address)).to.eq(
-          poolParamsBefore.collateralBalance
-        );
-        expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
-          poolParamsBefore.collateralBalance
-        );
+        // ========================
+        // Data provider resubmits the same value and confirms the pool
+        // ========================
 
         // ---------
-        // Act: Remove liquidity
+        // Arrange: Calculate settlement fee based on the remaining collateral balance of the pool.
+        // The reserved fee claim for the data provider is expected to be added to that number when the final value is confirmed.
         // ---------
-        await liquidityFacet
-          .connect(user1)
-          .removeLiquidity(poolId, positionTokensToRedeem);
+        const settlementFeeRemainingCollateral = calcFee(
+          feesParams.settlementFee,
+          poolParamsAfter.collateralBalance,
+          decimals
+        );
 
         // ---------
-        // Assert: Check the user1's short and long token balance got reduced
+        // Act: Submit the same value as before to confirm the pool
         // ---------
-        expect(await shortTokenInstance.balanceOf(user1.address)).to.eq(
-          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
-        );
-        expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
-          poolParamsBefore.collateralBalance.sub(positionTokensToRedeem)
-        );
-      });
+        await settlementFacet
+          .connect(oracle)
+          .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge); // allowChallenge is irrelevant here, as final value will be confirmed
+        expect((await getterFacet.getPoolParameters(poolId)).statusFinalReferenceValue).to.eq(3); // 3 == Confirmed
 
-      it("Decreases the diamond contract`s collateral token balance down to the fee amount owed to the treasury and data provider", async () => {
         // ---------
-        // Arrange: Confirm that diamond contract's balance equals that stored in the pool parameters
+        // Assert: Confirm that DIVA contract's collateral token balance is unchanged but reserved
+        // fee claim as well as the settlement fee based on the remaining pool collateral has been credited to
+        // the data provider.
+        // ---------
+        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+          poolParamsBefore.collateralBalance.sub(collateralToReturnNet).sub(protocolFee)
+        );
+        expect(await getterFacet.getTip(poolId)).to.eq(0);        
+        expect(await getterFacet.getClaim(
+          collateralTokenInstance.address,
+          oracle.address
+          )
+        ).to.eq(settlementFeeRemainingCollateral.add(settlementFee));
+
+        // ========================
+        // Data provider claims fee
+        // ========================
+
+        // ---------
+        // Act: Data provider claims the fee
+        // ---------
+        await claimFacet.claimFee(
+          poolParamsBefore.collateralToken,
+          oracle.address
+        );
+
+        // ---------
+        // Assert: Confirm that DIVA contract's collateral token balance is unchanged but reserved
+        // fee claim has been credited to the data provider
         // ---------
         expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
           poolParamsBefore.collateralBalance
-        );
-
-        // ---------
-        // Act: Remove liquidity
-        // ---------
-        await liquidityFacet
-          .connect(user1)
-          .removeLiquidity(poolId, positionTokensToRedeem);
-
-        // ---------
-        // Assert: Check that diamond contract's collateral token balance reduced
-        // ---------
-        expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
-          poolParamsBefore.collateralBalance.sub(collateralToReturnNet)
-        );
+            .sub(collateralToReturnNet)
+            .sub(protocolFee)
+            .sub(settlementFee)
+            .sub(settlementFeeRemainingCollateral)
+        ); // Note that treasury hasn't claimed the protocol fee received on the remaining pool collateral at this point
+        expect(await getterFacet.getTip(poolId)).to.eq(0);
+        expect(await getterFacet.getClaim(
+          collateralTokenInstance.address,
+          oracle.address
+          )
+        ).to.eq(0);
       });
 
       // @todo Add test where I remove liquidity and add tips and fee claim and reserves should be as expected
 
-      it.only("Decreases the DIVA contract`s collateral token balance down to zero after treasury and data provider have claimed their fees", async () => {
+      it("Decreases the DIVA contract`s collateral token balance down to zero after treasury and data provider have claimed their fees", async () => {
         // ---------
         // Arrange: Confirm that DIVA contract's balance equals that stored in the pool parameters
         // ---------
@@ -1170,8 +1263,7 @@ describe("LiquidityFacet", async function () {
         expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
           poolParamsBefore.collateralBalance
         );
-        console.log("positionTokensToRedeem", positionTokensToRedeem)
-        console.log("poolParamsBefore.collateralBalance", poolParamsBefore.collateralBalance)
+
         // ---------
         // Act: Remove liquidity
         // ---------
@@ -1185,7 +1277,6 @@ describe("LiquidityFacet", async function () {
         // Calculate settlementFee which is reserved for the data provider within the DIVA contract
         feesParams = await getterFacet.getFees(poolParamsBefore.indexFees);
         const reservedClaimAfter = await getterFacet.getTip(poolId);
-        console.log("HEEEY1")
 
         expect(reservedClaimAfter).to.be.eq(reservedClaimBefore.add(settlementFee));
 
