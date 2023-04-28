@@ -26,7 +26,7 @@ interface ILiquidity {
         uint256 collateralAmount
     );
 
-    // Duplication of event defined in `LibDIVA.sol` as events emitted out of
+    // Duplication of events defined in `LibDIVA.sol` as events emitted out of
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event LiquidityRemoved(
@@ -39,6 +39,11 @@ interface ILiquidity {
     event FeeClaimAllocated(
         uint256 indexed poolId,
         address indexed recipient,
+        uint256 amount
+    );
+
+    event FeeClaimReserved(
+        uint256 indexed poolId,
         uint256 amount
     );
 

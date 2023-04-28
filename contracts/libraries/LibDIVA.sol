@@ -108,7 +108,7 @@ library LibDIVA {
         uint256 amount
     );
 
-    // @todo add event to docs and add test
+    // @todo add event to docs
     /**
      * @notice Emitted when fees are reserved for data provider in 
      * `removeLiquidity`.

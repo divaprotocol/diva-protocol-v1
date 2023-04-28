@@ -562,7 +562,7 @@ The function executes the following steps in the following order:
 1. Burn both short and long position tokens.
 1. Allocate the protocol fee to the treasury and the settlement fee to the data provider and reduce the pool's `collateralBalance` by `protocolFee + settlementFee`. Allocated fees are retained within the DIVA contract until they are claimed by the entitled accounts via the [`claimFee`](#claimfee) function.
 1. Reduce the pool's `collateralBalance` by `_amount - protocolFee - settlementFee` and transfer the corresponding amount to `msg.sender` using OpenZeppelin's `safeTransfer` method. At this stage, the pool's `collateralBalance` reduced by `_amount` in total.
-1. Emit a [`LiquidityRemoved`](#liquidityremoved) event on success.
+1. Emit a [`LiquidityRemoved`](#liquidityremoved), [`FeeClaimAllocated`](#feeclaimallocated) and [`FeeClaimReserved`](#feeclaimreserved) event on success.
 
 The function reverts under the following conditions:
 
@@ -2194,6 +2194,17 @@ event FeeClaimAllocated(
     uint256 indexed poolId,             // Id of the corresponding contingent pool
     address indexed recipient,          // Fee recipient
     uint256 amount                      // Fee amount expressed as an integer with collateral token decimals
+);
+```
+
+### FeeClaimReserved
+
+Emitted when fees are reserved for the data provider in `removeLiquidity`.
+
+```
+event FeeClaimReserved(
+    uint256 indexed poolId,             // Id of the corresponding contingent pool
+    uint256 amount                      // Fee amount reserved expressed as an integer with collateral token decimals
 );
 ```
 
