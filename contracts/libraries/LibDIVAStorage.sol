@@ -77,8 +77,11 @@ library LibDIVAStorage {
         SettlementPeriods[] settlementPeriods; // Array including the settlement period regimes set over time
     }
 
+    // @todo rename to RewardStorage (do not use the term reporting here as treasury fees are also stored here)
     struct FeeClaimStorage {
+        // @todo rename claimableFeeAmount to claimableReward -> Sascha suggests to keep as is
         mapping(address => mapping(address => uint256)) claimableFeeAmount; // collateralTokenAddress -> RecipientAddress -> amount
+        // @todo rename poolIdToTip to poolIdToDataProviderReward
         mapping(uint256 => uint256) poolIdToTip; // poolId -> tip amount
     }
 
