@@ -5167,7 +5167,8 @@ describe("EIP712", async function () {
         ).to.eq(protocolFee);
         expect(
           await getterFacet.getClaim(collateralToken.address, oracle.address)
-        ).to.eq(settlementFee);
+        ).to.eq(0);
+        expect(await getterFacet.getTip(poolId)).to.eq(settlementFee);
 
         // Confirm that the collateral token balance for both users has increased
         expect(await collateralToken.balanceOf(user1.address)).to.eq(

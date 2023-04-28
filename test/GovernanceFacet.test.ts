@@ -323,6 +323,7 @@ describe("GovernanceFacet", async function () {
 
       // Get pool params
       poolParams2 = await getterFacet.getPoolParameters(poolId2);
+
       // Confirm that the neww fee regime applies to the second pool created
       const feeParams2 = await getterFacet.getFees(poolParams2.indexFees);
       expect(feeParams2.protocolFee).to.eq(newFee);
@@ -347,7 +348,7 @@ describe("GovernanceFacet", async function () {
         .connect(user1)
         .removeLiquidity(poolId1, positionTokensToRedeem);
 
-      // Check that fees are allocated correctly to treasury and oracle address
+      // Check that fees are allocated/reserved correctly to treasury and oracle address
       // according to the previous fee regime
       const treasuryCollateralTokenBalanceBefore = await getterFacet.getClaim(
         poolParams1.collateralToken,
@@ -358,7 +359,8 @@ describe("GovernanceFacet", async function () {
         poolParams1.collateralToken,
         oracle.address
       );
-      expect(oracleCollateralTokenBalanceBefore).to.eq(settlementFee1);
+      expect(oracleCollateralTokenBalanceBefore).to.eq(0);
+      expect(await getterFacet.getTip(poolId1)).to.eq(settlementFee1);
 
       // ---------
       // Act: User2 removes liquidity for poolId2 which follows the new fee regime
@@ -368,7 +370,7 @@ describe("GovernanceFacet", async function () {
         .removeLiquidity(poolId2, positionTokensToRedeem);
 
       // ---------
-      // Assert: Confirm that fees are allocated correctly to treasury and oracle
+      // Assert: Confirm that fees are allocated/reserved correctly to treasury and oracle
       // according to the new fee regime
       // ---------
       expect(
@@ -379,7 +381,8 @@ describe("GovernanceFacet", async function () {
       ).to.eq(treasuryCollateralTokenBalanceBefore.add(protocolFee2));
       expect(
         await getterFacet.getClaim(poolParams2.collateralToken, oracle.address)
-      ).to.eq(oracleCollateralTokenBalanceBefore.add(settlementFee2));
+      ).to.eq(0);
+      expect(await getterFacet.getTip(poolId2)).to.eq(settlementFee2);
     });
 
     // -------------------------------------------

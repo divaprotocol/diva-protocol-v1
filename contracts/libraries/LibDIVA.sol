@@ -311,10 +311,6 @@ library LibDIVA {
         address _recipient,
         uint256 _feeAmount
     ) internal {
-        // Get reference to the relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
         // Check that fee amount to be allocated doesn't exceed the pool's
         // current `collateralBalance`. This check should never trigger, but
         // kept for safety.
@@ -323,7 +319,8 @@ library LibDIVA {
 
         // Reduce `collateralBalance` in pool parameters and increase fee claim
         _pool.collateralBalance -= _feeAmount;
-        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _feeAmount;
+        LibDIVAStorage._feeClaimStorage()
+            .claimableFeeAmount[_pool.collateralToken][_recipient] += _feeAmount;
 
         // Log poolId, recipient and fee amount
         emit FeeClaimAllocated(_poolId, _recipient, _feeAmount);
@@ -348,15 +345,17 @@ library LibDIVA {
         LibDIVAStorage.Pool storage _pool,
         uint256 _feeAmount
     ) internal {
-        // Get reference to the relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
+        // Check that fee amount to be allocated doesn't exceed the pool's
+        // current `collateralBalance`. This check should never trigger, but
+        // kept for safety.
         if (_feeAmount > _pool.collateralBalance)
             revert FeeAmountExceedsPoolCollateralBalance();
         
+        // Reduce `collateralBalance` in pool parameters and increase
+        // fee claim reserve
         _pool.collateralBalance -= _feeAmount;
-        fs.poolIdToTip[_poolId] += _feeAmount; // @todo check that there is 
+        LibDIVAStorage._feeClaimStorage()
+            .poolIdToTip[_poolId] += _feeAmount; // @todo check that there is 
 
         // Log poolId and fee amount
         emit FeeClaimReserved(_poolId, _feeAmount); // @todo define new event as no recipient anymore
