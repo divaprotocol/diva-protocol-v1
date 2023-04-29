@@ -172,18 +172,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_initializationContractAddress",
-        "type": "address"
-      },
-      { "internalType": "bytes", "name": "_calldata", "type": "bytes" }
-    ],
-    "name": "EmptyCalldataNonZeroInitAddress",
-    "type": "error"
-  },
-  {
     "inputs": [{ "internalType": "uint8", "name": "_action", "type": "uint8" }],
     "name": "IncorrectFacetCutAction",
     "type": "error"
@@ -232,18 +220,6 @@
       { "internalType": "address", "name": "_facetAddress", "type": "address" }
     ],
     "name": "RemoveFacetAddressMustBeZeroAddress",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_initializationContractAddress",
-        "type": "address"
-      },
-      { "internalType": "bytes", "name": "_calldata", "type": "bytes" }
-    ],
-    "name": "ZeroInitAddressNonEmptyCalldata",
     "type": "error"
   },
   {
@@ -1843,6 +1819,15 @@
   },
   {
     "inputs": [
+      { "internalType": "uint256", "name": "_poolId", "type": "uint256" }
+    ],
+    "name": "getReservedClaim",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint48",
         "name": "_indexSettlementPeriods",
@@ -1941,15 +1926,6 @@
       }
     ],
     "name": "getTakerFilledAmount",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "_poolId", "type": "uint256" }
-    ],
-    "name": "getTip",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -2458,7 +2434,6 @@
     "stateMutability": "nonpayable",
     "type": "function"
   },
-  { "inputs": [], "name": "ZeroLongAndShortRecipients", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
@@ -2482,6 +2457,25 @@
       }
     ],
     "name": "FeeClaimAllocated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "poolId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeClaimReserved",
     "type": "event"
   },
   {
@@ -2841,6 +2835,31 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "poolId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReserveAllocated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "enum LibDIVAStorage.Status",
         "name": "statusFinalReferenceValue",
         "type": "uint8"
@@ -2865,31 +2884,6 @@
       }
     ],
     "name": "StatusChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "poolId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "TipAllocated",
     "type": "event"
   },
   {
