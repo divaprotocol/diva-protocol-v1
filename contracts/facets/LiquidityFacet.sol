@@ -17,9 +17,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         // still possible.
         _isValidAddLiquidityTx(
             _poolId,
-            _collateralAmountIncr,
-            _longRecipient,
-            _shortRecipient
+            _collateralAmountIncr
         );
 
         // Transfer approved collateral token from `msg.sender` and mint position tokens
@@ -45,9 +43,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
             // still possible.
             _isValidAddLiquidityTx(
                 _argsBatchAddLiquidity[i].poolId,
-                _argsBatchAddLiquidity[i].collateralAmountIncr,
-                _argsBatchAddLiquidity[i].longRecipient,
-                _argsBatchAddLiquidity[i].shortRecipient
+                _argsBatchAddLiquidity[i].collateralAmountIncr
             );
 
             // Transfer approved collateral token from `msg.sender` and mint position tokens
@@ -96,16 +92,8 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
 
     function _isValidAddLiquidityTx(
         uint256 _poolId,
-        uint256 _collateralAmountIncr,
-        address _longRecipient,
-        address _shortRecipient
+        uint256 _collateralAmountIncr
     ) private view {
-        // `longRecipient` and `shortRecipient` should not be both zero address
-        // However, similar to `createContingentPool`, conscious decision to allow either `longRecipient`
-        // or `shortRecipient` to to be equal to the zero address to enable conditional burn use cases.
-        if (_longRecipient == address(0) && _shortRecipient == address(0))
-            revert ZeroLongAndShortRecipients();
-
         // Get pool params using `_poolId`
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
         LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];

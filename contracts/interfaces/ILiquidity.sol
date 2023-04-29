@@ -2,10 +2,6 @@
 pragma solidity 0.8.19;
 
 interface ILiquidity {
-    // Thrown in `addLiquidity` if both `longRecipient` and `shortRecipient`
-    // equal to the zero address.
-    error ZeroLongAndShortRecipients();
-
     // Struct for `batchAddLiquidity` function input
     struct ArgsBatchAddLiquidity {
         uint256 poolId;
@@ -56,9 +52,11 @@ interface ILiquidity {
      * @param _collateralAmountIncr Incremental collateral amount that `msg.sender`
      * is going to add to the pool expressed as an integer with collateral token decimals.
      * @param _longRecipient: Address that shall receive the long position tokens.
-     * Zero address is a valid input to enable conditional burn use cases.
+     * Any burn address except for the zero address is a valid recipient to enable conditional
+     * burn use cases. 
      * @param _shortRecipient: Address that shall receive the short position tokens.
-     * Zero address is a valid input to enable conditional burn use cases.
+     * Any burn address except for the zero address is a valid recipient to enable conditional
+     * burn use cases.
      */
     function addLiquidity(
         uint256 _poolId,

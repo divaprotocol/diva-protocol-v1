@@ -347,7 +347,7 @@ Native ETH is not supported as collateral in v1. Use wrapped ETH (WETH) instead.
 
 ### createContingentPool
 
-Function to create a new contingent pool and mint long and short position tokens to `longRecipient` and `shortRecipient`, respectively, upon collateral deposit by `msg.sender`. It is important to highlight that the recipients of the short and long position tokens do not have to be `msg.sender`, but can instead be any address based on the specific use case and payment agreement between the parties involved. In particular, a zero address input for either of the recipients is a valid input to enable conditional burn use cases. The function will revert if both recipients are set to the zero address, though.
+Function to create a new contingent pool and mint long and short position tokens to `longRecipient` and `shortRecipient`, respectively, upon collateral deposit by `msg.sender`. It is important to highlight that the recipients of the short and long position tokens do not have to be `msg.sender`, but can instead be any address based on the specific use case and payment agreement between the parties involved. In particular, a burn address such as [0x000000000000000000000000000000000000dEaD](https://etherscan.io/address/0x000000000000000000000000000000000000dead) can be used as the recipient for either the long or short position token to enable conditional burn use cases. Note that the zero address cannot be used as a recipient to preserve OpenZeppelin's reference implementation of the ERC20 token standard, which disallows mints to the zero address.
 
 This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Returns the `poolId` on success. Refer to [`batchCreateContingentPool`](#batchcreatecontingentpool) for the batch version of the function.
 
@@ -373,8 +373,8 @@ The `PoolParams` struct has the following fields in the following order:
 | `collateralToken`  | address | Settlement asset         | Address of the ERC20 collateral token.                                                                                                                                                                  |
 | `dataProvider`     | address | Oracle                   | Ethereum account (EOA or smart contract) that is supposed to report the final reference asset value following pool expiration.                                                                                                              |
 | `capacity`         | uint256 | Pool size                | Maximum collateral amount that a contingent pool can accept. Choose a large number (e.g., `2**256 - 1`) for unlimited size. Input expects an integer with collateral token decimals.                    |
-| `longRecipient`    | address | Position token recipient | Address that shall receive the long position token. Zero address is a valid input to enable conditional burn use cases.                                                                                 |
-| `shortRecipient`   | address | Position token recipient | Address that shall receive the short position token. Zero address is a valid input to enable conditional burn use cases.                                                                                |
+| `longRecipient`    | address | Position token recipient | Address that shall receive the long position token. Any burn address except for the zero address is a valid recipient to enable conditional burn use cases.                                                                                 |
+| `shortRecipient`   | address | Position token recipient | Address that shall receive the short position token. Any burn address except for the zero address is a valid recipient to enable conditional burn use cases.                                                                                |
 |`permissionedERC721Token`|address|Permissions|Address of the ERC721 token that transfers are restricted to. Use zero address to render the position tokens permissionless.|
 
 The function executes the following steps in the following order:
@@ -399,16 +399,14 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - `collateralAmount` is smaller than `1e6`
 - `collateralAmount` exceeds `capacity`
 - Collateral token has more than 18 or less than 6 decimals
-- Both `longRecipient` and `shortRecipient` are equal to the zero address.
-
-> **❗Important:** `createContingentPool` does not revert if either `longRecipient` or `shortRecipient` are equal to the zero address. This is a conscious design choice to enable conditional burn use cases. Users should pay special attention when populating the function parameters for execution to avoid sending position tokens to the zero address accidentally.
+- Either `longRecipient` or `shortRecipient` are equal to the zero address (throws inside the ERC20 token as mint to the zero address is disabled).
 
 **Comments**
 
 - The long and short token supply are set equal to `collateralAmount` which implies a maximum payoff per short and long position token of 1 unit of the underlying collateral token (e.g., `1e6` in case of USDC, `1e18` in case of WETH). 
 - Position tokens have the same amount of decimals as the collateral token to mitigate the risk bugs due to rounding in decimal conversions.
 - Short and long tokens have different addresses.
-- To obtain the implementation contract addresses for position tokens, you can call the functions `positionTokenImplementation()` and `permissionedPositionTokenImplementation()` on the `PositionTokenFactory` contract.
+- To obtain the implementation contract addresses for position tokens, call the functions `positionTokenImplementation()` and `permissionedPositionTokenImplementation()` on the `PositionTokenFactory` contract.
 - The `owner` of the position tokens is set equal to the DIVA smart contract address at creation and cannot be modified afterwards. Only the `owner` is authorized to execute the `mint` and `burn` functions inside the `PositionToken` contract.
 - The `capacity` field allows to cap the size of a pool which can be useful for private pools or when dealing with metrics that are at risk of being manipulated.
 - Final reference value cannot be negative. Metrics that can go negative (e.g., interest rates) should be transformed into something that will remain positive (e.g., current interest rate + 100) before being used as a reference asset.
@@ -481,7 +479,7 @@ Liquidity is added by calling the [`addLiquidity`](#addliquidity) function (loca
 
 ### addLiquidity
 
-Function to add liquidity to an existing contingent pool and mint long and short position tokens to `longRecipient` and `shortRecipient`, respectively, upon collateral deposit by `msg.sender`. It is important to highlight that the recipients of the short and long position tokens do not have to be `msg.sender`, but can instead be any address based on the specific use case and payment agreement between the parties involved. In particular, a zero address input for either of the recipients is a valid input to enable conditional burn use cases. The function will revert if both recipients are set to the zero address, though.
+Function to add liquidity to an existing contingent pool and mint long and short position tokens to `longRecipient` and `shortRecipient`, respectively, upon collateral deposit by `msg.sender`. It is important to highlight that the recipients of the short and long position tokens do not have to be `msg.sender`, but can instead be any address based on the specific use case and payment agreement between the parties involved. In particular, similar to [`createContingentPool`](#createcontingentpool), a burn address such as [0x000000000000000000000000000000000000dEaD](https://etherscan.io/address/0x000000000000000000000000000000000000dead) can be used as the recipient for either the long or short position token to enable conditional burn use cases. Note that the zero address cannot be used as a recipient to preserve OpenZeppelin's reference implementation of the ERC20 token standard, which disallows mints to the zero address.
 
 This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchAddLiquidity`](#batchaddliquidity) for the batch version of the function.
 
@@ -506,9 +504,7 @@ The function reverts under the following conditions:
 
 - Pool is already expired (`block.timestamp >= expiryTime`)
 - Pool capacity is exceeded (i.e., `collateralBalance + _collateralAmountIncr > capacity`)
-- Both `_longRecipient` and `_shortRecipient` are equal to the zero address.
-
-> **❗Important:** Similar to [`createContingentPool`](#createcontingentpool), `addLiquidity` does not revert if `_longRecipient` or `_shortRecipient` are equal to the zero address. This is a conscious design choice to enable conditional burn use cases. Users should pay special attention when populating the function parameters for execution to avoid sending position tokens to the zero address accidentally.
+- Either `_longRecipient` or `_shortRecipient` are equal to the zero address (throws inside the ERC20 token as mint to the zero address is disabled).
 
 ### batchAddLiquidity
 
@@ -1163,7 +1159,7 @@ The function reverts under the following conditions:
 - Insufficient approval or collateral token balance by `maker` and/or `taker`.
 - Invalid parameters for create contingent pool. See [`createContingentPool`](#createcontingentpool) for details.
 
-> Note that an offer with `takerCollateralAmount = 0` is considered invalid as such use case (i.e. donation from `maker` to some `taker`) can be realized by calling [`createContingentPool`](#createcontingentpool) directly and setting `longRecipient` or `shortRecipient` to the donee address.
+> **Note:** An offer with `takerCollateralAmount = 0` is considered invalid as such use case (i.e. donation from `maker` to some `taker`) can be realized by calling [`createContingentPool`](#createcontingentpool) directly and setting `longRecipient` or `shortRecipient` to the donee address.
 
 The fillability and validity of an offer can be checked via [`getOfferRelevantStateCreateContingentPool`](#getofferrelevantstatecreatecontingentpool) prior to execution.
 
@@ -2316,7 +2312,6 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `ReviewPeriodNotExpired()`                 | `redeemPositionToken`                                                                           | Thrown if a user attempts to redeem a position token where status is "Challenged" and the review period did not expire yet                                          |
 | `AmountExceedsPoolCollateralBalance()`     | `removeLiquidity` / `redeemPositionToken`                                                        | Thrown, if collateral amount to be returned to user exceeds the pool's collateral balance                         |
 | `FeeAmountExceedsPoolCollateralBalance()`  | `removeLiquidity`                                                                                | Thrown if the fee amount to be allocated exceeds the pool's current collateral balance                                                                                 |
-| `ZeroLongAndShortRecipients()`             | `addLiquidity`                                                                                   | Thrown if both `longRecipient` and `shortRecipient` equal to the zero address                                                       |
 | `PoolExpired()`                            | `addLiquidity`                                                                                   | Thrown if the pool is already expired                                                                                           |
 | `InvalidInputParamsCreateContingentPool()` | `createContingentPool`                                                                          | Thrown if the input parameters are invalid                                                                                                       |
 | `PoolCapacityExceeded()`                   | `addLiquidity`                                                                                   | Thrown if adding additional collateral would result in the pool capacity being exceeded                                                                             |

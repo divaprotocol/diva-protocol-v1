@@ -805,12 +805,12 @@ describe("PoolFacet", async function () {
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
 
-    it("Reverts if both longRecipient and shortRecipient are zero address", async () => {
+    it("Reverts if longRecipient is the zero address", async () => {
       // ---------
-      // Arrange: Set longRecipient and shortRecipient to zero address
+      // Arrange: Set longRecipient to zero address
       // ---------
       const zeroXLongRecipient = ethers.constants.AddressZero;
-      const zeroXShortRecipient = ethers.constants.AddressZero;
+      expect(shortRecipient).to.not.eq(ethers.constants.AddressZero);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
@@ -828,10 +828,39 @@ describe("PoolFacet", async function () {
           dataProvider,
           capacity,
           longRecipient: zeroXLongRecipient,
+          shortRecipient,
+          permissionedERC721Token,
+        })
+      ).to.be.revertedWith("ERC20: mint to the zero address");
+    });
+
+    it("Reverts if shortRecipient is the zero address", async () => {
+      // ---------
+      // Arrange: Set shortRecipient to zero address
+      // ---------
+      const zeroXShortRecipient = ethers.constants.AddressZero;
+      expect(longRecipient).to.not.eq(ethers.constants.AddressZero);
+
+      // ---------
+      // Act & Assert: Check that contingent pool creation fails
+      // ---------
+      await expect(
+        poolFacet.connect(user1).createContingentPool({
+          referenceAsset,
+          expiryTime,
+          floor,
+          inflection,
+          cap,
+          gradient,
+          collateralAmount,
+          collateralToken,
+          dataProvider,
+          capacity,
+          longRecipient,
           shortRecipient: zeroXShortRecipient,
           permissionedERC721Token,
         })
-      ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
+      ).to.be.revertedWith("ERC20: mint to the zero address");
     });
   });
 
