@@ -360,7 +360,7 @@ describe("GovernanceFacet", async function () {
         oracle.address
       );
       expect(oracleCollateralTokenBalanceBefore).to.eq(0);
-      expect(await getterFacet.getTip(poolId1)).to.eq(settlementFee1);
+      expect(await getterFacet.getReservedClaim(poolId1)).to.eq(settlementFee1);
 
       // ---------
       // Act: User2 removes liquidity for poolId2 which follows the new fee regime
@@ -382,7 +382,7 @@ describe("GovernanceFacet", async function () {
       expect(
         await getterFacet.getClaim(poolParams2.collateralToken, oracle.address)
       ).to.eq(0);
-      expect(await getterFacet.getTip(poolId2)).to.eq(settlementFee2);
+      expect(await getterFacet.getReservedClaim(poolId2)).to.eq(settlementFee2);
     });
 
     // -------------------------------------------

@@ -286,7 +286,7 @@ DIVA Protocol implements the following functions:
 |[`getFallbackDataProviderInfo`](#getfallbackdataproviderinfo)|Function to return the latest update of the fallback data provider, including the activation time and the previous value.|
 |[`getTreasuryInfo`](#gettreasuryinfo)|Function to return the latest update of the treasury address, including the activation time and the previous value.|
 | [`getClaim`](#getclaim)                                                                   | Function to get the reward/fee claim for a given recipient denominated in a given collateral token.                                                                |
-| [`getTip`](#gettip)                                                                   | Function to return the amount tipped in collateral token for a given pool. Returns zero after pool moves to "Confirmed" stage as credited to the claimable amount that can be obtained via `getClaim`.                                                                |
+| [`getReservedClaim`](#getreservedclaim)                                                                   | Function to return the amount tipped in collateral token for a given pool. Returns zero after pool moves to "Confirmed" stage as credited to the claimable amount that can be obtained via `getClaim`.                                                                |
 | [`getPoolIdByTypedCreateOfferHash`](#getpoolidbytypedcreateofferhash)                                 | Function to return the pool Id associated with a given offer hash (EIP712 specific).                                                                        |
 | [`getTakerFilledAmount`](#gettakerfilledamount)                                           | Function to return the taker filled amount for a given offer hash (EIP712 specific).                                                                        |
 | [`getChainId`](#getchainid)                                                               | Function to get the chain Id.                                                                                                                               |
@@ -725,7 +725,7 @@ The function executes the following steps in the following order:
 1. Checks whether a final value can be submitted, which is only possible when status is "Open" or "Challenged".
 1. Evaluates the current state of the settlement process based on the status of the final reference value (`statusFinalReferenceValue`), the prevailing submission windows and the current `block.timestamp`.
 1. Updates `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
-1. If the final value _is_ confirmed within the function call (e.g., when challenge is disabled), [fees](#fees) and [tips](#tips) are allocated to the respective recipients, `collateralBalance` in pool parameters is reduced by the fees portion and the `payoutLong` and `payoutShort` amounts are set, net of fees.
+1. If the final value _is_ confirmed within the function call (e.g., when challenge is disabled), [fees](#fees), [tips](#tips) and any reserved fees are allocated to the respective recipients, `collateralBalance` in pool parameters is reduced by the fees portion and the `payoutLong` and `payoutShort` amounts are set, net of fees.
 1. If the final value _is not_ confirmed within the call (e.g., when challenge is enabled), `statusFinalReferenceValue` is set to "Submitted" and `finalReferenceValue` is set to the value passed into the function by `msg.sender`.
 1. On successful execution, it emits a [`StatusChanged`](#statuschanged) event, two [`FeeClaimAllocated`](#feeclaimallocated) and one [`TipAllocated`](#tipallocated) events, if the final value is confirmed within the function call (e.g., when a challenge is disabled). If the data provider submits a value and enables the possibility to challenge, only the [`StatusChanged`](#statuschanged) event is emitted as the status switches to "Submitted" and no fees or tips are allocated in that case.
 
@@ -850,7 +850,7 @@ If the `statusFinalReferenceValue` parameter is set to "Confirmed", the function
 
 If the `statusFinalReferenceValue` parameter is set to "Submitted" and the challenge period expired without a challenge, or if the parameter is set to "Challenged" and the review period expired without another input from the data provider, the first call of the `redeemPositionToken` function sets the parameter to "Confirmed" and then proceeds with the redemption process as described above.
 
-The steps involved in confirming the final reference value follow those described in [`setFinalReferenceValue`](#setfinalreferencevalue), including the allocation of fees and tips to their respective recipients, the reduction of the `collateralBalance` in pool parameters by the fees portion, and the setting of the `payoutLong` and `payoutShort` amounts net of fees.
+The steps involved in confirming the final reference value follow those described in [`setFinalReferenceValue`](#setfinalreferencevalue), including the allocation of (reserved) fees and tips to their respective recipients, the reduction of the `collateralBalance` in pool parameters by the fees portion, and the setting of the `payoutLong` and `payoutShort` amounts net of fees.
 
 The function reverts under the following conditions:
 
@@ -883,15 +883,17 @@ struct ArgsBatchRedeemPositionToken {
 
 ## Fees
 
-A protocol fee of 25bps (0.25%) and a settlement fee of 5bps (0.05%) (both updateable by DIVA contract owner) are charged whenever a user withdraws collateral from the pool via [`removeLiquidity`](#removeliquidity) or [`redeemPositionToken`](#redeempositiontoken). This fee is not transferred to the entitled account but rather kept as a claim within the DIVA smart contract. The entitled account can claim their fees via [`claimFee`](#claimfee) at any point in time. Fee claims can be transferred via the [`transferFeeClaim`](#transferfeeclaim).
+When a user withdraws collateral from the pool via [`removeLiquidity`](#removeliquidity) or [`redeemPositionToken`](#redeempositiontoken), a 25bps (0.25%) protocol fee and a 5bps (0.05%) settlement fee are charged. Both fees are adjustable by the DIVA contract owner but cannot be set higher than 1.5% (`15000000000000000` when represented as an integer with 18 decimals). For positive values, a minimum fee of 0.01% was introduced to ensure a reasonable minimum collateral amount that a user is subject to when [`removing liquidity`](#removeLiquidity). A 0% fee is possible. 
 
-As a security measure, a contract owner cannot set fees higher than 1.5% (15000000000000000 when represented as an integer with 18 decimals). Further, a minimum fee of 0.01% was introduced to ensure a reasonable minimum collateral amount that a user is subject to when [`removing liquidity`](#removeLiquidity). A 0% fee is possible though. The maximum and minimum values are hard-coded in the protocol and cannot be changed.
+Fees are not transferred to the entitled account but rather kept as a claim within the DIVA smart contract. Protocol fees can be claimed immediately by the treasury account after they occur. Settlement fees accrued during [`removeLiquidity`](#removeliquidity), however, are reserved and allocated to the actual data provider, which may be either the assigned data provider or the fallback data provider, once the final reference value has been confirmed. If neither of them reports a value, the reserved fee will be allocated to the treasury. The same logic applies to [tips](#tips).
 
-The protocol and settlement fees applicable to a pool represent the fees prevailing at the time of pool creation which can be obtained via the [`getFees`](#getfees) function by passing on the `indexFees` return by [`getPoolParameters`](#getpoolparameters). Changes in fee parameters initiated by the protocol owner will not affect oustanding pools.
+After fees have been allocated, the entitled accounts can claim them at any time via [`claimFee`](#claimfee). Fee claims can be transferred using the [`transferFeeClaim`](#transferfeeclaim).
+
+It is important to highlight that the maximum and minimum fee values are hard-coded in the protocol and cannot be changed. Additionally, changes to fee parameters initiated by the protocol owner will not affect outstanding pools. The fees that will apply to a pool can be obtained via the [`getFees`](#getfees) function by passing on the `indexFees` return by [`getPoolParameters`](#getpoolparameters).
 
 ### claimFee
 
-Function to claim the fee/reward in a given `_collateralToken` for a given `_recipient` address. Emits a [`FeeClaimed`](#feeclaimed) event on success. This function does not revert if the claimable amount is zero. Further, anyone can trigger the `claimFee` function, making it possible to sponsor gas fees. To determine the claimable amount before executing the `claimFee` fuction, use the [`getClaim`](#getclaim) function.
+Function to claim any allocated fees and tips in a given `_collateralToken` for a given `_recipient` address. Emits a [`FeeClaimed`](#feeclaimed) event on success. This function does not revert if the claimable amount is zero. Further, anyone can trigger the `claimFee` function, making it possible to sponsor gas fees. To determine the claimable amount before executing the `claimFee` fuction, use the [`getClaim`](#getclaim) function.
 
 This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchClaimFee`](#batchclaimfee) for the batch version of the function.
 
@@ -963,20 +965,20 @@ struct ArgsBatchTransferFeeClaim {
 
 ## Tips
 
-The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. Tipping is only possible using the pool's collateral token. After the final value has been confirmed, the tip is transferred to credited to the data provider. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed. The tip is added to the claimable fee amount and can be collected by the data provider using the [`claimFee`](#claimfee) function.
+The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. Tipping is only possible using the pool's collateral token. The tip is kept as a reserve and allocated to the actual data provider after the final value has been confirmed, or the treasury if neither of them reports a value. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed. The tip is added to the claimable fee amount and can be collected by the data provider using the [`claimFee`](#claimfee) function.
 
 ### addTip
 
-Function to add a tip in collateral token to a specific pool. This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function. Use [`getTip`](#gettip) function to get the current tip amount.
+Function to add a tip in collateral token to a specific pool. This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function. Use [`getReservedClaim`](#getreservedclaim) function to get the current tip amount.
 
 The function executes the following steps in the following order:
 
 1. Check that `statusFinalReferenceValue` is "Open", meaning that no value has been submitted by the data provider yet.
-1. Increase the tip amount for the specified pool.
+1. Increase the amount reserved for the data provider by the tip amount.
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard.
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
-The function reverts if a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`. The tip is credited to the corresponding data provider if the final value is confirmed within the submission window. If the fallback submission period is triggered, the tip will be credited to the fallback data provider. Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
+The function reverts if a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`. The tip is allocated to the corresponding data provider if the final value is confirmed within the submission window. If the final value is confirmed by the fallback data provider within fallback submission period, the tip will be allocated to the fallback data provider. If neither of them report a value, the tip will be allocated to the treasury. The same logic applies to settlement fees during [`removeLiquidity`](#removeliquidity). Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
 
 ```js
 function addTip(
@@ -1830,12 +1832,14 @@ function getClaim(
     returns (uint256);
 ```
 
-### getTip
+### getReservedClaim
 
-Function to return the collateral token tip amount for a given pool. Returns zero after a pool has been confirmed and tip has been credited to the `claimableFeeAmount`, which can be retrieved using the [`getClaim`](#getclaim) function.
+Function to return the claim reserved for the actual data provider, or the treasury if neither the assigned data provider nor the fallback data provider report a value. This includes tips as well as settlement fees accrued during [`removeLiquidity`](#removeliquidity). 
+
+Returns zero after a pool has been confirmed and the reserved amount has been credited to the `claimableFeeAmount`, which can be retrieved using the [`getClaim`](#getclaim) function.
 
 ```js
-function getTip(
+function getReservedClaim(
     uint256 _poolId     // Id of pool
 )
     external
@@ -2026,11 +2030,11 @@ event LiquidityRemoved(
 
 ### TipAllocated
 
-Emitted when a tip has been credited to the data provider after the final value is confirmed.
+Emitted when a tip has been allocated to the data provider after the final value is confirmed.
 
 ```
 event TipAllocated(
-    uint256 indexed poolId,     // Id of the pool for which the tip has been credited
+    uint256 indexed poolId,     // Id of the pool for which the tip has been allocated
     address indexed recipient,  // Address of the tip recipient, typically the data provider
     uint256 amount              // Tip amount allocated (in collateral token)
 );
@@ -2242,7 +2246,7 @@ event TipAdded(
     address indexed tipper,            // Tipper address
     uint256 indexed poolId,            // Pool Id tipped
     address indexed collateralToken,   // Collateral token address
-    uint256 amount                  // Tip amount
+    uint256 amount                     // Tip amount
 );
 ```
 

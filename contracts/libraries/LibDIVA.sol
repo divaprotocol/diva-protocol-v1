@@ -168,9 +168,9 @@ library LibDIVA {
     );
 
     /**
-     * @notice Emitted when a tip has been credited to the data provider after
+     * @notice Emitted when a tip has been allocated to the data provider after
      * the final value is confirmed.
-     * @param poolId Id of the pool for which the tip is credited
+     * @param poolId Id of the pool for which the tip is allocated
      * @param recipient Address of the tip recipient, typically the data provider
      * @param amount Tip amount allocated (in collateral token)
      */

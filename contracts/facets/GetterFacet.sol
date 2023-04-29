@@ -189,7 +189,7 @@ contract GetterFacet is IGetter {
     }
 
     // @todo renamed getTip into getReservedClaim -> rename in docs and tests
-    function getTip(uint256 _poolId) external view override returns (uint256) {
+    function getReservedClaim(uint256 _poolId) external view override returns (uint256) {
         return LibDIVA._getReservedClaim(_poolId);
     }
 
