@@ -367,7 +367,7 @@ The `PoolParams` struct has the following fields in the following order:
 | `expiryTime`       | uint96  | Event                    | Expiration time of the pool expressed as a unix timestamp in seconds (UTC). The value of the reference asset observed at that point in time determines the payoffs for long and short position tokens. |
 | `floor`            | uint256 | Payoff                   | Value of the reference asset at or below which the long token pays out 0 and the short token 1 (max payout), gross of fees. Input expects an integer with 18 decimals.                                                 |
 | `inflection`       | uint256 | Payoff                   | Value of the reference asset at which the long token pays out `gradient` and the short token `1-gradient`, gross of fees. Input expects an integer with 18 decimals.                                                   |
-| `cap`              | uint256 | Payoff                   | Value of the reference asset at or above which the long token pays out 1 (max payout) and the short token 0, gross of fees. Input expects an integer with 18 decimals.                                                 |
+| `cap`              | uint256 | Payoff                   | Value of the reference asset at or above which the long token pays out 1 (max payout) and the short token 0, gross of fees. Input expects an integer with 18 decimals. Max allowed value is `1e59`.                                                 |
 | `gradient`         | uint256 | Payoff                   | A value between 0 and 1 which specifies the payout per long token if the outcome is equal to `inflection`. Input expects an integer with **collateral token decimals**.                                                                                                     |
 | `collateralAmount` | uint256 | Payoff                   | Collateral amount to be deposited into the pool to back the position tokens. Input expects an integer with collateral token decimals.                                                                   |
 | `collateralToken`  | address | Settlement asset         | Address of the ERC20 collateral token.                                                                                                                                                                  |
@@ -394,6 +394,7 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - `referenceAsset` is an empty string
 - `floor` is greater than `inflection`
 - `cap` is smaller than `inflection`
+- `cap` is greater than `1e59`
 - `dataProvider` is equal to the zero address
 - `gradient` is greater than 1 base unit in collateral token terms (i.e. `10**collateralTokenDecimals`)
 - `collateralAmount` is smaller than `1e6`
@@ -411,6 +412,7 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - The `capacity` field allows to cap the size of a pool which can be useful for private pools or when dealing with metrics that are at risk of being manipulated.
 - Final reference value cannot be negative. Metrics that can go negative (e.g., interest rates) should be transformed into something that will remain positive (e.g., current interest rate + 100) before being used as a reference asset.
 - Minimum collateral balance of `1e6` was introduced to increase the precision in calculations. For USDC which has 6 decimals places, this means that the minimum collateral amount is 1 USDC.
+- The maximum `cap` value of `1e59` was introduced to prevent an overflow in the payoff calculations when `cap > _finalReferenceValue > _inflection` and `_finalReferenceValue` is very close to the `cap`. While the actual maximum value for `cap` is slightly larger than `1e59`, this value was chosen for ease of readability and reviewability.
 - Position tokens are deployed using [clones](#https://blog.openzeppelin.com/workshop-recap-cheap-contract-deployment-through-clones/) which allows for very cheap deployment. The only trade-off made is that interacting with the position token is a bit more expensive (+700 gas/call) compared to a naively deployed contract as it involves one `delegatecall`. 
 
 ### Pool struct

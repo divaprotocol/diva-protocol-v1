@@ -588,6 +588,13 @@ library LibDIVA {
             return false;
         }
 
+        // Cap should not exceed 1e59 to prevent overflow in
+        // `LibDIVA._calcPayoffs` in the scenario
+        // `cap > finalReferenceValue > inflection`
+        if (_poolParams.cap > 1e59) {
+            return false;
+        }
+
         // Data provider should not be zero address
         if (_poolParams.dataProvider == address(0)) {
             return false;

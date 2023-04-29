@@ -204,12 +204,15 @@ describe("SettlementFacet", async function () {
       permissionedERC721Token = ethers.constants.AddressZero,
       poolCreater = user1,
     } = {}): Promise<ContractTransaction> {
+      if (typeof cap === 'number') {
+        cap = parseUnits(cap.toString());
+      }
       return await poolFacet.connect(poolCreater).createContingentPool({
         referenceAsset,
         expiryTime: await getExpiryTime(expireInSeconds),
         floor: parseUnits(floor.toString()),
         inflection: parseUnits(inflection.toString()),
-        cap: parseUnits(cap.toString()),
+        cap: cap,
         gradient: parseUnits(gradient.toString(), decimals),
         collateralAmount: parseUnits(collateralAmount.toString(), decimals),
         collateralToken,
@@ -1411,6 +1414,7 @@ describe("SettlementFacet", async function () {
         // ---------
         // Arrange: Mint a set of position tokens with expiry time in the future
         // ---------
+        await mineBlock();
         const tx = await createContingentPool({
           expireInSeconds: 1000,
         });
@@ -1950,6 +1954,48 @@ describe("SettlementFacet", async function () {
             expect(poolParamsAfter.payoutShort).to.eq(
               parseUnits("0.997", decimals)
             ); // (1- 0.3% fee)
+          });
+        });
+
+        describe("cap = 1e59 and finalReferenceValue = cap - 1", async () => {
+          it("Should calculate the correct payoffs for max cap value and final reference value very close to the cap", async () => {
+            // ---------
+            // Arrange: Create a contingent pool where cap = 1e59 which shortly expires
+            // ---------
+            const tx = await createContingentPool({
+              floor: 0,
+              inflection: 0,
+              cap: parseUnits("1", 59),
+              gradient: 0,
+              collateralAmount: 200,
+              expireInSeconds: 2,
+            });
+            poolId = await getPoolIdFromTx(tx);
+            poolParamsBefore = await getterFacet.getPoolParameters(poolId);
+
+            // ---------
+            // Act: Set final reference value to cap - 1
+            // ---------
+            finalReferenceValue = poolParamsBefore.cap.sub(1);
+            allowChallenge = false;
+            await settlementFacet
+              .connect(oracle)
+              .setFinalReferenceValue(
+                poolId,
+                finalReferenceValue,
+                allowChallenge
+              );
+
+            // ---------
+            // Assert: Confirm that payout tx does not revert and amounts (net of fees) are correct
+            // ---------
+            poolParamsAfter = await getterFacet.getPoolParameters(poolId);            
+            expect(poolParamsAfter.payoutLong).to.eq(
+              parseUnits("0.996999", decimals) // Note: will pass with decimals = 6; adjust precision of value 0.996999 otherwise
+            ); // gradient * (1- 0.3% fee)
+            expect(poolParamsAfter.payoutShort).to.eq(
+              parseUnits("0", decimals)
+            ); // gradient * (1- 0.3% fee)
           });
         });
       });
