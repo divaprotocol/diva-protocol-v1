@@ -1834,7 +1834,7 @@ function getClaim(
 
 ### getReservedClaim
 
-Function to return the claim reserved for the actual data provider, or the treasury if neither the assigned data provider nor the fallback data provider report a value. This includes tips as well as settlement fees accrued during [`removeLiquidity`](#removeliquidity). 
+Function to return the claim reserved for the data provider for a given pool. Includes tips as well as settlement fees accrued during [`removeLiquidity`](#removeliquidity). 
 
 Returns zero after a pool has been confirmed and the reserved amount has been credited to the `claimableFeeAmount`, which can be retrieved using the [`getClaim`](#getclaim) function.
 
@@ -2030,7 +2030,7 @@ event LiquidityRemoved(
 
 ### ReserveAllocated
 
-Emitted when tips and reserved fees (the "reserve") have been allocated to the data provider after the final value is confirmed.
+Emitted when tips and reserved fees (the "reserve") have been allocated to the data provider after the final value has been confirmed.
 
 ```
 event ReserveAllocated(

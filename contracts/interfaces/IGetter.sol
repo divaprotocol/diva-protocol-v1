@@ -172,10 +172,8 @@ interface IGetter {
         returns (uint256);
 
     /**
-     * @notice Returns the claim amount reserved for the actual data provider,
-     * or the treasury if neither the assigned data provider nor the fallback data
-     * provider report a value. This includes tips as well as settlement fees
-     * accrued during `removeLiquidity`.
+     * @notice Returns the claim amount reserved for the data provider for a
+     * given pool. Includes tips as well as settlement fees accrued during `removeLiquidity`.
      * Returns zero after a pool has been confirmed and the reserved amount
      * has been credited to the `claimableFeeAmount`, which can be retrieved using
      * the `getClaim` function.
