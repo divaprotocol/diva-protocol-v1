@@ -1504,10 +1504,15 @@ describe("SettlementFacet", async function () {
               cap: 1600,
               gradient: 0.5,
               collateralAmount: 200,
-              expireInSeconds: 2,
+              expireInSeconds: 20,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
+            
+            // Fast forward in time post pool expiration
+            nextBlockTimestamp = Number(poolParamsBefore.expiryTime) + 1;
+            await mineBlock(nextBlockTimestamp);
+
             currentBlockTimestamp = await getLastTimestamp();
           });
 
@@ -2380,6 +2385,7 @@ describe("SettlementFacet", async function () {
         // Arrange: Challenge once and prepare for a second challenge within the review period
         // ---------
         expect(poolParamsBefore.statusFinalReferenceValue).to.eq(1); // Submitted
+        
         // Challenge 1
         challengePeriodEndTime =
           poolParamsBefore.statusTimestamp.add(challengePeriod);
