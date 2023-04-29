@@ -108,7 +108,6 @@ library LibDIVA {
         uint256 amount
     );
 
-    // @todo add event to docs
     /**
      * @notice Emitted when fees are reserved for data provider in 
      * `removeLiquidity`.
@@ -168,13 +167,13 @@ library LibDIVA {
     );
 
     /**
-     * @notice Emitted when a tip has been allocated to the data provider after
-     * the final value is confirmed.
-     * @param poolId Id of the pool for which the tip is allocated
-     * @param recipient Address of the tip recipient, typically the data provider
-     * @param amount Tip amount allocated (in collateral token)
+     * @notice Emitted when tips and reserved fees (the "reserve") have been allocated to the
+     * data provider after the final value is confirmed.
+     * @param poolId Id of the pool for which the reserve has been allocated
+     * @param recipient Address of the reserve recipient, typically the data provider
+     * @param amount Reserve amount allocated (in collateral token)
      */
-    event TipAllocated(
+    event ReserveAllocated(
         uint256 indexed poolId,
         address indexed recipient,
         uint256 amount
@@ -203,11 +202,9 @@ library LibDIVA {
             ][_recipient];
     }
 
-    // @todo rename _getTip to _getReservedClaim
     function _getReservedClaim(uint256 _poolId) internal view returns (uint256) {
-        return LibDIVAStorage._feeClaimStorage().poolIdToTip[_poolId];
+        return LibDIVAStorage._feeClaimStorage().poolIdToReserve[_poolId];
     }
-    // @todo Maybe use `_getReservedClaim` as function name
 
     /**
      * @dev Internal function to transfer the collateral to the user.
@@ -326,9 +323,6 @@ library LibDIVA {
         emit FeeClaimAllocated(_poolId, _recipient, _feeAmount);
     }
 
-    // @todo Data provider is not known until final value confirmation, as opposed to treasury address
-    // that's why treasury can claim immediately
-    // @todo Clarify the difference between allocate and reserve in the docs.
     /**
      * @notice Internal function to reserve settlement fees accrued during `removeLiquidity`
      * for outcome reporter.
@@ -355,20 +349,20 @@ library LibDIVA {
         // fee claim reserve
         _pool.collateralBalance -= _feeAmount;
         LibDIVAStorage._feeClaimStorage()
-            .poolIdToTip[_poolId] += _feeAmount; // @todo check that there is 
+            .poolIdToReserve[_poolId] += _feeAmount;
 
         // Log poolId and fee amount
-        emit FeeClaimReserved(_poolId, _feeAmount); // @todo define new event as no recipient anymore
+        emit FeeClaimReserved(_poolId, _feeAmount);
     }
 
     /**
-     * @notice Internal function to transfer the tip to the data provider when the
+     * @notice Internal function to transfer the reserved fee and tip to the data provider when the
      * final reference value is confirmed.
-     * @dev `poolIdToTip` is set to zero and credited to the fee claim in that process.
+     * @dev `poolIdToReserve` is set to zero and credited to the fee claim amount in that process.
      * @param _poolId Id of pool.
-     * @param _recipient Tip recipient.
+     * @param _recipient Reserve recipient.
      */
-    function _allocateTip(uint256 _poolId, address _recipient) internal {
+    function _allocateReserve(uint256 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
             ._feeClaimStorage();
@@ -377,15 +371,15 @@ library LibDIVA {
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
 
-        // Get tip for pool
-        uint256 _tip = fs.poolIdToTip[_poolId];
+        // Get reserve for pool
+        uint256 _reserve = fs.poolIdToReserve[_poolId];
 
         // Credit tip to the claimable fee amount
-        fs.poolIdToTip[_poolId] = 0;
-        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _tip;
+        fs.poolIdToReserve[_poolId] = 0;
+        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _reserve;
 
         // Log event
-        emit TipAllocated(_poolId, _recipient, _tip);
+        emit ReserveAllocated(_poolId, _recipient, _reserve);
     }
 
     /**

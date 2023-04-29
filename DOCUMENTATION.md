@@ -727,7 +727,7 @@ The function executes the following steps in the following order:
 1. Updates `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
 1. If the final value _is_ confirmed within the function call (e.g., when challenge is disabled), [fees](#fees), [tips](#tips) and any reserved fees are allocated to the respective recipients, `collateralBalance` in pool parameters is reduced by the fees portion and the `payoutLong` and `payoutShort` amounts are set, net of fees.
 1. If the final value _is not_ confirmed within the call (e.g., when challenge is enabled), `statusFinalReferenceValue` is set to "Submitted" and `finalReferenceValue` is set to the value passed into the function by `msg.sender`.
-1. On successful execution, it emits a [`StatusChanged`](#statuschanged) event, two [`FeeClaimAllocated`](#feeclaimallocated) and one [`TipAllocated`](#tipallocated) events, if the final value is confirmed within the function call (e.g., when a challenge is disabled). If the data provider submits a value and enables the possibility to challenge, only the [`StatusChanged`](#statuschanged) event is emitted as the status switches to "Submitted" and no fees or tips are allocated in that case.
+1. On successful execution, it emits a [`StatusChanged`](#statuschanged) event, two [`FeeClaimAllocated`](#feeclaimallocated) and one [`ReserveAllocated`](#reserveallocated) events, if the final value is confirmed within the function call (e.g., when a challenge is disabled). If the data provider submits a value and enables the possibility to challenge, only the [`StatusChanged`](#statuschanged) event is emitted as the status switches to "Submitted" and no fees or tips are allocated in that case.
 
 The function reverts under the following conditions:
 
@@ -2028,15 +2028,15 @@ event LiquidityRemoved(
 );
 ```
 
-### TipAllocated
+### ReserveAllocated
 
-Emitted when a tip has been allocated to the data provider after the final value is confirmed.
+Emitted when tips and reserved fees (the "reserve") have been allocated to the data provider after the final value is confirmed.
 
 ```
-event TipAllocated(
-    uint256 indexed poolId,     // Id of the pool for which the tip has been allocated
-    address indexed recipient,  // Address of the tip recipient, typically the data provider
-    uint256 amount              // Tip amount allocated (in collateral token)
+event ReserveAllocated(
+    uint256 indexed poolId,     // Id of the pool for which the reserve has been allocated
+    address indexed recipient,  // Address of the reserve recipient, typically the data provider
+    uint256 amount              // Reserve amount allocated (in collateral token)
 );
 ```
 

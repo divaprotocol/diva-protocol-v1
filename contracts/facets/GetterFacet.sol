@@ -188,7 +188,6 @@ contract GetterFacet is IGetter {
         return LibDIVA._getClaim(_collateralToken, _recipient);
     }
 
-    // @todo renamed getTip into getReservedClaim -> rename in docs and tests
     function getReservedClaim(uint256 _poolId) external view override returns (uint256) {
         return LibDIVA._getReservedClaim(_poolId);
     }

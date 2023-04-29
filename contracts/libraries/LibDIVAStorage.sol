@@ -82,7 +82,7 @@ library LibDIVAStorage {
         // @todo rename claimableFeeAmount to claimableReward -> Sascha suggests to keep as is
         mapping(address => mapping(address => uint256)) claimableFeeAmount; // collateralTokenAddress -> RecipientAddress -> amount
         // @todo rename poolIdToTip to poolIdToDataProviderReward
-        mapping(uint256 => uint256) poolIdToTip; // poolId -> tip amount
+        mapping(uint256 => uint256) poolIdToReserve; // poolId -> reserve amount
     }
 
     struct PoolStorage {

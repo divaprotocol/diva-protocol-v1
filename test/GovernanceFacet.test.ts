@@ -2135,8 +2135,6 @@ describe("GovernanceFacet", async function () {
       );
     });
 
-    // @todo addReturnCollateralUnpaused event test
-
     it("Emits a ReturnCollateralUnpaused event", async () => {
       // ---------
       // Act: Unpause withdrawals (can be triggered anytime without consequences)
