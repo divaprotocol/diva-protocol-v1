@@ -418,7 +418,8 @@ library LibDIVA {
                     _finalReferenceValue - _floor
                 )
             ).divideDecimal(_inflection - _floor);
-        } else if (_finalReferenceValue > _inflection) {
+        } else {
+            // Case: cap > _finalReferenceValue > _inflection
             _payoffLong =
                 _gradient *
                 _SCALINGFACTOR +

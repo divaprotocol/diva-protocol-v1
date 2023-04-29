@@ -310,42 +310,40 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
 
         uint8 _decimals = (IERC20Metadata(_pool.collateralToken)).decimals();
 
-        // If status is "Confirmed", burn position tokens and return collateral to user
-        if (
-            _pool.statusFinalReferenceValue == LibDIVAStorage.Status.Confirmed
-        ) {
-            // Burn position tokens. Will revert if `msg.sender` has a balance less than
-            // `_amount` (checked inside `burn` function).
-            _positionTokenInstance.burn(msg.sender, _amount);
+        // At this point, the status is always "Confirmed". Proceed with burning position tokens
+        // and returnning collateral to user.
 
-            uint256 _tokenPayoutAmount;
+        // Burn position tokens. Will revert if `msg.sender` has a balance less than
+        // `_amount` (checked inside `burn` function).
+        _positionTokenInstance.burn(msg.sender, _amount);
 
-            if (_positionToken == _pool.longToken) {
-                _tokenPayoutAmount = _pool.payoutLong; // net of fees
-            } else {
-                // Can only be shortToken due to require statement at the beginning
+        uint256 _tokenPayoutAmount;
 
-                _tokenPayoutAmount = _pool.payoutShort; // net of fees
-            }
+        if (_positionToken == _pool.longToken) {
+            _tokenPayoutAmount = _pool.payoutLong; // net of fees
+        } else {
+            // Can only be shortToken due to require statement at the beginning
 
-            // Calculate collateral amount to return. Note that for small values of `_amount`, 
-            // the position token may get burnt but no collateral returned due to
-            // rounding. Handle on frontend side accordingly.
-            uint256 _amountToReturn = (_tokenPayoutAmount * _amount) /
-                (10**uint256(_decimals));
-
-            // Return collateral to caller and reduce `collateralBalance` accordingly
-            LibDIVA._returnCollateral(_pool, msg.sender, _amountToReturn);
-
-            // Log redemption of position token
-            emit PositionTokenRedeemed(
-                _poolId,
-                _positionToken,
-                _amount,
-                _amountToReturn,
-                msg.sender
-            );
+            _tokenPayoutAmount = _pool.payoutShort; // net of fees
         }
+
+        // Calculate collateral amount to return. Note that for small values of `_amount`, 
+        // the position token may get burnt but no collateral returned due to
+        // rounding. Handle on frontend side accordingly.
+        uint256 _amountToReturn = (_tokenPayoutAmount * _amount) /
+            (10**uint256(_decimals));
+
+        // Return collateral to caller and reduce `collateralBalance` accordingly
+        LibDIVA._returnCollateral(_pool, msg.sender, _amountToReturn);
+
+        // Log redemption of position token
+        emit PositionTokenRedeemed(
+            _poolId,
+            _positionToken,
+            _amount,
+            _amountToReturn,
+            msg.sender
+        );
     }
 
     function _challengeFinalReferenceValue(
@@ -470,9 +468,9 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
                 }
             }
             // If within the fallback period (the case when the data provider
-            // failed to submit a value)
+            // failed to submit a value). Note that `block.timestamp > submissionEndTime`
+            // at this point.
             else if (
-                block.timestamp > submissionEndTime &&
                 block.timestamp <=
                 submissionEndTime + _settlementPeriods.fallbackSubmissionPeriod
             ) {
