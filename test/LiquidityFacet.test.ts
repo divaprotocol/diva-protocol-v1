@@ -1464,14 +1464,14 @@ describe("LiquidityFacet", async function () {
           .revokePendingTreasuryUpdate();
       });
 
-      it("Should remove liquidity and allocate all fees to treasury if final value defaults to inflection", async () => {
-        // Note: This test represents a scenario in which the final value is confirmed at the default value of inflection
-        // because neither the data provider nor the fallback provider submitted a value.
+      it("Should remove liquidity and allocate fee claims correctly on first redemption after the review period expires", async () => {
+        // Note: In this test, the final value is confirmed on first redemption after the review period
+        // expires following a challenge.
 
         // ---------
         // Arrange: Set position token amount to redeem and calculate fees
         // ---------
-        positionTokensToRedeem = poolParamsBefore.collateralBalance;
+        positionTokensToRedeem = poolParamsBefore.collateralBalance.sub(10); // Leaving 10 position tokens so that user can redeem and confirm final value
         protocolFee = calcFee(
           feesParams.protocolFee,
           positionTokensToRedeem,
@@ -1491,42 +1491,58 @@ describe("LiquidityFacet", async function () {
           .removeLiquidity(poolId, positionTokensToRedeem);
 
         // ========================
-        // Confirm pool with default value
+        // Confirm pool on first redemption after the review period expired
         // ========================
 
         // ---------
-        // Arrange: Let submission and fallback submission periods pass
+        // Arrange: Fast forward in time post pool expiration, submit and challenge final reference value.
         // ---------
-        govParams = await getterFacet.getGovernanceParameters();
-        const submissionPeriod = govParams.currentSettlementPeriods.submissionPeriod; // 7d (initial value)
-        const fallbackSubmissionPeriod = govParams.currentSettlementPeriods.fallbackSubmissionPeriod; // 10d (initial value)
-        nextBlockTimestamp = Number(poolParamsBefore.expiryTime.add(submissionPeriod).add(fallbackSubmissionPeriod)) + 1;
+        // Fast forward in time post pool expiration
+        nextBlockTimestamp = Number(poolParamsBefore.expiryTime) + 1;
         await mineBlock(nextBlockTimestamp);
-
+      
         // ---------
-        // Act: Confirm pool with the default value (inflection)
+        // Act: Confirm final value on first redeem after the review period
         // ---------
+        // Submit final reference value and enable challenge functionality
+        await settlementFacet
+          .connect(oracle)
+          .setFinalReferenceValue(poolId, "1", true);
+      
+        // Challenge final reference value
         await settlementFacet
           .connect(user1)
-          .setFinalReferenceValue(poolId, "0", false); // Doesn't matter who and what final reference value was submitted
+          .challengeFinalReferenceValue(poolId, "2");
+
+        // Fast forward in time post review period
+        govParams = await getterFacet.getGovernanceParameters();
+        const reviewSubmissionPeriod = govParams.currentSettlementPeriods.reviewPeriod; // 5d (initial value)
+        poolParamsAfter = await getterFacet.getPoolParameters(poolId);
+        nextBlockTimestamp = Number(poolParamsAfter.statusTimestamp.add(reviewSubmissionPeriod)) + 1;
+        await mineBlock(nextBlockTimestamp);
+
+        // Redeem and confirm final reference value
+        await settlementFacet
+            .connect(user1)
+            .redeemPositionToken(shortTokenInstance.address, "1");
 
         // ---------
         // Assert: Confirm that the reserved fee claim has been allocated to the treasury and not to the assigned data provider
         // or fallback data provider
         // ---------
         expect(await getterFacet.getReservedClaim(poolId)).to.eq(0);
-        expect(await getterFacet.getClaim(collateralTokenInstance.address, treasury.address)).to.eq(protocolFee.add(settlementFee));
-        expect(await getterFacet.getClaim(collateralTokenInstance.address, oracle.address)).to.eq(0); 
+        expect(await getterFacet.getClaim(collateralTokenInstance.address, treasury.address)).to.eq(protocolFee);
+        expect(await getterFacet.getClaim(collateralTokenInstance.address, oracle.address)).to.eq(settlementFee); 
         expect(await getterFacet.getClaim(collateralTokenInstance.address, contractOwner.address)).to.eq(0); // fallback data provider 
       });
 
-      it("Should allocate reserved settlement fees (incurred during removeLiquidity) and tips to the data provider when final value is confirmed on first value submission", async () => {
-        // Note: In this test, the final value is confirmed by the assigned data provider on first call (i.e. possibility to challenge is disabled)
+      it("Should allocate reserved settlement fees (incurred during removeLiquidity) and tips to the data provider when final value is confirmed on first redemption after submission", async () => {
+        // Note: In this test, the final value is confirmed on first redemption after the challenge period expired without a challenge
 
         // ---------
         // Arrange: Set position token amount to redeem, calculate fees and add a tip
         // ---------
-        positionTokensToRedeem = poolParamsBefore.collateralBalance;
+        positionTokensToRedeem = poolParamsBefore.collateralBalance.sub(10); // Leaving 10 position tokens so that user can redeem and confirm final value
         protocolFee = calcFee(
           feesParams.protocolFee,
           positionTokensToRedeem,
@@ -1556,7 +1572,7 @@ describe("LiquidityFacet", async function () {
         expect(await getterFacet.getReservedClaim(poolId)).to.eq(tipAmount.add(settlementFee));
         
         // ========================
-        // Confirm pool on first value submission
+        // Confirm pool on first redeem after the challenge period expired
         // ========================
 
         // ---------
@@ -1566,11 +1582,26 @@ describe("LiquidityFacet", async function () {
         await mineBlock(nextBlockTimestamp);
 
         // ---------
-        // Arrange: Confirm pool on first value submission
+        // Act: redeem with user to confirm the final value
         // ---------
+        // Submit final reference value with data provider
+        const finalReferenceValue = parseUnits("1605.33");
+        const allowChallenge = true;
         await settlementFacet
           .connect(oracle)
-          .setFinalReferenceValue(poolId, parseUnits("100") , false);
+          .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge);
+
+        // Fast forward in time post challenge period
+        govParams = await getterFacet.getGovernanceParameters();
+        poolParamsAfter = await getterFacet.getPoolParameters(poolId);
+        const challengePeriod = govParams.currentSettlementPeriods.challengePeriod; // 3d (initial value)
+        nextBlockTimestamp = Number(poolParamsAfter.statusTimestamp.add(challengePeriod)) + 1;
+        await mineBlock(nextBlockTimestamp);
+
+        // Redeem with user to confirm the final reference value
+        await settlementFacet
+            .connect(user1)
+            .redeemPositionToken(shortTokenInstance.address, "1");
 
         // ---------
         // Assert: Confirm that the reserved fee claim and tip have been allocated to the data provider

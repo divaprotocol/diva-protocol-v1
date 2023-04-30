@@ -203,7 +203,7 @@ library LibDIVA {
     }
 
     function _getReservedClaim(uint256 _poolId) internal view returns (uint256) {
-        return LibDIVAStorage._feeClaimStorage().poolIdToReserve[_poolId];
+        return LibDIVAStorage._feeClaimStorage().poolIdToReservedClaim[_poolId];
     }
 
     /**
@@ -350,7 +350,7 @@ library LibDIVA {
         // fee claim reserve
         _pool.collateralBalance -= _feeAmount;
         LibDIVAStorage._feeClaimStorage()
-            .poolIdToReserve[_poolId] += _feeAmount;
+            .poolIdToReservedClaim[_poolId] += _feeAmount;
 
         // Log poolId and fee amount
         emit FeeClaimReserved(_poolId, _feeAmount);
@@ -359,24 +359,23 @@ library LibDIVA {
     /**
      * @notice Internal function to transfer the reserved fee and tip to the data provider when the
      * final reference value is confirmed.
-     * @dev `poolIdToReserve` is set to zero and credited to the claimable fee amount.
+     * @dev `poolIdToReservedClaim` is set to zero and credited to the claimable fee amount.
      * @param _poolId Id of pool.
      * @param _recipient Reserve recipient.
      */
     function _allocateReserve(uint256 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
+        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
 
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
 
         // Get reserve for pool
-        uint256 _reserve = fs.poolIdToReserve[_poolId];
+        uint256 _reserve = fs.poolIdToReservedClaim[_poolId];
 
         // Credit reserve to the claimable fee amount
-        fs.poolIdToReserve[_poolId] = 0;
+        fs.poolIdToReservedClaim[_poolId] = 0;
         fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _reserve;
 
         // Log event
