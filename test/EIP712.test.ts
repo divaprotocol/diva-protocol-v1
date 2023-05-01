@@ -14,6 +14,7 @@ import {
   MockERC20,
   EIP712RemoveFacet,
   SettlementFacet,
+  GovernanceFacet,
 } from "../typechain-types";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
@@ -69,6 +70,7 @@ describe("EIP712", async function () {
     eip712CancelFacet: EIP712CancelFacet,
     poolFacet: PoolFacet,
     getterFacet: GetterFacet,
+    governanceFacet: GovernanceFacet,
     settlementFacet: SettlementFacet;
 
   let collateralToken: MockERC20;
@@ -97,6 +99,7 @@ describe("EIP712", async function () {
   let poolId: BigNumber;
   let poolParams: LibDIVAStorage.PoolStructOutput;
   let nextBlockTimestamp: number;
+  let governanceDelay: number = 60 * ONE_DAY;
 
   let createPoolParams: PoolParams;
   let offerCreateContingentPool: OfferCreateContingentPool;
@@ -136,6 +139,7 @@ describe("EIP712", async function () {
     poolFacet = await ethers.getContractAt("PoolFacet", diamondAddress);
     getterFacet = await ethers.getContractAt("GetterFacet", diamondAddress);
     settlementFacet = await ethers.getContractAt("SettlementFacet", diamondAddress);
+    governanceFacet = await ethers.getContractAt("GovernanceFacet", diamondAddress);
 
     // Get chainId
     chainId = (await getterFacet.getChainId()).toNumber();
@@ -5631,6 +5635,124 @@ describe("EIP712", async function () {
         expect(relevantStateParams.offerInfo.takerFilledAmount).to.eq(
           positionTokenAmountFirstFill.add(positionTokenAmountSecondFill)
         );
+      });
+
+      it("Should put the taker at a disadvantage if they remove liquidity in small amounts", async () => {
+        // ---------
+        // Arrange: Set fees to zero in order to skip the `_protocolFee == 0` & `_settlementFee == 0` checks
+        // in removeLiquidity, create a new pool with the new fee settings and generate a removeLiquidity offer
+        // ---------
+        // Get current fees in order to reset them at the end of this test
+        const govParamsBefore = await getterFacet.getGovernanceParameters();
+        await governanceFacet
+          .connect(contractOwner)
+          .updateFees("0", "0");
+        
+        // Fast forward in time to activate the new fee parameters
+        nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+        await mineBlock();
+
+        // Create a new pool with the new fee settings
+        createPoolParams.expiryTime = await getExpiryTime(7200); // Overwrite `expiryTime` as `getExpiryTime` doesn't capture the last block timestamp from this test
+        const tx = await poolFacet
+          .connect(user1)
+          .createContingentPool(createPoolParams);
+        const receipt = await tx.wait();
+
+        // Get poolId of the newly created pool from event
+        poolId = receipt.events?.find((x: any) => x.event === "PoolIssued")
+          ?.args?.poolId;
+
+        // Get pool parameters of newly created pool
+        poolParams = await getterFacet.getPoolParameters(poolId);
+
+        // Get instances of short and long token
+        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
+        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+
+        // Generate create remove liquidity offer as the one generated in the `beforeEach` block
+        // expired due to the shift in time
+        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
+          user1.address.toString(), // maker
+          user2.address.toString(), // taker
+          true, // maker is long
+          poolId,
+          collateralTokenDecimals,
+          "0", // minTakerFillAmount
+        );
+
+        // Generate signature and typed message hash
+        [signature, typedMessageHash] =
+          await generateSignatureAndTypedMessageHash(
+            user1,
+            divaDomain,
+            REMOVE_LIQUIDITY_TYPE,
+            offerRemoveLiquidity,
+            "OfferRemoveLiquidity"
+          );
+
+        // Set small position token amount
+        positionTokenFillAmount = "1";
+
+        // Get DIVA contract's collateral token balance before removing liquidity
+        balanceOfCollateralTokenBeforeDiva = await collateralToken.balanceOf(
+          diamondAddress
+        );
+
+        // Get the maker's and taker's collateral token balance before removing liquidity
+        balanceOfCollateralTokenBeforeUser1 = await collateralToken.balanceOf(
+          user1.address
+        );
+        balanceOfCollateralTokenBeforeUser2 = await collateralToken.balanceOf(
+          user2.address
+        );
+
+        // Get balance of short and long tokens for user1 and user2
+        balanceOfShortTokenBeforeUser2 = await shortTokenInstance.balanceOf(
+          user2.address
+        );
+        balanceOfLongTokenBeforeUser1 = await longTokenInstance.balanceOf(
+          user1.address
+        );
+
+        // ---------
+        // Act: Fill remove liquidity offer with small amount
+        // ---------
+        await eip712RemoveFacet
+          .connect(user2)
+          .fillOfferRemoveLiquidity(
+            offerRemoveLiquidity,
+            signature,
+            positionTokenFillAmount
+          );
+
+        // ---------
+        // Assert: Confirm that DIVA contract's collateral and user's position token balances have decreased by 1,
+        // and most importantly that maker's (user1) balance increased by 1 and taker's (user2) by 0.
+        // ---------       
+        expect(await collateralToken.balanceOf(diamondAddress)).to.eq(balanceOfCollateralTokenBeforeDiva.sub(1));
+        expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(balanceOfShortTokenBeforeUser2.sub(1));
+        expect(await longTokenInstance.balanceOf(user1.address)).to.eq(balanceOfLongTokenBeforeUser1.sub(1));
+        expect(await collateralToken.balanceOf(user2.address)).to.eq(balanceOfCollateralTokenBeforeUser2.add(0)); // taker
+        expect(await collateralToken.balanceOf(user1.address)).to.eq(balanceOfCollateralTokenBeforeUser1.add(1)); // maker
+      
+        // -------------------------------------------
+        // Reset: Change back fees to previous ones to avoid any effects on the next tests
+        // -------------------------------------------
+        await governanceFacet
+          .connect(contractOwner)
+          .updateFees(govParamsBefore.currentFees.protocolFee, govParamsBefore.currentFees.settlementFee);
+        
+        // Fast forward in time to activate previous fee parameters
+        nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+        await mineBlock();
+
+        // Confirm that the previous fees are re-instated
+        govParams = await getterFacet.getGovernanceParameters();
+        expect(govParams.currentFees.protocolFee).to.eq(govParamsBefore.currentFees.protocolFee);
+        expect(govParams.currentFees.settlementFee).to.eq(govParamsBefore.currentFees.settlementFee);
       });
 
       // -------------------------------------------

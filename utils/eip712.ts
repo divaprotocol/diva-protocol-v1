@@ -140,8 +140,10 @@ export const generateRemoveLiquidityOfferDetails = async (
   taker: string,
   makerIsLong: boolean,
   poolId: BigNumber,
-  collateralTokenDecimals: number
+  collateralTokenDecimals: number,
+  minimumTakerFillAmount?: string,
 ): Promise<OfferRemoveLiquidity> => {
+  const minTakerFillAmount = minimumTakerFillAmount ?? parseUnits("10", collateralTokenDecimals).toString();
   return {
     maker,
     taker,
@@ -149,10 +151,7 @@ export const generateRemoveLiquidityOfferDetails = async (
     makerCollateralAmount: parseUnits("10", collateralTokenDecimals).toString(),
     makerIsLong,
     offerExpiry: await getExpiryTime(1000),
-    minimumTakerFillAmount: parseUnits(
-      "10",
-      collateralTokenDecimals
-    ).toString(),
+    minimumTakerFillAmount: minTakerFillAmount,
     poolId,
     salt: Date.now().toString(),
   };
