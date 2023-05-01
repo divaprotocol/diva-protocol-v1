@@ -363,7 +363,7 @@ library LibDIVA {
      * @param _poolId Id of pool.
      * @param _recipient Reserve recipient.
      */
-    function _allocateReserve(uint256 _poolId, address _recipient) internal {
+    function _allocateReservedClaim(uint256 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
