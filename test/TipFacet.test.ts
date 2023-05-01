@@ -408,7 +408,7 @@ describe("TipFacet", async function () {
             expect(tipAddedEvent?.args?.amount).to.eq(tipAmount);
         });
 
-        it("Emits a `ReserveAllocated` event when final value is confirmed", async () => {
+        it("Emits a `ReservedClaimAllocated` event when final value is confirmed", async () => {
             // ---------
             // Arrange: Add tip
             // ---------
@@ -426,16 +426,16 @@ describe("TipFacet", async function () {
             // ---------
             tx = await settlementFacet.connect(oracle).setFinalReferenceValue(poolId, "1", false);
             receipt = await tx.wait();
-            const reserveAllocatedEvent = receipt.events?.find(
-                (x: any) => x.event === "ReserveAllocated"
+            const reservedClaimAllocatedEvent = receipt.events?.find(
+                (x: any) => x.event === "ReservedClaimAllocated"
             );
 
             // ---------
             // Assert: Check that event returns the expected values
             // ---------
-            expect(reserveAllocatedEvent?.args?.poolId).to.eq(poolId);
-            expect(reserveAllocatedEvent?.args?.recipient).to.eq(poolParamsBefore.dataProvider);
-            expect(reserveAllocatedEvent?.args?.amount).to.eq(tipAmount);
+            expect(reservedClaimAllocatedEvent?.args?.poolId).to.eq(poolId);
+            expect(reservedClaimAllocatedEvent?.args?.recipient).to.eq(poolParamsBefore.dataProvider);
+            expect(reservedClaimAllocatedEvent?.args?.amount).to.eq(tipAmount);
         })
 
         // -------------------------------------------

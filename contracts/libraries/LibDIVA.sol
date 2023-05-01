@@ -173,7 +173,7 @@ library LibDIVA {
      * @param recipient Address of the reserve recipient, typically the data provider
      * @param amount Reserve amount allocated (in collateral token)
      */
-    event ReserveAllocated(
+    event ReservedClaimAllocated(
         uint256 indexed poolId,
         address indexed recipient,
         uint256 amount
@@ -379,7 +379,7 @@ library LibDIVA {
         fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _reserve;
 
         // Log event
-        emit ReserveAllocated(_poolId, _recipient, _reserve);
+        emit ReservedClaimAllocated(_poolId, _recipient, _reserve);
     }
 
     /**

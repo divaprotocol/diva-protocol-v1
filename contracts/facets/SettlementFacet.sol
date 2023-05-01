@@ -222,7 +222,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         // Allocate reserved fees and tips to `_receiverSettlementFee` (fallback provider
         // if data provider didn't report any value and fallback provider
         // had to step in). Does NOT update `collateralBalance` in pool
-        // parameters. Emits a `ReserveAllocated` event.
+        // parameters. Emits a `ReservedClaimAllocated` event.
         LibDIVA._allocateReserve(_poolId, _receiverSettlementFee);
 
         // Set payout amounts in pool parameters (net of fees)
