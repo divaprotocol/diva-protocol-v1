@@ -839,6 +839,7 @@ library LibEIP712 {
             _offerRemoveLiquidity.poolId
         ];
 
+        // Get the total collateral amount to return to maker and taker net of fees
         uint256 _collateralAmountRemovedNet = LibDIVA._removeLiquidityLib(
             LibDIVA.RemoveLiquidityParams({
                 poolId: _offerRemoveLiquidity.poolId,
@@ -852,20 +853,25 @@ library LibEIP712 {
             })
         );
 
-        uint256 _collateralAmountRemovedNetMaker = (_collateralAmountRemovedNet *
-                (_offerRemoveLiquidity.makerCollateralAmount)) /
+        // It is important to calculate the taker amount first here to prevent a scenario where
+        // the taker receives all the collateral by filling small amounts as the result of round-down in
+        // Solidity math operations
+        uint256 _collateralAmountRemovedNetTaker = (_collateralAmountRemovedNet *
+                (_offerRemoveLiquidity.positionTokenAmount - _offerRemoveLiquidity.makerCollateralAmount)) /
                 (_offerRemoveLiquidity.positionTokenAmount);
 
-        LibDIVA._returnCollateral(
-            _pool,
-            _offerRemoveLiquidity.maker,
-            _collateralAmountRemovedNetMaker
-        );
-
+        // Return collateral to taker
         LibDIVA._returnCollateral(
             _pool,
             msg.sender,
-            _collateralAmountRemovedNet - _collateralAmountRemovedNetMaker
+            _collateralAmountRemovedNetTaker
+        );
+
+        // Return collateral to maker
+        LibDIVA._returnCollateral(
+            _pool,
+            _offerRemoveLiquidity.maker,
+            _collateralAmountRemovedNet - _collateralAmountRemovedNetTaker
         );
     }
 
