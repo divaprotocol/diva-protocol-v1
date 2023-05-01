@@ -188,8 +188,8 @@ contract GetterFacet is IGetter {
         return LibDIVA._getClaim(_collateralToken, _recipient);
     }
 
-    function getTip(uint256 _poolId) external view override returns (uint256) {
-        return LibDIVA._getTip(_poolId);
+    function getReservedClaim(uint256 _poolId) external view override returns (uint256) {
+        return LibDIVA._getReservedClaim(_poolId);
     }
 
     function getPoolIdByTypedCreateOfferHash(bytes32 _typedOfferHash)

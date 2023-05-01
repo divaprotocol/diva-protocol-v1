@@ -205,7 +205,7 @@ describe("TipFacet", async function () {
             tipAmount = parseUnits("10", decimals);
             tipper = user2;
             expect(poolParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
-            tipAmountBefore = await getterFacet.getTip(poolId);
+            tipAmountBefore = await getterFacet.getReservedClaim(poolId);
             feeClaimAmountBefore = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperBefore = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondBefore = await collateralTokenInstance.balanceOf(diamondAddress);
@@ -218,7 +218,7 @@ describe("TipFacet", async function () {
             // ---------
             // Assert: Confirm that relevant variables have been updated as expected
             // ---------
-            tipAmountAfter = await getterFacet.getTip(poolId);
+            tipAmountAfter = await getterFacet.getReservedClaim(poolId);
             feeClaimAmountAfter = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperAfter = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondAfter = await collateralTokenInstance.balanceOf(diamondAddress);
@@ -243,14 +243,14 @@ describe("TipFacet", async function () {
             // Prepare for tipping and log relevant variables before calling the function
             tipAmount = parseUnits("10", decimals);
             tipper = user2;
-            tipAmountBefore = await getterFacet.getTip(poolId);
+            tipAmountBefore = await getterFacet.getReservedClaim(poolId);
             feeClaimAmountBefore = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             expect(poolParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
             expect(tipAmountBefore).to.eq(0);
 
             // Add tip
             await tipFacet.connect(tipper).addTip(poolId, tipAmount);
-            tipAmountAfter = await getterFacet.getTip(poolId);
+            tipAmountAfter = await getterFacet.getReservedClaim(poolId);
             feeClaimAmountAfter = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             expect(tipAmountAfter).to.eq(tipAmountBefore.add(tipAmount));
             expect(feeClaimAmountAfter).to.eq(feeClaimAmountBefore);
@@ -282,7 +282,7 @@ describe("TipFacet", async function () {
             // ---------
             // Assert 1: Check that relevant variables have been updated correctly
             // ---------
-            const tipAmountAfterReporting = await getterFacet.getTip(poolId);
+            const tipAmountAfterReporting = await getterFacet.getReservedClaim(poolId);
             const feeClaimAmountAfterReporting = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             const poolParamsAfterReporting = await getterFacet.getPoolParameters(poolId);
             
@@ -303,7 +303,7 @@ describe("TipFacet", async function () {
             // ---------
             // Assert 2: Check that relevant variables have been updated correctly
             // ---------
-            const tipAmountAfterClaim = await getterFacet.getTip(poolId);
+            const tipAmountAfterClaim = await getterFacet.getReservedClaim(poolId);
             const feeClaimAmountAfterClaim = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             const poolParamsAfterClaim = await getterFacet.getPoolParameters(poolId);
 
@@ -329,7 +329,7 @@ describe("TipFacet", async function () {
             await tipFacet.connect(tipper).addTip(poolId, tipAmount);
 
             // Get tips and fee claim amounts before confirming the final reference value
-            const tipAmountBefore = await getterFacet.getTip(poolId);
+            const tipAmountBefore = await getterFacet.getReservedClaim(poolId);
             const feeClaimAmountDataProviderBefore = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             const feeClaimAmountFallbackDataProviderBefore = await getterFacet.getClaim(poolParamsBefore.collateralToken, fallbackDataProvider.address);
             expect(tipAmountBefore).to.eq(tipAmount);
@@ -360,7 +360,7 @@ describe("TipFacet", async function () {
             // Assert: Confirm that the tip was credit to the fallback data provider's account and
             // not the data provider
             // ---------
-            const tipAmountAfter = await getterFacet.getTip(poolId);
+            const tipAmountAfter = await getterFacet.getReservedClaim(poolId);
             const feeClaimAmountDataProviderAfter = await getterFacet.getClaim(poolParamsBefore.collateralToken, oracle.address);
             const feeClaimAmountFallbackDataProviderAfter = await getterFacet.getClaim(poolParamsBefore.collateralToken, fallbackDataProvider.address);
             poolParamsAfter = await getterFacet.getPoolParameters(poolId);
@@ -408,7 +408,7 @@ describe("TipFacet", async function () {
             expect(tipAddedEvent?.args?.amount).to.eq(tipAmount);
         });
 
-        it("Emits a `TipAllocated` event when final value is confirmed", async () => {
+        it("Emits a `ReservedClaimAllocated` event when final value is confirmed", async () => {
             // ---------
             // Arrange: Add tip
             // ---------
@@ -426,17 +426,16 @@ describe("TipFacet", async function () {
             // ---------
             tx = await settlementFacet.connect(oracle).setFinalReferenceValue(poolId, "1", false);
             receipt = await tx.wait();
-            const tipAllocatedEvent = receipt.events?.find(
-                (x: any) => x.event === "TipAllocated"
+            const reservedClaimAllocatedEvent = receipt.events?.find(
+                (x: any) => x.event === "ReservedClaimAllocated"
             );
 
             // ---------
             // Assert: Check that event returns the expected values
             // ---------
-            console.log(tipAllocatedEvent)
-            expect(tipAllocatedEvent?.args?.poolId).to.eq(poolId);
-            expect(tipAllocatedEvent?.args?.recipient).to.eq(poolParamsBefore.dataProvider);
-            expect(tipAllocatedEvent?.args?.amount).to.eq(tipAmount);
+            expect(reservedClaimAllocatedEvent?.args?.poolId).to.eq(poolId);
+            expect(reservedClaimAllocatedEvent?.args?.recipient).to.eq(poolParamsBefore.dataProvider);
+            expect(reservedClaimAllocatedEvent?.args?.amount).to.eq(tipAmount);
         })
 
         // -------------------------------------------
@@ -557,7 +556,7 @@ describe("TipFacet", async function () {
             tipAmount2 = parseUnits("15", decimals);
             tipper = user2;
             expect(pool1ParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
-            tipAmountBefore = await getterFacet.getTip(poolId1);
+            tipAmountBefore = await getterFacet.getReservedClaim(poolId1);
             feeClaimAmountBefore = await getterFacet.getClaim(pool1ParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperBefore = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondBefore = await collateralTokenInstance.balanceOf(diamondAddress);
@@ -579,7 +578,7 @@ describe("TipFacet", async function () {
             // ---------
             // Assert: Confirm that relevant variables have been updated as expected
             // ---------
-            tipAmountAfter = await getterFacet.getTip(poolId1);
+            tipAmountAfter = await getterFacet.getReservedClaim(poolId1);
             feeClaimAmountAfter = await getterFacet.getClaim(pool1ParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperAfter = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondAfter = await collateralTokenInstance.balanceOf(diamondAddress);
@@ -605,8 +604,8 @@ describe("TipFacet", async function () {
             tipAmount2 = parseUnits("15", decimals);
             tipper = user2;
             expect(pool1ParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
-            const tipAmountPool1Before = await getterFacet.getTip(poolId1);
-            const tipAmountPool2Before = await getterFacet.getTip(poolId2);
+            const tipAmountPool1Before = await getterFacet.getReservedClaim(poolId1);
+            const tipAmountPool2Before = await getterFacet.getReservedClaim(poolId2);
             feeClaimAmountBefore = await getterFacet.getClaim(pool1ParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperBefore = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondBefore = await collateralTokenInstance.balanceOf(diamondAddress);
@@ -628,8 +627,8 @@ describe("TipFacet", async function () {
             // ---------
             // Assert: Confirm that relevant variables have been updated as expected
             // ---------
-            const tipAmountPool1After = await getterFacet.getTip(poolId1);
-            const tipAmountPool2After = await getterFacet.getTip(poolId2);
+            const tipAmountPool1After = await getterFacet.getReservedClaim(poolId1);
+            const tipAmountPool2After = await getterFacet.getReservedClaim(poolId2);
             feeClaimAmountAfter = await getterFacet.getClaim(pool1ParamsBefore.collateralToken, oracle.address);
             collateralBalanceTipperAfter = await collateralTokenInstance.balanceOf(tipper.address);
             collateralBalanceDiamondAfter = await collateralTokenInstance.balanceOf(diamondAddress);

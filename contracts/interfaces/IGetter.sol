@@ -172,14 +172,15 @@ interface IGetter {
         returns (uint256);
 
     /**
-     * @notice Returns the collateral token tip amount for a given
-     * pool. Returns zero after a pool has been confirmed and tip has been
-     * credited to the `claimableFeeAmount`, which can be retrieved using
+     * @notice Returns the claim amount reserved for the data provider for a
+     * given pool. Includes tips as well as settlement fees accrued during `removeLiquidity`.
+     * Returns zero after a pool has been confirmed and the reserved amount
+     * has been credited to the `claimableFeeAmount`, which can be retrieved using
      * the `getClaim` function.
      * @param _poolId Id of pool.
      * @return Tip amount expressed as an integer in collateral token decimals.
      */
-    function getTip(uint256 _poolId) external view returns (uint256);
+    function getReservedClaim(uint256 _poolId) external view returns (uint256);
 
     /**
      * @notice Returns the poolId for a given `_typedOfferHash` derived from a

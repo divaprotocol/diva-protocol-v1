@@ -49,7 +49,7 @@ interface IClaim {
     );
 
     /**
-     * @notice Function to claim allocated fee
+     * @notice Function to claim allocated fees and tips
      * @dev List of collateral token addresses has to be obtained off-chain
      * (e.g., from TheGraph)
      * @param _collateralToken Collateral token address

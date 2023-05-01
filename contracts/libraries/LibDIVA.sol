@@ -109,6 +109,19 @@ library LibDIVA {
     );
 
     /**
+     * @notice Emitted when fees are reserved for data provider in 
+     * `removeLiquidity`.
+     * @dev Collateral token can be looked up via the `getPoolParameters`
+     * function using the emitted `poolId`.
+     * @param poolId The Id of the pool that the fee applies to.
+     * @param amount Fee amount reserved.
+     */
+    event FeeClaimReserved(
+        uint256 indexed poolId,
+        uint256 amount
+    );
+
+    /**
      * @notice Emitted when a new pool is created.
      * @param poolId The Id of the newly created contingent pool.
      * @param longRecipient The address that received the long position tokens.
@@ -154,13 +167,13 @@ library LibDIVA {
     );
 
     /**
-     * @notice Emitted when a tip has been credited to the data provider after
-     * the final value is confirmed.
-     * @param poolId Id of the pool for which the tip is credited
-     * @param recipient Address of the tip recipient, typically the data provider
-     * @param amount Tip amount allocated (in collateral token)
+     * @notice Emitted when tips and reserved fees (the "reserve") have been allocated to the
+     * data provider after the final value has been confirmed.
+     * @param poolId Id of the pool for which the reserve has been allocated
+     * @param recipient Address of the reserve recipient, typically the data provider
+     * @param amount Reserve amount allocated (in collateral token)
      */
-    event TipAllocated(
+    event ReservedClaimAllocated(
         uint256 indexed poolId,
         address indexed recipient,
         uint256 amount
@@ -189,8 +202,8 @@ library LibDIVA {
             ][_recipient];
     }
 
-    function _getTip(uint256 _poolId) internal view returns (uint256) {
-        return LibDIVAStorage._feeClaimStorage().poolIdToTip[_poolId];
+    function _getReservedClaim(uint256 _poolId) internal view returns (uint256) {
+        return LibDIVAStorage._feeClaimStorage().poolIdToReservedClaim[_poolId];
     }
 
     /**
@@ -295,10 +308,6 @@ library LibDIVA {
         address _recipient,
         uint256 _feeAmount
     ) internal {
-        // Get reference to the relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
         // Check that fee amount to be allocated doesn't exceed the pool's
         // current `collateralBalance`. This check should never trigger, but
         // kept for safety.
@@ -307,37 +316,70 @@ library LibDIVA {
 
         // Reduce `collateralBalance` in pool parameters and increase fee claim
         _pool.collateralBalance -= _feeAmount;
-        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _feeAmount;
+        LibDIVAStorage._feeClaimStorage()
+            .claimableFeeAmount[_pool.collateralToken][_recipient] += _feeAmount;
 
         // Log poolId, recipient and fee amount
         emit FeeClaimAllocated(_poolId, _recipient, _feeAmount);
     }
 
     /**
-     * @notice Internal function to transfer the tip to the data provider when the
-     * final reference value is confirmed.
-     * @dev `poolIdToTip` is set to zero and credited to the fee claim in that process.
-     * @param _poolId Id of pool.
-     * @param _recipient Tip recipient.
+     * @notice Internal function to reserve settlement fees accrued during `removeLiquidity`
+     * for data provider. The function is very similar to `_allocateFeeClaim`.
+     * @dev The fee will be allocated to the actual data provider, which may be
+     * either the assigned data provider or the fallback data provider, once the final value
+     * has been confirmed. If neither of them reports a value, the reserved fee will be
+     * allocated to the treasury.
+     * @param _poolId Pool Id that the fee applies to.
+     * @param _pool Pool struct.
+     * @param _feeAmount Total fee amount expressed as an integer with
+     * collateral token decimals.
      */
-    function _allocateTip(uint256 _poolId, address _recipient) internal {
+    function _reserveFeeClaim(
+        uint256 _poolId,
+        LibDIVAStorage.Pool storage _pool,
+        uint256 _feeAmount
+    ) internal {
+        // Check that fee amount to be reserved doesn't exceed the pool's
+        // current `collateralBalance`. This check should never trigger, but
+        // kept for safety.
+        if (_feeAmount > _pool.collateralBalance)
+            revert FeeAmountExceedsPoolCollateralBalance();
+        
+        // Reduce `collateralBalance` in pool parameters and increase
+        // fee claim reserve
+        _pool.collateralBalance -= _feeAmount;
+        LibDIVAStorage._feeClaimStorage()
+            .poolIdToReservedClaim[_poolId] += _feeAmount;
+
+        // Log poolId and fee amount
+        emit FeeClaimReserved(_poolId, _feeAmount);
+    }
+
+    /**
+     * @notice Internal function to transfer the reserved fee and tip to the data provider when the
+     * final reference value is confirmed.
+     * @dev `poolIdToReservedClaim` is set to zero and credited to the claimable fee amount.
+     * @param _poolId Id of pool.
+     * @param _recipient Reserve recipient.
+     */
+    function _allocateReservedClaim(uint256 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
+        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
 
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
 
-        // Get tip for pool
-        uint256 _tip = fs.poolIdToTip[_poolId];
+        // Get reserve for pool
+        uint256 _reserve = fs.poolIdToReservedClaim[_poolId];
 
-        // Credit tip to the claimable fee amount
-        fs.poolIdToTip[_poolId] = 0;
-        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _tip;
+        // Credit reserve to the claimable fee amount
+        fs.poolIdToReservedClaim[_poolId] = 0;
+        fs.claimableFeeAmount[_pool.collateralToken][_recipient] += _reserve;
 
         // Log event
-        emit TipAllocated(_poolId, _recipient, _tip);
+        emit ReservedClaimAllocated(_poolId, _recipient, _reserve);
     }
 
     /**
@@ -781,15 +823,15 @@ library LibDIVA {
             _protocolFee
         );
 
-        // Allocate settlement fee to data provider. Fee is held within this
-        // contract and can be claimed via `claimFee` function.
-        _allocateFeeClaim(
+        // Reserve settlement fee for data provider which is not known at this stage.
+        // Fee will be allocated to actual data provider following final value
+        // confirmation and afterwards can be claimed via the `claimFee` function.
+        _reserveFeeClaim(
             _removeLiquidityParams.poolId,
             _pool,
-            _pool.dataProvider,
             _settlementFee
         );
-
+        
         // Collateral amount to return net of fees
         collateralAmountRemovedNet =
             _removeLiquidityParams.amount -

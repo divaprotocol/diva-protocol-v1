@@ -13,6 +13,7 @@ import {
   GetterFacet,
   MockERC20,
   EIP712RemoveFacet,
+  SettlementFacet,
 } from "../typechain-types";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
@@ -58,7 +59,8 @@ describe("EIP712", async function () {
     user2: SignerWithAddress,
     user3: SignerWithAddress,
     oracle: SignerWithAddress,
-    treasury: SignerWithAddress;
+    treasury: SignerWithAddress,
+    contractOwner: SignerWithAddress;
 
   let diamondAddress: string;
   let eip712CreateFacet: EIP712CreateFacet,
@@ -66,7 +68,8 @@ describe("EIP712", async function () {
     eip712AddFacet: EIP712AddFacet,
     eip712CancelFacet: EIP712CancelFacet,
     poolFacet: PoolFacet,
-    getterFacet: GetterFacet;
+    getterFacet: GetterFacet,
+    settlementFacet: SettlementFacet;
 
   let collateralToken: MockERC20;
 
@@ -93,6 +96,7 @@ describe("EIP712", async function () {
 
   let poolId: BigNumber;
   let poolParams: LibDIVAStorage.PoolStructOutput;
+  let nextBlockTimestamp: number;
 
   let createPoolParams: PoolParams;
   let offerCreateContingentPool: OfferCreateContingentPool;
@@ -105,7 +109,7 @@ describe("EIP712", async function () {
 
   before(async () => {
     // Get signers
-    [, treasury, oracle, user1, user2, user3] = await ethers.getSigners();
+    [contractOwner, treasury, oracle, user1, user2, user3] = await ethers.getSigners();
     console.log("Address user1: " + user1.address);
     console.log("Address user2: " + user2.address);
 
@@ -131,6 +135,7 @@ describe("EIP712", async function () {
     );
     poolFacet = await ethers.getContractAt("PoolFacet", diamondAddress);
     getterFacet = await ethers.getContractAt("GetterFacet", diamondAddress);
+    settlementFacet = await ethers.getContractAt("SettlementFacet", diamondAddress);
 
     // Get chainId
     chainId = (await getterFacet.getChainId()).toNumber();
@@ -5053,6 +5058,8 @@ describe("EIP712", async function () {
       });
 
       it("Should fully fill a remove liquidity offer and update the relevant parameters", async function () {
+        // Note: In this test, the final value is confirmed by the assigned data provider on first submission (i.e. possibility to challenge is disabled)
+
         // ---------
         // Arrange: Set positionTokenFillAmount equal to positionTokenAmount, calculate collateral net of fees and token balances for both users before removing liquidity
         // ---------
@@ -5167,7 +5174,8 @@ describe("EIP712", async function () {
         ).to.eq(protocolFee);
         expect(
           await getterFacet.getClaim(collateralToken.address, oracle.address)
-        ).to.eq(settlementFee);
+        ).to.eq(0);
+        expect(await getterFacet.getReservedClaim(poolId)).to.eq(settlementFee);
 
         // Confirm that the collateral token balance for both users has increased
         expect(await collateralToken.balanceOf(user1.address)).to.eq(
@@ -5217,13 +5225,56 @@ describe("EIP712", async function () {
           positionTokenFillAmount
         );
         expect(relevantStateParamsAfter.poolExists).to.be.true; // should remain unchanged
+
+        // ========================
+        // Confirm final reference value on first submission to test that fee claims
+        // are allocated correctly
+        // ========================
+
+        // ---------
+        // Arrange: Fast forward in time after pool expiration and calculate settlement
+        // and protocol fees based on the remaining collateral balance of the pool
+        // ---------
+        nextBlockTimestamp = Number(poolParamsBefore.expiryTime) + 1;
+        await mineBlock(nextBlockTimestamp);
+
+        const protocolFeeRemainingCollateral = calcFee(
+          feesParams.protocolFee,
+          poolParamsAfter.collateralBalance,
+          collateralTokenDecimals
+        );
+        const settlementFeeRemainingCollateral = calcFee(
+          feesParams.settlementFee,
+          poolParamsAfter.collateralBalance,
+          collateralTokenDecimals
+        );
+
+        // ---------
+        // Act: Confirm pool on first value submission
+        // ---------
+        await settlementFacet
+          .connect(oracle)
+          .setFinalReferenceValue(poolId, parseUnits("100") , false);
+
+        // ---------
+        // Assert: Confirm that all fee claims have been allocated correctly
+        // ---------
+        expect(
+          await getterFacet.getClaim(collateralToken.address, treasury.address)
+        ).to.eq(protocolFee.add(protocolFeeRemainingCollateral));
+        expect(
+          await getterFacet.getClaim(collateralToken.address, oracle.address)
+        ).to.eq(settlementFee.add(settlementFeeRemainingCollateral));
+        expect(await getterFacet.getReservedClaim(poolId)).to.eq(0);
       });
 
-      it("Should fill a remove liquidity offer in two steps", async function () {
+      it("Should fill a remove liquidity offer in two steps and allocate all fees to treasury if final value defaults to inflection", async function () {
+        // Note: This test represents a scenario in which the final value is confirmed at the default value of inflection
+        // because neither the data provider nor the fallback provider submitted a value.
+
         // ---------
         // Arrange: Simulate a partial fill of a remove liquidity offer
         // ---------
-
         // Set positionTokenAmountFirstFill < positionTokenAmount to simulate a partial fill of a remove liquidity offer
         const positionTokenAmountFirstFill = parseUnits(
           "15",
@@ -5232,6 +5283,20 @@ describe("EIP712", async function () {
         expect(BigNumber.from(positionTokenAmountFirstFill)).to.be.lt(
           BigNumber.from(offerRemoveLiquidity.positionTokenAmount)
         );
+
+        // Calculate fees to be incurred on first fill
+        const protocolFee1 = calcFee(
+          feesParams.protocolFee,
+          BigNumber.from(positionTokenAmountFirstFill),
+          collateralTokenDecimals
+        );
+        expect(protocolFee1).to.not.eq(0);
+        const settlementFee1 = calcFee(
+          feesParams.settlementFee,
+          BigNumber.from(positionTokenAmountFirstFill),
+          collateralTokenDecimals
+        );
+        expect(settlementFee1).to.not.eq(0);
 
         // Fill remove liquidity offer with user2 address (taker)
         await eip712RemoveFacet
@@ -5276,6 +5341,12 @@ describe("EIP712", async function () {
           relevantStateParamsAfterFirstFill.offerInfo.takerFilledAmount
         ).to.eq(positionTokenAmountFirstFill);
 
+        // Confirm that fee claims are updated correctly after first fill
+        expect(await getterFacet.getReservedClaim(poolId)).to.eq(settlementFee1);
+        expect(await getterFacet.getClaim(collateralToken.address, treasury.address)).to.eq(protocolFee1);
+        expect(await getterFacet.getClaim(collateralToken.address, oracle.address)).to.eq(0); 
+        expect(await getterFacet.getClaim(collateralToken.address, contractOwner.address)).to.eq(0); // fallback data provider 
+
         // Get pool parameters before removing liquidity a second time
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
 
@@ -5285,24 +5356,24 @@ describe("EIP712", async function () {
           (await getterFacet.getTakerFilledAmount(typedMessageHash)).toString()
         );
 
-        // Calculate fees
-        protocolFee = calcFee(
+        // Calculate fees to be incurred on second fill
+        const protocolFee2 = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenAmountSecondFill),
           collateralTokenDecimals
         );
-        expect(protocolFee).to.not.eq(0);
-        settlementFee = calcFee(
+        expect(protocolFee2).to.not.eq(0);
+        const settlementFee2 = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenAmountSecondFill),
           collateralTokenDecimals
         );
-        expect(settlementFee).to.not.eq(0);
+        expect(settlementFee2).to.not.eq(0);
 
         // Collateral net of fees
         collateralToReturnNet = BigNumber.from(positionTokenAmountSecondFill)
-          .sub(protocolFee)
-          .sub(settlementFee);
+          .sub(protocolFee2)
+          .sub(settlementFee2);
 
         // Collateral net of fees for maker and taker
         collateralAmountRemovedNetMaker = collateralToReturnNet
@@ -5402,6 +5473,59 @@ describe("EIP712", async function () {
         expect(relevantStateParamsAfterSecondFill.poolExists).to.eq(
           relevantStateParamsAfterFirstFill.poolExists
         ); // should remain unchanged
+
+        // Confirm that fee claims are updated correctly after first fill.
+        expect(await getterFacet.getReservedClaim(poolId)).to.eq(settlementFee1.add(settlementFee2));
+        expect(await getterFacet.getClaim(collateralToken.address, treasury.address)).to.eq(protocolFee1.add(protocolFee2));
+        expect(await getterFacet.getClaim(collateralToken.address, oracle.address)).to.eq(0); 
+        expect(await getterFacet.getClaim(collateralToken.address, contractOwner.address)).to.eq(0); // fallback data provider 
+
+        // ========================
+        // Confirm pool with default value
+        // ========================
+
+        // ---------
+        // Arrange: Let submission and fallback submission periods pass
+        // ---------
+        govParams = await getterFacet.getGovernanceParameters();
+        const submissionPeriod = govParams.currentSettlementPeriods.submissionPeriod; // 7d (initial value)
+        const fallbackSubmissionPeriod = govParams.currentSettlementPeriods.fallbackSubmissionPeriod; // 10d (initial value)
+        nextBlockTimestamp = Number(poolParamsBefore.expiryTime.add(submissionPeriod).add(fallbackSubmissionPeriod)) + 1;
+        await mineBlock(nextBlockTimestamp);
+
+        // ---------
+        // Act: Confirm pool with the default value (inflection)
+        // ---------
+        await settlementFacet
+          .connect(user1)
+          .setFinalReferenceValue(poolId, "0", false); // Doesn't matter who and what final reference value was submitted
+
+        // ---------
+        // Assert: Confirm that the reserved fee claim has been allocated to the treasury and not to the assigned data provider
+        // or fallback data provider. Note that settlement and protocol fees paid on remaining collateral balance
+        // when final value is confirmed have to be considered.
+        // ---------
+        const protocolFeeRemainingCollateral = calcFee(
+          feesParams.protocolFee,
+          poolParamsAfter.collateralBalance,
+          collateralTokenDecimals
+        );
+        const settlementFeeRemainingCollateral = calcFee(
+          feesParams.settlementFee,
+          poolParamsAfter.collateralBalance,
+          collateralTokenDecimals
+        );
+        expect(await getterFacet.getReservedClaim(poolId)).to.eq(0);
+        expect(await getterFacet.getClaim(collateralToken.address, treasury.address))
+          .to.eq(protocolFeeRemainingCollateral
+            .add(settlementFeeRemainingCollateral)
+            .add(protocolFee1)
+            .add(protocolFee2)
+            .add(settlementFee1)
+            .add(settlementFee2)
+          );
+        expect(await getterFacet.getClaim(collateralToken.address, oracle.address)).to.eq(0); 
+        expect(await getterFacet.getClaim(collateralToken.address, contractOwner.address)).to.eq(0); // fallback data provider 
       });
 
       it("Should fill a remove liquidity offer with minimumTakerFillAmount", async () => {

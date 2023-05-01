@@ -67,7 +67,7 @@ contract TipFacet is ITip, ReentrancyGuard {
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
         // Update claim mapping
-        _fs.poolIdToTip[_poolId] += _amount;
+        _fs.poolIdToReservedClaim[_poolId] += _amount;
 
         // Transfer approved collateral tokens from `msg.sender` to `this`
         collateralToken.safeTransferFrom(msg.sender, address(this), _amount);

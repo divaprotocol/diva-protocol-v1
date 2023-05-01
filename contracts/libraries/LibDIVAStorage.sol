@@ -79,7 +79,7 @@ library LibDIVAStorage {
 
     struct FeeClaimStorage {
         mapping(address => mapping(address => uint256)) claimableFeeAmount; // collateralTokenAddress -> RecipientAddress -> amount
-        mapping(uint256 => uint256) poolIdToTip; // poolId -> tip amount
+        mapping(uint256 => uint256) poolIdToReservedClaim; // poolId -> reserve amount
     }
 
     struct PoolStorage {
