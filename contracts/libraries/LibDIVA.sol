@@ -541,7 +541,7 @@ library LibDIVA {
             }
             uint256 _after = collateralToken.balanceOf(address(this));
 
-            // Revert if a fee was applied during transfer
+            // Revert if a fee was applied during transfer. Throws if `_before > _after`.
             if (_after - _before != _createPoolParams.collateralAmountMsgSender + _createPoolParams.collateralAmountMaker) {
                 revert FeeTokensNotSupported();
             }
@@ -717,7 +717,7 @@ library LibDIVA {
             }
             uint256 _after = collateralToken.balanceOf(address(this));
 
-            // Revert if a fee was applied during transfer
+            // Revert if a fee was applied during transfer. Throws if `_before > _after`.
             if (_after - _before != addLiquidityParams.collateralAmountMsgSender + addLiquidityParams.collateralAmountMaker) {
                 revert FeeTokensNotSupported();
             }

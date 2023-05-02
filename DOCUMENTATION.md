@@ -976,11 +976,13 @@ Function to add a tip in collateral token to a specific pool. This function uses
 The function executes the following steps in the following order:
 
 1. Check that `statusFinalReferenceValue` is "Open", meaning that no value has been submitted by the data provider yet.
-1. Increase the amount reserved for the data provider by the tip amount.
+1. Increase the amount reserved for the data provider by the tip amount. Account for any fees that may have been charged on token transfer.
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard.
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts if a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`. The tip is allocated to the corresponding data provider if the final value is confirmed within the submission window. If the final value is confirmed by the fallback data provider within fallback submission period, the tip will be allocated to the fallback data provider. If neither of them report a value, the tip will be allocated to the treasury. The same logic applies to settlement fees during [`removeLiquidity`](#removeliquidity). Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
+
+>**Note:** Allowing users to add tips even when fees are activated for the underlying collateral token was a deliberate decision made to incentivize reporting.
 
 ```js
 function addTip(

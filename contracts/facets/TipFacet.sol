@@ -66,11 +66,27 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Cache collateral token
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
-        // Update claim mapping
-        _fs.poolIdToReservedClaim[_poolId] += _amount;
+        // Check collateral token balance before and after the transfer to account
+        // for potential fees. It is a conscious decision to allow users to add tips
+        // in the presence of fees to incentive reporting. Note that the
+        // Checks-Effects-Interactions pattern cannot be followed here. This shouldn't
+        // be a problem because reentrancy guards are in place and tips are only
+        // transferred to recipient when the final value is confirmed.
+        uint256 _before = collateralToken.balanceOf(address(this));
 
         // Transfer approved collateral tokens from `msg.sender` to `this`
         collateralToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+        uint256 _after = collateralToken.balanceOf(address(this));
+
+        // Update `_amount` if a fee was applied during transfer. Throws if
+        // `_before > _after`.
+        if (_after - _before != _amount) {
+            _amount = _after - _before;
+        }
+
+        // Update claim mapping.
+        _fs.poolIdToReservedClaim[_poolId] += _amount;
 
         // Log event
         emit TipAdded(msg.sender, _poolId, address(collateralToken), _amount);

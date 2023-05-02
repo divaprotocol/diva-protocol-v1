@@ -52,6 +52,7 @@ describe("PoolFacet", async function () {
     gradient: BigNumber,
     collateralAmount: BigNumber,
     collateralToken: string,
+    collateralTokenWithFees: string,
     dataProvider: string,
     capacity: BigNumber,
     longRecipient: string,
@@ -156,6 +157,10 @@ describe("PoolFacet", async function () {
       await collateralTokenInstance
         .connect(user1)
         .approve(diamondAddress, userStartCollateralTokenBalance);
+      await collateralTokenWithFeesInstance
+        .connect(user1)
+        .approve(diamondAddress, userStartCollateralTokenBalance);
+      
       // Specify default pool parameters
       referenceAsset = "BTC/USD";
       expiryTime = await getExpiryTime(7200); // Expiry in 2h
@@ -278,35 +283,6 @@ describe("PoolFacet", async function () {
         govParams.currentSettlementPeriods.fallbackSubmissionPeriod
       );
     });
-
-    it("Deduct a fee on transfer for the Mock ERC20 token with fees", async () => {
-      // ---------
-      // Arrange: Get the token balances before transfer and prepare parameters for transfer call
-      // ---------
-      const collateralTokenWithFeesUser1Before = await collateralTokenWithFeesInstance.balanceOf(user1.address);
-      const collateralTokenWithFeesUser2Before = await collateralTokenWithFeesInstance.balanceOf(user2.address);
-
-      const amountToTransfer = BigNumber.from("10000");
-      const feePct = await collateralTokenWithFeesInstance.getFee();
-      expect(feePct).to.be.gt(0)
-      const feeAmount = amountToTransfer.div(feePct);
-      
-      // ---------
-      // Act: Transfer tokens
-      // ---------
-      await collateralTokenWithFeesInstance
-        .connect(user1)
-        .transfer(user2.address, amountToTransfer);
-
-      // ---------
-      // Assert: Confirm that the new balances are as expected
-      // ---------
-      const collateralTokenWithFeesUser1After = await collateralTokenWithFeesInstance.balanceOf(user1.address);
-      const collateralTokenWithFeesUser2After = await collateralTokenWithFeesInstance.balanceOf(user2.address);
-      expect(collateralTokenWithFeesUser1After).to.eq(collateralTokenWithFeesUser1Before.sub(amountToTransfer));
-      expect(collateralTokenWithFeesUser2After).to.eq(collateralTokenWithFeesUser2Before.add(amountToTransfer).sub(feeAmount));
-      
-    })
 
     it("Creates a contingent pool and returns the poolId", async () => {
       // ---------
@@ -526,6 +502,36 @@ describe("PoolFacet", async function () {
         longTokenBalanceUser1
       );
     });
+
+    it("Deducts a fee on transfer for the Mock ERC20 token with fees", async () => {
+      // This test is to ensure that the fee logic in the Mock ERC20 functions correctly
+
+      // ---------
+      // Arrange: Get the token balances before transfer and prepare parameters for transfer call
+      // ---------
+      const collateralTokenWithFeesUser1Before = await collateralTokenWithFeesInstance.balanceOf(user1.address);
+      const collateralTokenWithFeesUser2Before = await collateralTokenWithFeesInstance.balanceOf(user2.address);
+
+      const amountToTransfer = BigNumber.from("10000");
+      const feePct = await collateralTokenWithFeesInstance.getFee();
+      expect(feePct).to.be.gt(0)
+      const feeAmount = amountToTransfer.div(feePct);
+      
+      // ---------
+      // Act: Transfer tokens
+      // ---------
+      await collateralTokenWithFeesInstance
+        .connect(user1)
+        .transfer(user2.address, amountToTransfer);
+
+      // ---------
+      // Assert: Confirm that the new balances are as expected
+      // ---------
+      const collateralTokenWithFeesUser1After = await collateralTokenWithFeesInstance.balanceOf(user1.address);
+      const collateralTokenWithFeesUser2After = await collateralTokenWithFeesInstance.balanceOf(user2.address);
+      expect(collateralTokenWithFeesUser1After).to.eq(collateralTokenWithFeesUser1Before.sub(amountToTransfer));
+      expect(collateralTokenWithFeesUser2After).to.eq(collateralTokenWithFeesUser2Before.add(amountToTransfer).sub(feeAmount));
+    })
 
     // -------------------------------------------
     // Events
@@ -929,6 +935,29 @@ describe("PoolFacet", async function () {
           permissionedERC721Token,
         })
       ).to.be.revertedWith("ERC20: mint to the zero address");
+    });
+
+    it("Reverts if collateral token implements a fee", async () => {
+      // ---------
+      // Act & Assert: Check that contingent pool creation fails
+      // ---------
+      await expect(
+        poolFacet.connect(user1).createContingentPool({
+          referenceAsset,
+          expiryTime,
+          floor,
+          inflection,
+          cap,
+          gradient,
+          collateralAmount,
+          collateralToken: collateralTokenWithFeesInstance.address,
+          dataProvider,
+          capacity,
+          longRecipient,
+          shortRecipient,
+          permissionedERC721Token,
+        })
+      ).to.be.revertedWith("FeeTokensNotSupported()");
     });
   });
 
