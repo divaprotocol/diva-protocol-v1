@@ -595,37 +595,37 @@ describe("SettlementFacet", async function () {
             )
           ).to.eq(settlementFee);
         });
-      });
 
-      it("Should allow the fallback data provider to set a final reference value during the fallback period", async () => {
-        // ---------
-        // Arrange: Check that pool has expired and the submission period expired without any input
-        // ---------
-        expect(poolParamsBefore.expiryTime).to.be.lte(currentBlockTimestamp); // pool expired
-        submissionPeriodEndTime =
-          poolParamsBefore.expiryTime.add(submissionPeriod); // set submission period end
-        expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0); // no final value set yet
-        expect(poolParamsBefore.finalReferenceValue).to.eq(0); // status is 0 = Open
+        it("Should allow the fallback data provider to set a final reference value during the fallback period", async () => {
+          // ---------
+          // Arrange: Check that pool has expired and the submission period expired without any input
+          // ---------
+          expect(poolParamsBefore.expiryTime).to.be.lte(currentBlockTimestamp); // pool expired
+          submissionPeriodEndTime =
+            poolParamsBefore.expiryTime.add(submissionPeriod); // set submission period end
+          expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0); // no final value set yet
+          expect(poolParamsBefore.finalReferenceValue).to.eq(0); // status is 0 = Open
 
-        // ---------
-        // Act: Fallback data provider submits a final value (enabling the possibility to challenge should not have any impact)
-        // ---------
-        finalReferenceValue = parseUnits("1688.17");
-        allowChallenge = true;
-        await setNextTimestamp(
-          ethers.provider,
-          submissionPeriodEndTime.add(1).toNumber()
-        ); // set timestamp of next block such that it's outside of the submission period and inside the fallback period
-        await settlementFacet
-          .connect(fallbackOracle)
-          .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge);
+          // ---------
+          // Act: Fallback data provider submits a final value (enabling the possibility to challenge should not have any impact)
+          // ---------
+          finalReferenceValue = parseUnits("1688.17");
+          allowChallenge = true;
+          await setNextTimestamp(
+            ethers.provider,
+            submissionPeriodEndTime.add(1).toNumber()
+          ); // set timestamp of next block such that it's outside of the submission period and inside the fallback period
+          await settlementFacet
+            .connect(fallbackOracle)
+            .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge);
 
-        // ---------
-        // Assert: Check that final value is confirmed and equal to finalReferenceValue
-        // ---------
-        poolParamsAfter = await getterFacet.getPoolParameters(poolId);
-        expect(poolParamsAfter.finalReferenceValue).to.eq(finalReferenceValue);
-        expect(poolParamsAfter.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+          // ---------
+          // Assert: Check that final value is confirmed and equal to finalReferenceValue
+          // ---------
+          poolParamsAfter = await getterFacet.getPoolParameters(poolId);
+          expect(poolParamsAfter.finalReferenceValue).to.eq(finalReferenceValue);
+          expect(poolParamsAfter.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+        });
       });
 
       describe("Tests requiring to be within the fallback submission period", async () => {
