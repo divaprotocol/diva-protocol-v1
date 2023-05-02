@@ -72,7 +72,17 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
             _releasePeriodInSeconds
         );
 
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20 _tokenInstance = IERC20(_token);
+
+        // Transfer token from user to `this`. Revert if a fee is applied
+        // during transfer.
+        uint256 _before = _tokenInstance.balanceOf(address(this));
+        _tokenInstance.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _after = _tokenInstance.balanceOf(address(this));
+
+        if (_after - _before != _amount) {
+            revert FeeTokensNotSupported();
+        }
 
         emit Deposited(msg.sender, _depositIndex);
     }

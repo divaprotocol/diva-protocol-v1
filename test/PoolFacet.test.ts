@@ -6,7 +6,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import {
   GetterFacet,
-  LibDiamond,
   MockERC20,
   MockERC721,
   PermissionedPositionToken,
@@ -63,6 +62,7 @@ describe("PoolFacet", async function () {
   let settlementFee = "500000000000000"; // initial protocol value
   let userStartCollateralTokenBalance: BigNumber;
   let collateralTokenInstance: MockERC20;
+  let collateralTokenWithFeesInstance: MockERC20;
 
   let poolId: BigNumber;
   let poolParams: LibDIVAStorage.PoolStructOutput;
@@ -142,7 +142,16 @@ describe("PoolFacet", async function () {
         "DCT",
         userStartCollateralTokenBalance,
         user1.address,
-        decimals
+        decimals,
+        "0"
+      );
+      collateralTokenWithFeesInstance = await erc20DeployFixture(
+        "DummyCollateralTokenWithFees",
+        "DCTWF",
+        userStartCollateralTokenBalance,
+        user1.address,
+        decimals,
+        "100", // 1% = 100, 0.1% = 1000
       );
       await collateralTokenInstance
         .connect(user1)
@@ -269,6 +278,35 @@ describe("PoolFacet", async function () {
         govParams.currentSettlementPeriods.fallbackSubmissionPeriod
       );
     });
+
+    it("Deduct a fee on transfer for the Mock ERC20 token with fees", async () => {
+      // ---------
+      // Arrange: Get the token balances before transfer and prepare parameters for transfer call
+      // ---------
+      const collateralTokenWithFeesUser1Before = await collateralTokenWithFeesInstance.balanceOf(user1.address);
+      const collateralTokenWithFeesUser2Before = await collateralTokenWithFeesInstance.balanceOf(user2.address);
+
+      const amountToTransfer = BigNumber.from("10000");
+      const feePct = await collateralTokenWithFeesInstance.getFee();
+      expect(feePct).to.be.gt(0)
+      const feeAmount = amountToTransfer.div(feePct);
+      
+      // ---------
+      // Act: Transfer tokens
+      // ---------
+      await collateralTokenWithFeesInstance
+        .connect(user1)
+        .transfer(user2.address, amountToTransfer);
+
+      // ---------
+      // Assert: Confirm that the new balances are as expected
+      // ---------
+      const collateralTokenWithFeesUser1After = await collateralTokenWithFeesInstance.balanceOf(user1.address);
+      const collateralTokenWithFeesUser2After = await collateralTokenWithFeesInstance.balanceOf(user2.address);
+      expect(collateralTokenWithFeesUser1After).to.eq(collateralTokenWithFeesUser1Before.sub(amountToTransfer));
+      expect(collateralTokenWithFeesUser2After).to.eq(collateralTokenWithFeesUser2Before.add(amountToTransfer).sub(feeAmount));
+      
+    })
 
     it("Creates a contingent pool and returns the poolId", async () => {
       // ---------
@@ -773,7 +811,8 @@ describe("PoolFacet", async function () {
         "DCT",
         userStartCollateralTokenBalance,
         user1.address,
-        _decimals
+        _decimals,
+        "0"
       );
 
       // ---------
@@ -808,7 +847,8 @@ describe("PoolFacet", async function () {
         "DCT",
         userStartCollateralTokenBalance,
         user1.address,
-        _decimals
+        _decimals,
+        "0"
       );
 
       // ---------
@@ -908,7 +948,8 @@ describe("PoolFacet", async function () {
         "DCT",
         userStartCollateralTokenBalance,
         user1.address,
-        decimals
+        decimals,
+        "0"
       );
       await collateralTokenInstance
         .connect(user1)
@@ -1300,7 +1341,8 @@ describe("PoolFacet", async function () {
         "DCT",
         userStartCollateralTokenBalance,
         user1.address,
-        decimals
+        decimals,
+        "0"
       );
       await collateralTokenInstance
         .connect(user1)

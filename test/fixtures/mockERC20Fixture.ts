@@ -10,10 +10,11 @@ export const erc20DeployFixture = async (
   symbol: string,
   tokenSupply: BigNumber,
   recipient: string,
-  decimals: number
+  decimals: number,
+  fee: string, // 1% = 100, 0.1% = 1000
 ) => {
   const factory = await ethers.getContractFactory("MockERC20");
-  return await factory.deploy(name, symbol, tokenSupply, recipient, decimals);
+  return await factory.deploy(name, symbol, tokenSupply, recipient, decimals, fee);
 };
 
 export const erc20AttachFixture = async (tokenAddress: string) => {

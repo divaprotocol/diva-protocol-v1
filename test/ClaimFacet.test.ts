@@ -91,7 +91,8 @@ describe("ClaimFacet", async function () {
         "DCT",
         parseUnits(user1StartCollateralTokenBalance.toString(), decimals),
         user1.address,
-        decimals
+        decimals,
+        "0"
       );
 
       // Set user1 allowances for Diamond contract
@@ -592,7 +593,8 @@ describe("ClaimFacet", async function () {
           "DCT2",
           parseUnits(user1StartCollateralTokenBalance.toString(), decimals),
           user1.address,
-          decimals
+          decimals,
+          "0"
         );
 
         // Set user1 allowances for Diamond contract

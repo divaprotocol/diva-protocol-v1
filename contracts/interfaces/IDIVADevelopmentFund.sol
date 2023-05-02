@@ -11,6 +11,9 @@ interface IDIVADevelopmentFund {
     // exceeds 30 years    
     error InvalidReleasePeriod();
 
+    // Thrown in `deposit` (ERC20 token version) if the token implements a fee on transfers
+    error FeeTokensNotSupported(); // @todo add test and also in docs where we mention rebase token and in create & add steps
+
     // Thrown in `withdraw` if token addresses for indices passed are
     // different
     error DifferentTokens();

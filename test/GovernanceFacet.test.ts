@@ -35,7 +35,6 @@ import {
 import { deployMain } from "../scripts/deployMain";
 
 import { erc20DeployFixture } from "./fixtures";
-import { any } from "hardhat/internal/core/params/argumentTypes";
 
 // -------
 // Input: Collateral token decimals (>= 6 && <= 18)
@@ -160,7 +159,8 @@ describe("GovernanceFacet", async function () {
       "DCT",
       parseUnits(user1StartCollateralTokenBalance.toString(), decimals),
       user1.address,
-      decimals
+      decimals,
+      "0"
     );
 
     // Set user1 allowances for Diamond contract

@@ -133,7 +133,8 @@ describe("LiquidityFacet", async function () {
         "DCT",
         parseUnits(user1StartCollateralTokenBalance.toString(), decimals),
         user1.address,
-        decimals
+        decimals,
+        "0"
       );
 
       // Transfer half of user1's DCT balance to user2 who will add liquidity
