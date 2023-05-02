@@ -293,7 +293,7 @@ describe("DIVAOwnershipMain", async function () {
         // Events
         // -------------------------------------------
     
-        it("Emits a Staked event", async () => {
+        it("Emits a `Staked` event", async () => {
             // -------------------------------------------
             // Act: Stake
             // -------------------------------------------
@@ -306,6 +306,7 @@ describe("DIVAOwnershipMain", async function () {
             const stakedEvent = receipt.events?.find(
                 (item: any) => item.event === "Staked"
               );
+            expect(stakedEvent?.args?.by).to.eq(contractOwner.address);
             expect(stakedEvent?.args?.candidate).to.eq(contractOwner.address);
             expect(stakedEvent?.args?.amount).to.eq("1");
         })
@@ -831,7 +832,7 @@ describe("DIVAOwnershipMain", async function () {
         // Events
         // -------------------------------------------
     
-        it("Emits and `Unstaked` event", async () => {
+        it("Emits an `Unstaked` event", async () => {
             // -------------------------------------------
             // Arrange: Set amount to unstake and get user2's current stake
             // -------------------------------------------
@@ -853,6 +854,7 @@ describe("DIVAOwnershipMain", async function () {
             const unstakedEvent = receipt.events?.find(
                 (item: any) => item.event === "Unstaked"
               );
+            expect(unstakedEvent?.args?.by).to.eq(user2.address);
             expect(unstakedEvent?.args?.candidate).to.eq(user2.address);
             expect(unstakedEvent?.args?.amount).to.eq(amountToUnstake);
         })

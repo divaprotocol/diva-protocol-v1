@@ -94,7 +94,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         _candidateToStakedAmount[_candidate] += _amount;
 
         // Log candidate and amount
-        emit Staked(_candidate, _amount);        
+        emit Staked(msg.sender, _candidate, _amount);        
     }
 
     function triggerElectionCycle() external override {    
@@ -166,7 +166,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         _DIVA_TOKEN.safeTransfer(msg.sender, _amount);
 
         // Log candidate and amount
-        emit Unstaked(_candidate, _amount);
+        emit Unstaked(msg.sender, _candidate, _amount);
     }
 
     function getStakedAmount(

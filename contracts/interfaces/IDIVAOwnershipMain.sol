@@ -44,17 +44,19 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
 
     /**
      * @notice Emitted when a user stakes for a candidate.
+     * @param by The address of the user that staked.
      * @param candidate The address of the candidate that was staked for.
      * @param amount The voting token amount staked.
      */
-    event Staked(address indexed candidate, uint256 amount);
+    event Staked(address indexed by, address indexed candidate, uint256 amount);
 
     /**
      * @notice Emitted when a user reduces his stake for a candidate.
+     * @param by The address of the user that unstaked.
      * @param candidate The address of the candidate that stake was reduced for.
      * @param amount The voting token amount unstaked.
      */
-    event Unstaked(address indexed candidate, uint256 amount);
+    event Unstaked(address indexed by, address indexed candidate, uint256 amount);
 
     /**
      * @notice Emitted when a candidate triggers the election cycle.

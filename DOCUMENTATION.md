@@ -2604,6 +2604,7 @@ Emitted when a DIVA token holder stakes for a protocol owner candidate.
 
 ```
 event Staked(
+    address indexed by,         // The address of the user that staked
     address indexed candidate,  // The address of the candidate that was staked for
     uint256 amount              // The DIVA token amount staked
 );
@@ -2615,6 +2616,7 @@ Emitted when a user reduces his stake for a protocol owner candidate.
 
 ```
 event Unstaked(
+    address indexed by,         // The address of the user that unstaked
     address indexed candidate,  // The address of the candidate that stake was reduced for
     uint256 amount              // The voting token amount unstaked
 );
