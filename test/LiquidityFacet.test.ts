@@ -726,7 +726,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange 2: Activate token transfer fees
         // ---------
-        await collateralTokenInstance.setFee("100");
+        await collateralTokenInstance.setFee(100);
         expect(await collateralTokenInstance.getFee()).to.eq(100);
 
         // ---------
@@ -744,7 +744,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange 3: Set token transfer fees back to 0
         // ---------
-        await collateralTokenInstance.setFee("0");
+        await collateralTokenInstance.setFee(0);
         expect(await collateralTokenInstance.getFee()).to.eq(0);
 
         // ---------
