@@ -70,8 +70,7 @@ contract TipFacet is ITip, ReentrancyGuard {
         // for potential fees. It is a conscious decision to allow users to add tips
         // in the presence of fees to incentive reporting. Note that the
         // Checks-Effects-Interactions pattern cannot be followed here. This shouldn't
-        // be a problem because reentrancy guards are in place and tips are only
-        // transferred to recipient when the final value is confirmed.
+        // be a problem because reentrancy guards are in place.
         uint256 _before = collateralToken.balanceOf(address(this));
 
         // Transfer approved collateral tokens from `msg.sender` to `this`
