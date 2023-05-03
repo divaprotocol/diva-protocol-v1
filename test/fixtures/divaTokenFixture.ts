@@ -15,7 +15,7 @@ export const divaTokenDeployFixture = async (
   return await factory.deploy(name, symbol, tokenSupply, recipient);
 };
 
-export const erc20AttachFixture = async (tokenAddress: string) => {
+export const divaTokenAttachFixture = async (tokenAddress: string) => {
   const factory = await ethers.getContractFactory("DIVAToken");
   return factory.attach(tokenAddress);
 };

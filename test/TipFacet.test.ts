@@ -379,7 +379,7 @@ describe("TipFacet", async function () {
             expect(poolParamsAfter.collateralBalance).to.eq(poolParamsBefore.collateralBalance.sub(settlementFee).sub(protocolFee));
         });
 
-        it.only("Adds a tip even if fees-on-transfer were activated for the underlying collateral token", async () => {
+        it("Adds a tip even if fees-on-transfer were activated for the underlying collateral token", async () => {
             // ---------
             // Arrange 1: Activate token transfer fees and set tip parameters
             // ---------

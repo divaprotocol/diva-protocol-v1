@@ -8,11 +8,12 @@ import {
   DIVADevelopmentFund,
   GetterFacet,
   DIVAToken,
+  MockERC20,
 } from "../typechain-types";
 
 import { getLastTimestamp, setNextTimestamp } from "../utils";
 
-import { divaTokenDeployFixture } from "./fixtures";
+import { divaTokenDeployFixture, erc20DeployFixture } from "./fixtures";
 import { deployMain } from "../scripts/deployMain";
 import { Deposit, ONE_HOUR } from "../constants";
 
@@ -25,6 +26,7 @@ describe("DIVADevelopmentFund", async function () {
   let ownershipContractAddress: string;
   let divaDevelopmentFund: DIVADevelopmentFund;
   let depositTokenInstance: DIVAToken;
+  let depositTokenWithFeesInstance: MockERC20;
 
   let user1EthBalance: BigNumber;
   let user1DepositTokenBalance: BigNumber;
@@ -55,12 +57,22 @@ describe("DIVADevelopmentFund", async function () {
       ownershipContractAddress
     );
 
-    // Deploy dummy deposit token
+    // Deploy DIVA Token for deposit
     depositTokenInstance = await divaTokenDeployFixture(
       "DummyDepositToken",
       "DDT",
       parseUnits("10000", 18),
       user1.address
+    );
+
+    // Deploy deposit token that implements fees on transfers
+    depositTokenWithFeesInstance = await erc20DeployFixture(
+      "DummyDepositTokenWithFees",
+      "DDTWF",
+      parseUnits("10000", 18),
+      user1.address,
+      18, // decimals
+      "100", // 1% = 100, 0.1% = 1000
     );
   });
 
@@ -550,6 +562,32 @@ describe("DIVADevelopmentFund", async function () {
           depositAmount,
           releasePeriodInSecondsTest
         )).to.be.revertedWith("InvalidReleasePeriod()");
+    });
+
+    it("Reverts with `FeeTokensNotSupported()` if the deposit token implements a fee on transfers", async () => {
+      // ---------
+      // Arrange: Set `depositAmount` and allowance
+      // ---------
+      const user1DepositTokenWithFeesBalance = await depositTokenWithFeesInstance.balanceOf(
+        user1.address
+      );
+      expect(user1DepositTokenWithFeesBalance).to.be.gt(0);
+      depositAmount = user1DepositTokenWithFeesBalance.div(10);
+
+      await depositTokenWithFeesInstance
+        .connect(user1)
+        .approve(divaDevelopmentFund.address, depositAmount);
+
+      // ---------
+      // Act & Assert: Check that the deposit operation fails
+      // ---------
+      await expect(divaDevelopmentFund
+        .connect(user1)
+        ["deposit(address,uint256,uint256)"](
+          depositTokenWithFeesInstance.address,
+          depositAmount,
+          "100" // release period in seconds
+        )).to.be.revertedWith("FeeTokensNotSupported()");      
     });
   });
 

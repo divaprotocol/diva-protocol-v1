@@ -52,7 +52,6 @@ describe("PoolFacet", async function () {
     gradient: BigNumber,
     collateralAmount: BigNumber,
     collateralToken: string,
-    collateralTokenWithFees: string,
     dataProvider: string,
     capacity: BigNumber,
     longRecipient: string,
