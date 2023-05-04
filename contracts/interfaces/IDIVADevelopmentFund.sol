@@ -11,8 +11,8 @@ interface IDIVADevelopmentFund {
     // exceeds 30 years    
     error InvalidReleasePeriod();
 
-    // Thrown in `deposit` (ERC20 token version) if the token implements a fee on transfers
-    error FeeTokensNotSupported(); // @todo add test and also in docs where we mention rebase token and in create & add steps
+    // Thrown in ERC20 `deposit` function if the token implements a fee on transfers
+    error FeeTokensNotSupported();
 
     // Thrown in `withdraw` if token addresses for indices passed are
     // different
@@ -63,6 +63,11 @@ interface IDIVADevelopmentFund {
      * @notice Function to deposit ERC20 token.
      * @dev Creates a new entry in the `Deposit` struct array with the
      * `token` and `amount` parameters set equal to the ones provided by the user.
+     * The deposit transaction will revert if `_releasePeriodInSeconds = 0`, `msg.sender`
+     * has insufficient allowance/balance or the deposit token implements a fee on transfers.
+     * When tokens with a flexible supply are considered, only tokens with a constant
+     * balance mechanism such as Compound's cToken or the wrapped version of Lido's staked
+     * ETH (wstETH) should be used.
      * Emits a `Deposited` event on success.
      * @param _token Address of token to deposit.
      * @param _amount ERC20 token amount to deposit.

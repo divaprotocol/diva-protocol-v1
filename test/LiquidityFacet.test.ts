@@ -726,11 +726,12 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange 2: Activate token transfer fees
         // ---------
-        await collateralTokenInstance.setFee(100);
-        expect(await collateralTokenInstance.getFee()).to.eq(100);
+        const fee = 100;
+        await collateralTokenInstance.setFee(fee);
+        expect(await collateralTokenInstance.getFee()).to.eq(fee);
 
         // ---------
-        // Act & Assert 2: Check that adding collateral fails if the fee was activated
+        // Act & Assert 2: Check that adding collateral fails if a fee is activated
         // ---------        
         await expect(
           liquidityFacet.connect(user2).addLiquidity(

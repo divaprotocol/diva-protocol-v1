@@ -340,7 +340,7 @@ It's important to note that the transfer restriction does not apply to `burn` op
 The collateral refers to the asset that is deposited into a contingent pool to back the value of the position tokens. To be used as collateral, an ERC20 token must meet the following requirements:
 1. **Decimal precision:** The token's decimal precision must be between 6 and 18.
 2. **No transfer fees:** The token must not charge fees on transfers. This will result in a transaction revert when creating a pool. If transfer fees are activated _after_ a pool has been created, adding liquidity will no longer be possible. It is important to highlight that the pool can still be settled. In particular, the [`addTip`](#addtip) functionality remains in place, even in the presence of fees.
-3. **Non-rebasable:** The token's balance in a holder's wallet should remain constant throughout the life of the pool. Tokens that change a holder's wallet balance, such as Ampleforth or Lido's (non-wrapped) staked ETH, or [Aave's aTokens][interest-bearing-tokens], should not be used as collateral. If rebasable tokens are used as collateral, any changes in the holder's balance may render a pool undercollateralized or lock any accrued yield/interest as payouts for position tokens are derived based on the payoff curve parameters and the final reference asset value, independent of the collateral balance. When tokens with a flexible supply are considered as collateral, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used. **Unlike fee tokens, using rebasable tokens as collateral will NOT result in a transaction revert when creating a pool or adding liquidity.**
+3. **Non-rebasable:** The token's balance in a holder's wallet should remain constant. Rebasable tokens that change a holder's wallet balance, such as Ampleforth or Lido's (non-wrapped) staked ETH, or [Aave's aTokens][interest-bearing-tokens], should not be used as collateral as any changes in the holder's balance may render a pool undercollateralized or lock any accrued yield/interest. When tokens with a flexible supply are considered as collateral, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used. **It's important to highlight that, unlike fee-on-transfer tokens, using rebasable tokens as collateral will NOT result in a transaction revert when creating a pool or adding liquidity.**
 
 > **⚠️Warning:** It is crucial to only engage with pools that utilize well-known and trusted ERC20 tokens as collateral, which meet the criteria mentioned above. Avoid interacting with pools that use unknown ERC20 tokens, as these may pose a potential threat and could lead to financial loss.
 
@@ -509,7 +509,7 @@ The function reverts under the following conditions:
 - Pool is already expired (`block.timestamp >= expiryTime`)
 - Pool capacity is exceeded (i.e., `collateralBalance + _collateralAmountIncr > capacity`)
 - Either `_longRecipient` or `_shortRecipient` are equal to the zero address (throws inside the ERC20 token as mint to the zero address is disabled).
-- The actual collateral amount transferred to DIVA Protocol is less than indicated in the input parameters. This is the case for ERC20 tokens that implement a fee on transfers.
+- The actual collateral amount transferred to DIVA Protocol is less than indicated in the input parameters. This is the case for ERC20 tokens that charge fees on transfers.
 
 ### batchAddLiquidity
 
@@ -968,22 +968,24 @@ struct ArgsBatchTransferFeeClaim {
 
 ## Tips
 
-The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. Tipping is only possible using the pool's collateral token. The tip is kept as a reserve and allocated to the actual data provider after the final value has been confirmed, or the treasury if neither of them reports a value. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed. The tip is added to the claimable fee amount and can be collected by the data provider using the [`claimFee`](#claimfee) function.
+The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. A tip can be added to a specific pool using the pool's collateral token, which is then kept as a reserve and allocated to the actual data provider after the final value has been confirmed, or to the treasury if neither of them reports a value. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed. Tips can be claimed by the data provider by using the [`claimFee`](#claimfee) function.
+
+Note that both tips and settlement fees are aggregated under the same internal variable, `poolIdToReservedClaim`, and there is no direct method to retrieve the tip amount alone. To obtain the current reserved claim amount, use the [`getReservedClaim`](#getreservedclaim) function.
 
 ### addTip
 
-Function to add a tip in collateral token to a specific pool. This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function. Use [`getReservedClaim`](#getreservedclaim) function to get the current tip amount.
+Function to add a tip in collateral token to a specific pool. This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy] to protect against reentrancy attacks. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function.
 
 The function executes the following steps in the following order:
 
 1. Check that `statusFinalReferenceValue` is "Open", meaning that no value has been submitted by the data provider yet.
-1. Increase the amount reserved for the data provider by the tip amount. Account for any fees that may have been charged on token transfer.
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard.
+1. Increase the amount reserved for the data provider by the tip amount, accounting for any fees that may have been charged on the token transfer.
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts if a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`. The tip is allocated to the corresponding data provider if the final value is confirmed within the submission window. If the final value is confirmed by the fallback data provider within fallback submission period, the tip will be allocated to the fallback data provider. If neither of them report a value, the tip will be allocated to the treasury. The same logic applies to settlement fees during [`removeLiquidity`](#removeliquidity). Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
 
->**Note:** Allowing users to add tips even when fees are activated for the underlying collateral token was a deliberate decision made to incentivize reporting.
+>**Note:** Accepting fee-on-transfer tokens was a deliberate decision made to incentivize reporting. While this breaks the Checks-Effects-Interactions pattern as the actually transferred amount can only be determined after the `safeTransferFrom` call, this is not a problem as reentrancy guards are in place.
 
 ```js
 function addTip(
@@ -2835,7 +2837,7 @@ The `DIVADevelopmentFund` contract was created to support the ongoing developmen
 
 To allow everyone to contribute to the project's development, the contract accepts a wide range of ERC20 token that that are non-rebasable and do not charge fees on transfers, as well as native assets such as ETH on Ethereum.
 
-> **❗Important:** While deposits of tokens that charge fees on transfers will be rejected by the contract, deposits of rebasable tokens won't. When tokens with a flexible supply are considered as collateral, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used.
+> **❗Important:** While deposits of tokens that charge fees on transfers will be rejected by the contract, deposits of rebasable tokens won't. When tokens with a flexible supply are considered, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used.
 
 > **Note:** To reduce the incentive for unauthorized access to secondary chain contracts, as discussed in the [`Ownership on secondary chains`](#diva-ownership-on-secondary-chains) section, the DIVA Development Fund is exclusively deployed on Ethereum, minimizing the risk of potential losses.
 
@@ -2872,7 +2874,7 @@ The `deposit` functions execute the following steps in the following order:
 The function reverts under the following conditions:
 - `_releasePeriodInSeconds` is zero or exceeds 30 years.
 - `msg.sender` has insufficient allowance or balance to execute the `safeTransferFrom` function. This condition is only applicable to ERC20 token deposits.
-- The deposit token implements a fee on transfer.
+- The deposit token implements a fee on transfers.
 
 >**Note:** The `deposit` functions deliberately disallow direct deposits with `_releasePeriodInSeconds = 0`. Users who want their deposits to be unlocked immediately should send the tokens or native asset (ETH) directly to the `DIVADevelopmentFund` contract address.
 
@@ -2892,7 +2894,7 @@ function deposit(
 
 #### ERC20 token
 
-Function to deposit ERC20 token. Requires prior approval by `msg.sender` to transfer the token. Fee-on-transfer tokens are not supported and will result in a transaction revert.
+Function to deposit ERC20 token. Requires prior approval by `msg.sender` to transfer the token. Fee-on-transfer tokens are not supported and will result in a transaction revert. When tokens with a flexible supply are considered, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used.
 
 ```js
 function deposit(

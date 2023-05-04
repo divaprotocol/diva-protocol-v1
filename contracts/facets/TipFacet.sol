@@ -68,9 +68,9 @@ contract TipFacet is ITip, ReentrancyGuard {
 
         // Check collateral token balance before and after the transfer to account
         // for potential fees. It is a conscious decision to allow users to add tips
-        // in the presence of fees to incentive reporting. Note that the
-        // Checks-Effects-Interactions pattern cannot be followed here. This shouldn't
-        // be a problem because reentrancy guards are in place.
+        // in the presence of fees to incentivize reporting. Note that the
+        // Checks-Effects-Interactions pattern cannot be followed here. This is not
+        // a problem because reentrancy guards are in place.
         uint256 _before = collateralToken.balanceOf(address(this));
 
         // Transfer approved collateral tokens from `msg.sender` to `this`
@@ -79,15 +79,13 @@ contract TipFacet is ITip, ReentrancyGuard {
         uint256 _after = collateralToken.balanceOf(address(this));
 
         // Update `_amount` if a fee was applied during transfer. Throws if
-        // `_before > _after`.
-        if (_after - _before != _amount) {
-            _amount = _after - _before;
-        }
+        // `_before > _after` as Solidity version >0.8.0 is used.
+        uint256 _amountNet = _after - _before;
 
-        // Update claim mapping.
-        _fs.poolIdToReservedClaim[_poolId] += _amount;
+        // Update claim mapping
+        _fs.poolIdToReservedClaim[_poolId] += _amountNet;
 
         // Log event
-        emit TipAdded(msg.sender, _poolId, address(collateralToken), _amount);
+        emit TipAdded(msg.sender, _poolId, address(collateralToken), _amountNet);
     }
 }

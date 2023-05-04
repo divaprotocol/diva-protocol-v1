@@ -568,12 +568,15 @@ describe("DIVADevelopmentFund", async function () {
       // ---------
       // Arrange: Set `depositAmount` and allowance
       // ---------
+      // Set `depositAmount`
       const user1DepositTokenWithFeesBalance = await depositTokenWithFeesInstance.balanceOf(
         user1.address
       );
       expect(user1DepositTokenWithFeesBalance).to.be.gt(0);
       depositAmount = user1DepositTokenWithFeesBalance.div(10);
+      expect(depositAmount).to.be.gt(0);
 
+      // Set allowance
       await depositTokenWithFeesInstance
         .connect(user1)
         .approve(divaDevelopmentFund.address, depositAmount);
