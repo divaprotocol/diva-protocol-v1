@@ -26,7 +26,7 @@ error InvalidInputParamsCreateContingentPool();
 
 // Thrown in `createContingentPool` and `addLiquidity` if the collateral token
 // implements a fee
-error FeeTokensNotSupported(); // @todo add test and also in docs where we mention rebase token and in create & add steps
+error FeeTokensNotSupported();
 
 // Thrown in `addLiquidity` if adding additional collateral would
 // result in the pool capacity being exceeded
