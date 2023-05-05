@@ -76,16 +76,14 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Transfer approved collateral tokens from `msg.sender` to `this`
         collateralToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        uint256 _after = collateralToken.balanceOf(address(this));
-
         // Update `_amount` if a fee was applied during transfer. Throws if
         // `_before > _after` as Solidity version >0.8.0 is used.
-        uint256 _amountNet = _after - _before;
+        _amount = collateralToken.balanceOf(address(this)) - _before;
 
         // Update claim mapping
-        _fs.poolIdToReservedClaim[_poolId] += _amountNet;
+        _fs.poolIdToReservedClaim[_poolId] += _amount;
 
         // Log event
-        emit TipAdded(msg.sender, _poolId, address(collateralToken), _amountNet);
+        emit TipAdded(msg.sender, _poolId, address(collateralToken), _amount);
     }
 }

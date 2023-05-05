@@ -2253,7 +2253,7 @@ event TipAdded(
     address indexed tipper,            // Tipper address
     uint256 indexed poolId,            // Pool Id tipped
     address indexed collateralToken,   // Collateral token address
-    uint256 amount                     // Tip amount
+    uint256 amount                     // Tip amount (net of fees, if any)
 );
 ```
 
