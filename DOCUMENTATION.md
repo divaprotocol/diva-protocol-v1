@@ -968,7 +968,7 @@ struct ArgsBatchTransferFeeClaim {
 
 ## Tips
 
-The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. A tip can be added to a specific pool using the pool's collateral token, which is then kept as a reserve and allocated to the actual data provider after the final value has been confirmed, or to the treasury if neither of them reports a value. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed. Tips can be claimed by the data provider by using the [`claimFee`](#claimfee) function.
+The tipping functionality has been introduced to encourage reporting for pools where the gas costs exceed the settlement fee for the data provider. A tip can be added to a specific pool using the pool's collateral token, which is then kept as a reserve and allocated to the actual data provider after the final value has been confirmed, or to the treasury if neither of them reports a value. It is not possible to add tips after a data provider has submitted a value, regardless of whether it has been confirmed, or if the collateral token implements a fee. Tips can be claimed by the data provider by using the [`claimFee`](#claimfee) function.
 
 Note that both tips and settlement fees are aggregated under the same internal variable, `poolIdToReservedClaim`, and there is no direct method to retrieve the tip amount alone. To obtain the current reserved claim amount, use the [`getReservedClaim`](#getreservedclaim) function.
 
@@ -979,13 +979,15 @@ Function to add a tip in collateral token to a specific pool. This function uses
 The function executes the following steps in the following order:
 
 1. Check that `statusFinalReferenceValue` is "Open", meaning that no value has been submitted by the data provider yet.
+1. Increase the amount reserved for the data provider by the tip amount.
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard.
-1. Increase the amount reserved for the data provider by the tip amount, accounting for any fees that may have been charged on the token transfer.
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
-The function reverts if a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`. The tip is allocated to the corresponding data provider if the final value is confirmed within the submission window. If the final value is confirmed by the fallback data provider within fallback submission period, the tip will be allocated to the fallback data provider. If neither of them report a value, the tip will be allocated to the treasury. The same logic applies to settlement fees during [`removeLiquidity`](#removeliquidity). Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
+The function reverts if:
+- a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`, or
+- the collateral token charges a fee on transfers.
 
->**Note:** Accepting fee-on-transfer tokens was a deliberate decision made to incentivize reporting. While this breaks the Checks-Effects-Interactions pattern as the actually transferred amount can only be determined after the `safeTransferFrom` call, this is not a problem as reentrancy guards are in place.
+The tip is allocated to the corresponding data provider if the final value is confirmed within the submission window. If the final value is confirmed by the fallback data provider within fallback submission period, the tip will be allocated to the fallback data provider. If neither of them report a value, the tip will be allocated to the treasury. The same logic applies to settlement fees during [`removeLiquidity`](#removeliquidity). Refer to [`redeemPositionToken`](#redeempositiontoken) and [`setFinalReferenceValue`](#setfinalreferencevalue) functions for more information.
 
 ```js
 function addTip(
@@ -2338,7 +2340,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `FeeAmountExceedsPoolCollateralBalance()`  | `removeLiquidity`                                                                                | Thrown if the fee amount to be allocated exceeds the pool's current collateral balance                                                                                 |
 | `PoolExpired()`                            | `addLiquidity`                                                                                   | Thrown if the pool is already expired                                                                                           |
 | `InvalidInputParamsCreateContingentPool()` | `createContingentPool`                                                                          | Thrown if the input parameters are invalid                                                                                                       |
-| `FeeTokensNotSupported()`                   | `createContingentPool` / `addLiquidity`                                                                                   | Thrown if the collateral token implements a fee.                                                                             |
+| `FeeTokensNotSupported()`                   | `createContingentPool` / `addLiquidity` / `addTip`                                                                                   | Thrown if the collateral token implements a fee.                                                                             |
 | `PoolCapacityExceeded()`                   | `addLiquidity`                                                                                   | Thrown if adding additional collateral would result in the pool capacity being exceeded                                                                             |
 | `TakerFillAmountSmallerMinimum()`          | `fillOfferCreateContingentPool` /  `fillOfferAddLiquidity` / `fillOfferRemoveLiquidity`                                       | Thrown if user tries to fill an amount smaller than the minimum provided in the offer                                                                               |
 | `TakerFillAmountExceedsFillableAmount()`   | `fillOfferCreateContingentPool` / `fillOfferAddLiquidity` / `fillOfferRemoveLiquidity`                                        | Thrown if the provided `takerFillAmount` exceeds the remaining fillable amount                                                                                      |

@@ -66,22 +66,19 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Cache collateral token
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
-        // Check collateral token balance before and after the transfer to account
-        // for potential fees. It is a conscious decision to allow users to add tips
-        // in the presence of fees to incentivize reporting. Note that the
-        // Checks-Effects-Interactions pattern cannot be followed here. This is not
-        // a problem because reentrancy guards are in place.
-        uint256 _before = collateralToken.balanceOf(address(this));
-
-        // Transfer approved collateral tokens from `msg.sender` to `this`
-        collateralToken.safeTransferFrom(msg.sender, address(this), _amount);
-
-        // Update `_amount` if a fee was applied during transfer. Throws if
-        // `_before > _after` as Solidity version >0.8.0 is used.
-        _amount = collateralToken.balanceOf(address(this)) - _before;
-
         // Update claim mapping
         _fs.poolIdToReservedClaim[_poolId] += _amount;
+
+        // Check collateral token balance before and after the transfer to account
+        // for potential fees. Transfer approved collateral token from `msg.sender`
+        // if no fees are charged. Otherwise, revert.
+        uint256 _before = collateralToken.balanceOf(address(this));
+        collateralToken.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _after = collateralToken.balanceOf(address(this));
+
+        if (_after - _before != _amount) {
+            revert FeeTokensNotSupported(); // @todo add to docs and test and in interace
+        }
 
         // Log event
         emit TipAdded(msg.sender, _poolId, address(collateralToken), _amount);
