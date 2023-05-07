@@ -378,67 +378,6 @@ describe("TipFacet", async function () {
             // Confirm that the pool collateral balance was reduced by the fee portion only
             expect(poolParamsAfter.collateralBalance).to.eq(poolParamsBefore.collateralBalance.sub(settlementFee).sub(protocolFee));
         });
-
-        it("Adds a tip even if fees-on-transfer were activated for the underlying collateral token", async () => {
-            // ---------
-            // Arrange 1: Activate token transfer fees and set tip parameters
-            // ---------
-            const fee = 100;
-            await collateralTokenInstance.setFee(fee);
-            expect(await collateralTokenInstance.getFee()).to.eq(fee);
-            const tipAmountBefore = await getterFacet.getReservedClaim(poolId);
-
-            tipAmount = parseUnits("10", decimals);
-            tipper = user2;
-            expect(poolParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
-
-            // ---------
-            // Act 1: Tip pool
-            // ---------
-            await tipFacet.connect(tipper).addTip(poolId, tipAmount);
-
-            // ---------
-            // Assert 1: Confirm that reserved claim amount increased by `tipAmount` net of fee
-            // ---------
-            const feeAmount = tipAmount.div(fee);
-            const tipAmountAfter1 = await getterFacet.getReservedClaim(poolId);
-            expect(tipAmountAfter1).to.eq(tipAmountBefore.add(tipAmount).sub(feeAmount));
-
-            // ---------
-            // Arrange 2: Set small tip amount such that fee on transfer will be rendered zero.
-            // ---------  
-            const smallTipAmount = BigNumber.from("1");
-
-            // ---------
-            // Act 2: Tip a very small amount such that fee is zero due to rounding
-            // ---------            
-            await tipFacet.connect(tipper).addTip(poolId, smallTipAmount);
-
-            // ---------
-            // Assert 2: Confirm that reserved claim amount increased by `smallTipAmount` as fee is
-            // zero due to round-down
-            // ---------
-            expect(smallTipAmount.div(fee)).to.eq(0);
-            const tipAmountAfter2 = await getterFacet.getReservedClaim(poolId);
-            expect(tipAmountAfter2).to.eq(tipAmountAfter1.add(smallTipAmount));
-
-            // ---------
-            // Arrange 3: Set back fee to zero
-            // ---------
-            await collateralTokenInstance.setFee(0);
-            expect(await collateralTokenInstance.getFee()).to.eq(0);
-
-            // ---------
-            // Act 3: Tip pool with `tipAmount`
-            // ---------
-            await tipFacet.connect(tipper).addTip(poolId, tipAmount);
-
-            // ---------
-            // Assert 3: Confirm that reserved claim amount increased by `tipAmount`
-            // ---------
-            const tipAmountAfter3 = await getterFacet.getReservedClaim(poolId);
-            expect(tipAmountAfter3).to.eq(tipAmountAfter2.add(tipAmount));
-        });
         
         // -------------------------------------------
         // Events
@@ -582,6 +521,41 @@ describe("TipFacet", async function () {
                     .addTip(poolId, tipAmount)
             ).to.be.revertedWith("FinalValueAlreadySubmitted()");
         })
+
+        it("Reverts with `FeeTokensNotSupported` if fees-on-transfer were activated for the underlying collateral token", async () => {
+          // ---------
+          // Arrange 1: Activate token transfer fees and set tip parameters
+          // ---------
+          const fee = 100;
+          await collateralTokenInstance.setFee(fee);
+          expect(await collateralTokenInstance.getFee()).to.eq(fee);
+          const tipAmountBefore = await getterFacet.getReservedClaim(poolId);
+
+          tipAmount = parseUnits("10", decimals);
+          tipper = user2;
+          expect(poolParamsBefore.statusFinalReferenceValue).to.eq(Status.Open);
+
+          // ---------
+          // Act & Assert 1: Check that adding a tip fails if a fee is activated
+          // ---------
+          await expect(
+            tipFacet.connect(tipper).addTip(poolId, tipAmount)
+          ).to.be.revertedWith("FeeTokensNotSupported()");
+
+          // ---------
+          // Reset: Set back fee to zero and test that add tips work again
+          // ---------
+          await collateralTokenInstance.setFee(0);
+          expect(await collateralTokenInstance.getFee()).to.eq(0);
+
+          // Tip pool with `tipAmount`
+          await tipFacet.connect(tipper).addTip(poolId, tipAmount);
+
+          // Confirm that reserved claim amount increased by `tipAmount`
+          const tipAmountAfter3 = await getterFacet.getReservedClaim(poolId);
+          expect(tipAmountAfter3).to.eq(tipAmountBefore.add(tipAmount));
+      });
+
     });
 
     describe("batchAddTip", async () => {
