@@ -203,7 +203,7 @@ interface IGetter {
     function getTakerFilledAmount(bytes32 _typedOfferHash)
         external
         view
-        returns (bytes32);
+        returns (uint256);
 
     /**
      * @notice Returns the chain Id.

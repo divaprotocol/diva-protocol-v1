@@ -522,34 +522,34 @@ library LibDIVA {
         ++ps.nonce;
 
         // Cache new `_nonce` to avoid reading from storage
-        _nonce = ps.nonce;
+        uint256 _nonce = ps.nonce;
 
         // Calculate `poolId`
-        bytes32 = _poolId;
+        bytes32 _poolId;
         {
             _poolId = keccak256(
                 abi.encode(
                     msg.sender,
                     _nonce,
-                    _createPoolParams.referenceAsset,
-                    _createPoolParams.expiryTime,
-                    _createPoolParams.floor,
-                    _createPoolParams.inflection,
-                    _createPoolParams.cap,
-                    _createPoolParams.gradient,
-                    _createPoolParams.collateralAmount,
-                    _createPoolParams.collateralToken,
-                    _createPoolParams.dataProvider,
-                    _createPoolParams.capacity,
-                    _createPoolParams.longRecipient,
-                    _createPoolParams.shortRecipient,
-                    _createPoolParams.permissionedERC721Token,
+                    _createPoolParams.poolParams.referenceAsset,
+                    _createPoolParams.poolParams.expiryTime,
+                    _createPoolParams.poolParams.floor,
+                    _createPoolParams.poolParams.inflection,
+                    _createPoolParams.poolParams.cap,
+                    _createPoolParams.poolParams.gradient,
+                    _createPoolParams.poolParams.collateralAmount,
+                    _createPoolParams.poolParams.collateralToken,
+                    _createPoolParams.poolParams.dataProvider,
+                    _createPoolParams.poolParams.capacity,
+                    _createPoolParams.poolParams.longRecipient,
+                    _createPoolParams.poolParams.shortRecipient,
+                    _createPoolParams.poolParams.permissionedERC721Token,
                     _createPoolParams.collateralAmountMsgSender,
                     _createPoolParams.collateralAmountMaker,
-                    _createPoolParams.maker,
+                    _createPoolParams.maker
                 )
             );
-        }
+        }        
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
