@@ -82,7 +82,7 @@ library LibDIVA {
 
     // Argument for `_addLiquidityLib` to avoid stack-too-deep error
     struct AddLiquidityParams {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 collateralAmountMsgSender;
         uint256 collateralAmountMaker;
         address maker;
@@ -92,7 +92,7 @@ library LibDIVA {
 
     // Argument for `_removeLiquidityLib` to avoid stack-too-deep error
     struct RemoveLiquidityParams {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 amount;
         address longTokenHolder;
         address shortTokenHolder;
@@ -107,7 +107,7 @@ library LibDIVA {
      * @param amount Fee amount allocated.
      */
     event FeeClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
@@ -121,7 +121,7 @@ library LibDIVA {
      * @param amount Fee amount reserved.
      */
     event FeeClaimReserved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         uint256 amount
     );
 
@@ -135,7 +135,7 @@ library LibDIVA {
      * restrictions apply to.
      */
     event PoolIssued(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount,
@@ -150,7 +150,7 @@ library LibDIVA {
      * @param collateralAmount The collateral amount added.
      */
     event LiquidityAdded(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount
@@ -164,7 +164,7 @@ library LibDIVA {
      * @param collateralAmount The collateral amount removed from the pool.
      */
     event LiquidityRemoved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longTokenHolder,
         address indexed shortTokenHolder,
         uint256 collateralAmount
@@ -178,12 +178,12 @@ library LibDIVA {
      * @param amount Reserve amount allocated (in collateral token)
      */
     event ReservedClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
 
-    function _poolParameters(uint256 _poolId)
+    function _poolParameters(bytes32 _poolId)
         internal
         view
         returns (LibDIVAStorage.Pool memory)
@@ -191,9 +191,13 @@ library LibDIVA {
         return LibDIVAStorage._poolStorage().pools[_poolId];
     }
 
-    function _getLatestPoolId() internal view returns (uint256) {
+    // @todo Confirm with Sascha that no update of this function is needed as it's
+    // already returnen the latest poolId; maybe check whether docs need update
+    function _getLatestPoolId() internal view returns (bytes32) {        
         return LibDIVAStorage._poolStorage().poolId;
     }
+
+    // @todo Add _getLatestNonce() function?
 
     function _getClaim(address _collateralToken, address _recipient)
         internal
@@ -206,7 +210,7 @@ library LibDIVA {
             ][_recipient];
     }
 
-    function _getReservedClaim(uint256 _poolId) internal view returns (uint256) {
+    function _getReservedClaim(bytes32 _poolId) internal view returns (uint256) {
         return LibDIVAStorage._feeClaimStorage().poolIdToReservedClaim[_poolId];
     }
 
@@ -280,7 +284,7 @@ library LibDIVA {
      * @param _collateralTokenDecimals Collateral token decimals.
      */
     function _calcAndAllocateFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         uint96 _fee,
         address _recipient,
@@ -307,7 +311,7 @@ library LibDIVA {
      * collateral token decimals.
      */
     function _allocateFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         address _recipient,
         uint256 _feeAmount
@@ -340,7 +344,7 @@ library LibDIVA {
      * collateral token decimals.
      */
     function _reserveFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         uint256 _feeAmount
     ) internal {
@@ -367,7 +371,7 @@ library LibDIVA {
      * @param _poolId Id of pool.
      * @param _recipient Reserve recipient.
      */
-    function _allocateReservedClaim(uint256 _poolId, address _recipient) internal {
+    function _allocateReservedClaim(bytes32 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
@@ -490,7 +494,7 @@ library LibDIVA {
 
     function _createContingentPoolLib(CreatePoolParams memory _createPoolParams)
         internal
-        returns (uint256)
+        returns (bytes32)
     {
         // Get reference to relevant storage slots
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
@@ -512,12 +516,40 @@ library LibDIVA {
             )
         ) revert InvalidInputParamsCreateContingentPool();
 
-        // Increment `poolId` every time a new pool is created. Index
+        // @todo update comments in code and docs
+        // Increment `nonce` every time a new pool is created. Index
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
-        ++ps.poolId;
+        ++ps.nonce;
 
-        // Cache new poolId to avoid reading from storage
-        uint256 _poolId = ps.poolId;
+        // Cache new `_nonce` to avoid reading from storage
+        _nonce = ps.nonce;
+
+        // Calculate `poolId`
+        bytes32 = _poolId;
+        {
+            _poolId = keccak256(
+                abi.encode(
+                    msg.sender,
+                    _nonce,
+                    _createPoolParams.referenceAsset,
+                    _createPoolParams.expiryTime,
+                    _createPoolParams.floor,
+                    _createPoolParams.inflection,
+                    _createPoolParams.cap,
+                    _createPoolParams.gradient,
+                    _createPoolParams.collateralAmount,
+                    _createPoolParams.collateralToken,
+                    _createPoolParams.dataProvider,
+                    _createPoolParams.capacity,
+                    _createPoolParams.longRecipient,
+                    _createPoolParams.shortRecipient,
+                    _createPoolParams.permissionedERC721Token,
+                    _createPoolParams.collateralAmountMsgSender,
+                    _createPoolParams.collateralAmountMaker,
+                    _createPoolParams.maker,
+                )
+            );
+        }
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
@@ -549,14 +581,14 @@ library LibDIVA {
 
         // Deploy two `PositionToken` contract clones, one that represents shares in the short
         // and one that represents shares in the long position.
-        // Naming convention for short/long token: S13/L13 where 13 is the poolId
+        // Naming convention for short/long token: S13/L13 where 13 is the nonce
         // Diamond contract (address(this) due to delegatecall) is set as the
         // owner of the position tokens and is the only account that is
         // authorized to call the `mint` and `burn` function therein.
         // Note that position tokens have same number of decimals as collateral token.
         address _shortToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("S", Strings.toString(_poolId))), // name is equal to symbol
+                string(abi.encodePacked("S", Strings.toString(_nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
@@ -565,7 +597,7 @@ library LibDIVA {
 
         address _longToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("L", Strings.toString(_poolId))), // name is equal to symbol
+                string(abi.encodePacked("L", Strings.toString(_nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
@@ -574,6 +606,9 @@ library LibDIVA {
 
         (uint48 _indexFees, ) = _getCurrentFees(gs);
         (uint48 _indexSettlementPeriods, ) = _getCurrentSettlementPeriods(gs);
+
+        // Store `poolId`
+        ps.poolId = _poolId;
 
         // Store `Pool` struct in `pools` mapping for the newly generated `poolId`
         ps.pools[_poolId] = LibDIVAStorage.Pool(

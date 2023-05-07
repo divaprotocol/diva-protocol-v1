@@ -79,12 +79,13 @@ library LibDIVAStorage {
 
     struct FeeClaimStorage {
         mapping(address => mapping(address => uint256)) claimableFeeAmount; // collateralTokenAddress -> RecipientAddress -> amount
-        mapping(uint256 => uint256) poolIdToReservedClaim; // poolId -> reserve amount
+        mapping(bytes32 => uint256) poolIdToReservedClaim; // poolId -> reserve amount // @todo updated here
     }
 
     struct PoolStorage {
-        uint256 poolId;
-        mapping(uint256 => Pool) pools;
+        uint256 nonce; // @todo added new
+        bytes32 poolId; // @todo type updated; updated docs & tests
+        mapping(bytes32 => Pool) pools;
         address positionTokenFactory;
     }
 

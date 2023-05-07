@@ -25,14 +25,14 @@ contract PositionTokenFactory is IPositionTokenFactory {
 
     function createPositionToken(
         string memory symbol_,
-        uint256 poolId_,
+        bytes32 poolId_,
         uint8 decimals_,
         address owner_,
         address permissionedERC721Token_
     ) external override returns (address) {
         
         address clone;
-        
+
         // Initialize position token contract as implementation contract
         // doesn't have a constructor
         if (permissionedERC721Token_ == address(0)) {

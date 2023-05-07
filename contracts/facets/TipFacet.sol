@@ -10,7 +10,7 @@ import {LibDIVAStorage} from "../libraries/LibDIVAStorage.sol";
 contract TipFacet is ITip, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
 
-    function addTip(uint256 _poolId, uint256 _amount)
+    function addTip(bytes32 _poolId, uint256 _amount)
         external
         override
         nonReentrant
@@ -50,7 +50,7 @@ contract TipFacet is ITip, ReentrancyGuard {
     }
 
     function _addTip(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _amount,
         LibDIVAStorage.PoolStorage storage _ps,
         LibDIVAStorage.FeeClaimStorage storage _fs

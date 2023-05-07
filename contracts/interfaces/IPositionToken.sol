@@ -28,7 +28,7 @@ interface IPositionToken is IERC20Upgradeable {
      */
     function initialize(
         string memory symbol_, // name is set equal to symbol
-        uint256 poolId_,
+        bytes32 poolId_,
         uint8 decimals_,
         address owner_
     ) external;
@@ -58,7 +58,7 @@ interface IPositionToken is IERC20Upgradeable {
      * @notice Returns the Id of the contingent pool that the position token is
      * linked to in the context of DIVA.
      */
-    function poolId() external view returns (uint256);
+    function poolId() external view returns (bytes32);
 
     /**
      * @notice Returns the owner of the position token (Diamond contract in the

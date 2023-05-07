@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 interface ILiquidity {
     // Struct for `batchAddLiquidity` function input
     struct ArgsBatchAddLiquidity {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 collateralAmountIncr;
         address longRecipient;
         address shortRecipient;
@@ -12,7 +12,7 @@ interface ILiquidity {
 
     // Struct for `batchRemoveLiquidity` function input
     struct ArgsBatchRemoveLiquidity {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 amount;
     }
 
@@ -20,7 +20,7 @@ interface ILiquidity {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event LiquidityAdded(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount
@@ -30,7 +30,7 @@ interface ILiquidity {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event LiquidityRemoved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longTokenHolder,
         address indexed shortTokenHolder,
         uint256 collateralAmount
@@ -40,7 +40,7 @@ interface ILiquidity {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event FeeClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
@@ -49,7 +49,7 @@ interface ILiquidity {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event FeeClaimReserved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         uint256 amount
     );
 
@@ -71,7 +71,7 @@ interface ILiquidity {
      * burn use cases.
      */
     function addLiquidity(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _collateralAmountIncr,
         address _longRecipient,
         address _shortRecipient
@@ -98,7 +98,7 @@ interface ILiquidity {
      * @param _amount Number of position tokens to return (1:1 to collateral
      * amount).
      */
-    function removeLiquidity(uint256 _poolId, uint256 _amount) external;
+    function removeLiquidity(bytes32 _poolId, uint256 _amount) external;
 
     /**
      * @notice Batch version of `removeLiquidity`

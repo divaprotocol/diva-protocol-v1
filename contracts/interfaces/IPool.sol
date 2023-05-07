@@ -8,7 +8,7 @@ interface IPool {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event PoolIssued(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount,
@@ -69,7 +69,7 @@ interface IPool {
      */
     function createContingentPool(LibDIVA.PoolParams memory _poolParams)
         external
-        returns (uint256);
+        returns (bytes32);
 
     /**
      * @notice Batch version of `createContingentPool`
@@ -77,5 +77,5 @@ interface IPool {
      */
     function batchCreateContingentPool(LibDIVA.PoolParams[] memory _poolsParams)
         external
-        returns (uint256[] memory);
+        returns (bytes32[] memory);
 }

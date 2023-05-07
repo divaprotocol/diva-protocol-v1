@@ -10,9 +10,9 @@ contract PoolFacet is IPool, ReentrancyGuard {
         external
         override
         nonReentrant
-        returns (uint256)
+        returns (bytes32)
     {
-        uint256 poolId = LibDIVA._createContingentPoolLib(
+        bytes32 poolId = LibDIVA._createContingentPoolLib(
             LibDIVA.CreatePoolParams({
                 poolParams: _poolParams,
                 collateralAmountMsgSender: _poolParams.collateralAmount,
@@ -27,10 +27,10 @@ contract PoolFacet is IPool, ReentrancyGuard {
         external
         override
         nonReentrant
-        returns (uint256[] memory)
+        returns (bytes32[] memory)
     {
         uint256 len = _poolsParams.length;
-        uint256[] memory poolIds = new uint256[](len);
+        bytes32[] memory poolIds = new bytes32[](len);
         for (uint256 i = 0; i < len; ) {
             poolIds[i] = LibDIVA._createContingentPoolLib(
                 LibDIVA.CreatePoolParams({

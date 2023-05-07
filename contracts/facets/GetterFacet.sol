@@ -10,11 +10,11 @@ import {LibEIP712Storage} from "../libraries/LibEIP712Storage.sol";
 import {LibOwnership} from "../libraries/LibOwnership.sol";
 
 contract GetterFacet is IGetter {
-    function getLatestPoolId() external view override returns (uint256) {
+    function getLatestPoolId() external view override returns (bytes32) {
         return LibDIVA._getLatestPoolId();
     }
 
-    function getPoolParameters(uint256 _poolId)
+    function getPoolParameters(bytes32 _poolId)
         external
         view
         override
@@ -30,7 +30,7 @@ contract GetterFacet is IGetter {
         returns (LibDIVAStorage.Pool memory)
     {
         PositionToken positionToken = PositionToken(_positionToken);
-        uint256 _poolId = positionToken.poolId();
+        bytes32 _poolId = positionToken.poolId();
         return LibDIVA._poolParameters(_poolId);
     }
 
@@ -188,7 +188,7 @@ contract GetterFacet is IGetter {
         return LibDIVA._getClaim(_collateralToken, _recipient);
     }
 
-    function getReservedClaim(uint256 _poolId) external view override returns (uint256) {
+    function getReservedClaim(bytes32 _poolId) external view override returns (uint256) {
         return LibDIVA._getReservedClaim(_poolId);
     }
 
@@ -196,7 +196,7 @@ contract GetterFacet is IGetter {
         external
         view
         override
-        returns (uint256)
+        returns (bytes32)
     {
         return
             LibEIP712Storage._eip712Storage().typedOfferHashToPoolId[

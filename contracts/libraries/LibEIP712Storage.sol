@@ -13,7 +13,7 @@ library LibEIP712Storage {
         // Chain id (set in constructor in Diamond.sol)
         uint256 CACHED_CHAIN_ID;
         // Mapping to store created poolId with typedOfferHash
-        mapping(bytes32 => uint256) typedOfferHashToPoolId;
+        mapping(bytes32 => bytes32) typedOfferHashToPoolId;
         // Mapping to store takerFilled amount with typedOfferHash
         mapping(bytes32 => uint256) typedOfferHashToTakerFilledAmount;
     }

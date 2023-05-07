@@ -10,7 +10,7 @@ contract PermissionedPositionToken is
     ERC20Upgradeable
 {
     address private _permissionedERC721Token;
-    uint256 private _poolId;
+    bytes32 private _poolId;
     address private _owner;
     uint8 private _decimals;
 
@@ -29,7 +29,7 @@ contract PermissionedPositionToken is
 
     function initialize(
         string memory symbol_,
-        uint256 poolId_,
+        bytes32 poolId_,
         uint8 decimals_,
         address owner_,
         address permissionedERC721Token_
@@ -58,7 +58,7 @@ contract PermissionedPositionToken is
         _burn(_redeemer, _amount);
     }
 
-    function poolId() external view override returns (uint256) {
+    function poolId() external view override returns (bytes32) {
         return _poolId;
     }
 

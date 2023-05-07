@@ -83,7 +83,7 @@ library LibEIP712 {
         bool makerIsLong; // 1 [0] if maker shall receive the long [short] position
         uint256 offerExpiry; // Offer expiration time
         uint256 minimumTakerFillAmount; // Minimum taker fill amount on first fill
-        uint256 poolId; // Id of an existing pool
+        bytes32 poolId; // Id of an existing pool
         uint256 salt; // Arbitrary number to enforce uniqueness of the offer hash
     }
 
@@ -96,7 +96,7 @@ library LibEIP712 {
         bool makerIsLong; // 1 [0] if maker returns long [short] position token
         uint256 offerExpiry; // Offer expiration time
         uint256 minimumTakerFillAmount; // Minimum position token fill amount on first fill
-        uint256 poolId; // Id of an existing pool
+        bytes32 poolId; // Id of an existing pool
         uint256 salt; // Arbitrary number to enforce uniqueness of the offer hash
     }
 
@@ -159,12 +159,12 @@ library LibEIP712 {
     //         "bool makerIsLong,"
     //         "uint256 offerExpiry,"
     //         "uint256 minimumTakerFillAmount,"
-    //         "uint256 poolId,"
+    //         "bytes32 poolId,"
     //         "uint256 salt)"
     //     )
     // )
     bytes32 internal constant ADD_LIQUIDITY_OFFER_TYPEHASH =
-        0x975f3968a81decadba63b6466e62ce2251375eafc0c1a7533833ca65c7fd37d9;
+        0x18aa534f754a80ed0c17a2fc3cdb02cb2d5b8ab01f238e1cc28e91a3da224dd2;
 
     // The type hash for remove liquidity offer is:
     // keccak256(
@@ -177,12 +177,12 @@ library LibEIP712 {
     //         "bool makerIsLong,"
     //         "uint256 offerExpiry,"
     //         "uint256 minimumTakerFillAmount,"
-    //         "uint256 poolId,"
+    //         "bytes32 poolId,"
     //         "uint256 salt)"
     //     )
     // )
     bytes32 internal constant REMOVE_LIQUIDITY_OFFER_TYPEHASH =
-        0xac00f11325081eb117c866f34ac4e3a902bed956f41d8fbfbf42418bdc02af16;
+        0x0049fd2a622c7f3484cfd950f474c9ff0e7381945ea7dcfe603572a7fc388584;
 
     // Max int value of a uint256, used to flag cancelled offers.
     uint256 internal constant MAX_INT = ~uint256(0);
@@ -805,7 +805,7 @@ library LibEIP712 {
             mstore(add(mem, 0xC0), mload(add(_offerAddLiquidity, 0xA0)))
             // _offerAddLiquidity.minimumTakerFillAmount;
             mstore(add(mem, 0xE0), mload(add(_offerAddLiquidity, 0xC0)))
-            // _offerAddLiquidity.poolId;
+            // _offerAddLiquidity.poolId; // @todo bytes32 has same length as uint256, hence no adjustment needed here
             mstore(add(mem, 0x100), mload(add(_offerAddLiquidity, 0xE0)))
             // _offerAddLiquidity.salt;
             mstore(add(mem, 0x120), mload(add(_offerAddLiquidity, 0x100)))
@@ -952,7 +952,7 @@ library LibEIP712 {
             mstore(add(mem, 0xC0), mload(add(_offerRemoveLiquidity, 0xA0)))
             // _offerRemoveLiquidity.minimumTakerFillAmount;
             mstore(add(mem, 0xE0), mload(add(_offerRemoveLiquidity, 0xC0)))
-            // _offerRemoveLiquidity.poolId;
+            // _offerRemoveLiquidity.poolId; // @todo uint256 has same length as bytes32
             mstore(add(mem, 0x100), mload(add(_offerRemoveLiquidity, 0xE0)))
             // _offerRemoveLiquidity.salt;
             mstore(add(mem, 0x120), mload(add(_offerRemoveLiquidity, 0x100)))

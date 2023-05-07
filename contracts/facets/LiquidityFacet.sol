@@ -8,7 +8,7 @@ import {LibDIVA} from "../libraries/LibDIVA.sol";
 
 contract LiquidityFacet is ILiquidity, ReentrancyGuard {
     function addLiquidity(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _collateralAmountIncr,
         address _longRecipient,
         address _shortRecipient
@@ -66,7 +66,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         }
     }
 
-    function removeLiquidity(uint256 _poolId, uint256 _amount)
+    function removeLiquidity(bytes32 _poolId, uint256 _amount)
         external
         override
         nonReentrant
@@ -91,7 +91,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
     }
 
     function _isValidAddLiquidityTx(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _collateralAmountIncr
     ) private view {
         // Get pool params using `_poolId`
@@ -103,7 +103,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         LibDIVA._checkAddLiquidityAllowed(_pool, _collateralAmountIncr);
     }
 
-    function _removeLiquidity(uint256 _poolId, uint256 _amount) private {
+    function _removeLiquidity(bytes32 _poolId, uint256 _amount) private {
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
         LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
 

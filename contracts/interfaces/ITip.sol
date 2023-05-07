@@ -11,7 +11,7 @@ interface ITip {
 
     // Struct for `batchAddTip` function input
     struct ArgsBatchAddTip {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 amount;
     }
 
@@ -24,7 +24,7 @@ interface ITip {
      */
     event TipAdded(
         address indexed tipper,
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed collateralToken,
         uint256 amount
     );
@@ -37,7 +37,7 @@ interface ITip {
      * @param _amount Collateral token amount to add as a tip (expressed as
      * an integer with collateral token decimals)
      */
-    function addTip(uint256 _poolId, uint256 _amount) external;
+    function addTip(bytes32 _poolId, uint256 _amount) external;
 
     /**
      * @notice Batch version of `addTip`.

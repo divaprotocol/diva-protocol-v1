@@ -9,7 +9,7 @@ import {IPositionToken} from "./interfaces/IPositionToken.sol";
  */
 contract PositionToken is IPositionToken, ERC20Upgradeable {
 
-    uint256 private _poolId;
+    bytes32 private _poolId;
     address private _owner;
     uint8 private _decimals;
 
@@ -43,7 +43,7 @@ contract PositionToken is IPositionToken, ERC20Upgradeable {
         _burn(_redeemer, _amount);
     }
 
-    function poolId() external view override returns (uint256) {
+    function poolId() external view override returns (bytes32) {
         return _poolId;
     }
 
@@ -57,7 +57,7 @@ contract PositionToken is IPositionToken, ERC20Upgradeable {
 
     function initialize(
         string memory symbol_,
-        uint256 poolId_,
+        bytes32 poolId_,
         uint8 decimals_,
         address owner_
     ) external override initializer {
