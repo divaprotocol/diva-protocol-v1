@@ -83,7 +83,7 @@ library LibDIVAStorage {
     }
 
     struct PoolStorage {
-        uint256 nonce; // @todo added new
+        uint256 nonce; // IMPORTANT: hash calc in `LibDIVA._createContingentPool` assumes this variable at slot 0 inside this struct @todo added new
         bytes32 poolId; // @todo type updated; updated docs & tests
         mapping(bytes32 => Pool) pools;
         address positionTokenFactory;

@@ -183,6 +183,9 @@ library LibDIVA {
         uint256 amount
     );
 
+    uint256 private constant ADDRESS_MASK = (1 << 160) - 1;
+    uint256 private constant UINT_96_MASK = (1 << 96) - 1;
+
     function _poolParameters(bytes32 _poolId)
         internal
         view
@@ -521,35 +524,93 @@ library LibDIVA {
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
         ++ps.nonce;
 
-        // Cache new `_nonce` to avoid reading from storage
-        uint256 _nonce = ps.nonce;
-
         // Calculate `poolId`
+        // bytes32 _poolId = keccak256(
+        //     abi.encode(
+        //         _createPoolParams.poolParams.referenceAsset,
+        //         _createPoolParams.poolParams.expiryTime,
+        //         _createPoolParams.poolParams.floor,
+        //         _createPoolParams.poolParams.inflection,
+        //         _createPoolParams.poolParams.cap,
+        //         _createPoolParams.poolParams.gradient,
+        //         _createPoolParams.poolParams.collateralAmount,
+        //         _createPoolParams.poolParams.collateralToken,
+        //         _createPoolParams.poolParams.dataProvider,
+        //         _createPoolParams.poolParams.capacity,
+        //         _createPoolParams.poolParams.longRecipient,
+        //         _createPoolParams.poolParams.shortRecipient,
+        //         _createPoolParams.poolParams.permissionedERC721Token,
+        //         _createPoolParams.collateralAmountMsgSender,
+        //         _createPoolParams.collateralAmountMaker,
+        //         _createPoolParams.maker,
+        //         msg.sender,
+        //         ps.nonce
+        //     )
+        // );
         bytes32 _poolId;
-        {
-            _poolId = keccak256(
-                abi.encode(
-                    msg.sender,
-                    _nonce,
-                    _createPoolParams.poolParams.referenceAsset,
-                    _createPoolParams.poolParams.expiryTime,
-                    _createPoolParams.poolParams.floor,
-                    _createPoolParams.poolParams.inflection,
-                    _createPoolParams.poolParams.cap,
-                    _createPoolParams.poolParams.gradient,
-                    _createPoolParams.poolParams.collateralAmount,
-                    _createPoolParams.poolParams.collateralToken,
-                    _createPoolParams.poolParams.dataProvider,
-                    _createPoolParams.poolParams.capacity,
-                    _createPoolParams.poolParams.longRecipient,
-                    _createPoolParams.poolParams.shortRecipient,
-                    _createPoolParams.poolParams.permissionedERC721Token,
-                    _createPoolParams.collateralAmountMsgSender,
-                    _createPoolParams.collateralAmountMaker,
-                    _createPoolParams.maker
-                )
-            );
-        }        
+        assembly {
+            let mem := mload(0x40)
+            // _createPoolParams.poolParams.referenceAsset;
+            let referenceAsset := mload(_createPoolParams)
+            mstore(
+                mem,
+                keccak256(add(referenceAsset, 0x20), mload(referenceAsset))
+            )
+            // _createPoolParams.poolParams.expiryTime;
+            mstore(
+                add(mem, 0x20),
+                and(UINT_96_MASK, mload(add(_createPoolParams, 0x20)))
+            )
+            // _createPoolParams.poolParams.floor;
+            mstore(add(mem, 0x40), mload(add(_createPoolParams, 0x40)))
+            // _createPoolParams.poolParams.inflection;
+            mstore(add(mem, 0x60), mload(add(_createPoolParams, 0x60)))
+            // _createPoolParams.poolParams.cap;
+            mstore(add(mem, 0x80), mload(add(_createPoolParams, 0x80)))
+            // _createPoolParams.poolParams.gradient;
+            mstore(add(mem, 0xA0), mload(add(_createPoolParams, 0xA0)))
+            // _createPoolParams.poolParams.collateralAmount;
+            mstore(add(mem, 0xC0), mload(add(_createPoolParams, 0xC0)))
+            // _createPoolParams.poolParams.collateralToken;
+            mstore(add(mem, 0xE0),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0xE0)))
+            )
+            // _createPoolParams.poolParams.dataProvider;
+            mstore(add(mem, 0x100),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x100)))
+            )
+            // _createPoolParams.poolParams.capacity;
+            mstore(add(mem, 0x120), mload(add(_createPoolParams, 0x120)))
+            // _createPoolParams.poolParams.longRecipient;
+            mstore(add(mem, 0x140),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x140)))
+            )
+            // _createPoolParams.poolParams.shortRecipient;
+            mstore(add(mem, 0x160),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x160)))
+            )
+            // _createPoolParams.poolParams.permissionedERC721Token;
+            mstore(add(mem, 0x180),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x180)))
+            )
+            // _createPoolParams.collateralAmountMsgSender;
+            mstore(add(mem, 0x1A0), mload(add(_createPoolParams, 0x1A0)))
+            // _createPoolParams.collateralAmountMaker;
+            mstore(add(mem, 0x1C0), mload(add(_createPoolParams, 0x1C0)))
+            // _createPoolParams.maker;
+            mstore(add(mem, 0x1E0),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x1E0)))
+            )
+            // msg.sender;
+            mstore(add(mem, 0x200),
+                and(ADDRESS_MASK, mload(caller()))
+            )
+            // ps.nonce
+            // IMPORTANT: Assumes `nonce` to be at position zero inside `PoolStorage` struct
+            mstore(add(mem, 0x220), mload(sload(add(ps.slot, 0))))
+
+            _poolId := keccak256(mem, 0x240)
+        }
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
@@ -588,7 +649,7 @@ library LibDIVA {
         // Note that position tokens have same number of decimals as collateral token.
         address _shortToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("S", Strings.toString(_nonce))), // name is equal to symbol
+                string(abi.encodePacked("S", Strings.toString(ps.nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
@@ -597,7 +658,7 @@ library LibDIVA {
 
         address _longToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("L", Strings.toString(_nonce))), // name is equal to symbol
+                string(abi.encodePacked("L", Strings.toString(ps.nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
