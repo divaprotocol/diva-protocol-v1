@@ -14,12 +14,19 @@ import {
 } from "../typechain-types";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
-import { getExpiryTime, getLastTimestamp, getPoolIdFromTx } from "../utils";
+import {
+  getExpiryTime,
+  getLastTimestamp,
+  getPoolIdFromTx,
+  getPoolId,
+  extractNumberFromString,
+} from "../utils";
 import { ONE_DAY, GovParams } from "../constants";
 import { deployMain } from "../scripts/deployMain";
 
 import {
   erc20DeployFixture,
+  erc20AttachFixture,
   erc721DeployFixture,
   positionTokenAttachFixture,
   permissionedPositionTokenAttachFixture,
@@ -240,8 +247,46 @@ describe("PoolFacet", async function () {
       currentBlockTimestamp = await getLastTimestamp();
 
       poolId = await getPoolIdFromTx(tx);
+      console.log("Actual poolId", poolId)
       poolParams = await getterFacet.getPoolParameters(poolId);
-      expect(poolId).to.eq(1); // @todo
+      const shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
+      const currentNonce = await extractNumberFromString(await shortTokenInstance.name());
+
+      console.log("referenceAsset", referenceAsset)
+      const bytes = ethers.utils.toUtf8Bytes(referenceAsset);
+      // console.log("referencAsset bytes", bytes)
+      const referenceAssetBytes32 = ethers.utils.keccak256(bytes);
+      const expectedPoolId = getPoolId(
+        referenceAssetBytes32,
+        poolParams.expiryTime,
+        floor,
+        inflection,
+        cap,
+        gradient,
+        collateralAmount,
+        collateralToken,
+        dataProvider,
+        capacity,
+        longRecipient,
+        shortRecipient,
+        permissionedERC721Token,
+        collateralAmount, // collateralAmountMsgSender
+        "0", // collateralAmountMaker
+        ethers.constants.AddressZero, // maker,
+        user1.address, // msgSender
+        currentNonce // nonce
+      )
+      
+      console.log("shortTokenInstance.name", await shortTokenInstance.name())
+      
+      // @todo write test that the poolId is stored inside position token
+      console.log("shortTokenInstance.poolId", await shortTokenInstance.poolId())
+
+      console.log("currentNonce", currentNonce)
+      console.log("poolParams.expiryTime",poolParams.expiryTime)
+      console.log("expectedPoolId", expectedPoolId)
+
+      expect(poolId).to.eq(expectedPoolId);
       expect(poolParams.referenceAsset).to.eq(referenceAsset);
       expect(poolParams.expiryTime).to.eq(expiryTime);
       expect(poolParams.floor).to.eq(floor);

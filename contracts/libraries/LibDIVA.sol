@@ -9,6 +9,7 @@ import {IPositionToken} from "../interfaces/IPositionToken.sol";
 import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
+import "hardhat/console.sol";
 
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
 // to be returned to user during exceeds the pool's collateral balance
@@ -524,91 +525,11 @@ library LibDIVA {
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
         ++ps.nonce;
 
-        // Calculate `poolId`
-        // bytes32 _poolId = keccak256(
-        //     abi.encode(
-        //         keccak256(bytes(_createPoolParams.poolParams.referenceAsset)),
-        //         _createPoolParams.poolParams.expiryTime,
-        //         _createPoolParams.poolParams.floor,
-        //         _createPoolParams.poolParams.inflection,
-        //         _createPoolParams.poolParams.cap,
-        //         _createPoolParams.poolParams.gradient,
-        //         _createPoolParams.poolParams.collateralAmount,
-        //         _createPoolParams.poolParams.collateralToken,
-        //         _createPoolParams.poolParams.dataProvider,
-        //         _createPoolParams.poolParams.capacity,
-        //         _createPoolParams.poolParams.longRecipient,
-        //         _createPoolParams.poolParams.shortRecipient,
-        //         _createPoolParams.poolParams.permissionedERC721Token,
-        //         _createPoolParams.collateralAmountMsgSender,
-        //         _createPoolParams.collateralAmountMaker,
-        //         _createPoolParams.maker,
-        //         msg.sender,
-        //         ps.nonce
-        //     )
-        // );
-        bytes32 _poolId;
-        assembly {
-            let mem := mload(0x40)
-            // _createPoolParams.poolParams.referenceAsset;
-            let referenceAsset := mload(_createPoolParams)
-            mstore(
-                mem,
-                keccak256(add(referenceAsset, 0x20), mload(referenceAsset))
-            )
-            // _createPoolParams.poolParams.expiryTime;
-            mstore(
-                add(mem, 0x20),
-                and(UINT_96_MASK, mload(add(_createPoolParams, 0x20)))
-            )
-            // _createPoolParams.poolParams.floor;
-            mstore(add(mem, 0x40), mload(add(_createPoolParams, 0x40)))
-            // _createPoolParams.poolParams.inflection;
-            mstore(add(mem, 0x60), mload(add(_createPoolParams, 0x60)))
-            // _createPoolParams.poolParams.cap;
-            mstore(add(mem, 0x80), mload(add(_createPoolParams, 0x80)))
-            // _createPoolParams.poolParams.gradient;
-            mstore(add(mem, 0xA0), mload(add(_createPoolParams, 0xA0)))
-            // _createPoolParams.poolParams.collateralAmount;
-            mstore(add(mem, 0xC0), mload(add(_createPoolParams, 0xC0)))
-            // _createPoolParams.poolParams.collateralToken;
-            mstore(add(mem, 0xE0),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0xE0)))
-            )
-            // _createPoolParams.poolParams.dataProvider;
-            mstore(add(mem, 0x100),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x100)))
-            )
-            // _createPoolParams.poolParams.capacity;
-            mstore(add(mem, 0x120), mload(add(_createPoolParams, 0x120)))
-            // _createPoolParams.poolParams.longRecipient;
-            mstore(add(mem, 0x140),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x140)))
-            )
-            // _createPoolParams.poolParams.shortRecipient;
-            mstore(add(mem, 0x160),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x160)))
-            )
-            // _createPoolParams.poolParams.permissionedERC721Token;
-            mstore(add(mem, 0x180),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x180)))
-            )
-            // _createPoolParams.collateralAmountMsgSender;
-            mstore(add(mem, 0x1A0), mload(add(_createPoolParams, 0x1A0)))
-            // _createPoolParams.collateralAmountMaker;
-            mstore(add(mem, 0x1C0), mload(add(_createPoolParams, 0x1C0)))
-            // _createPoolParams.maker;
-            mstore(add(mem, 0x1E0),
-                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x1E0)))
-            )
-            // msg.sender;
-            mstore(add(mem, 0x200), and(ADDRESS_MASK, caller()))
-            // ps.nonce
-            // IMPORTANT: Assumes `nonce` to be at position zero inside `PoolStorage` struct
-            mstore(add(mem, 0x220), mload(sload(add(ps.slot, 0))))
-
-            _poolId := keccak256(mem, 0x240)
-        }
+        // Calculate `poolId` as the has of pool params, msg.sender and nonce.
+        // This is to protect users from malicious pools in case of chain reorgs.
+        bytes32 _poolId = _getPoolId(_createPoolParams, ps);
+        console.log("_poolId in SOLIDITY");
+        console.logBytes32(_poolId);
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
@@ -714,6 +635,112 @@ library LibDIVA {
         );
 
         return _poolId;
+    }
+
+    // Return poolId which is the hash of create pool parameters, msg.sender and nonce.
+    // This is to protect users from malicious pools in case of chain reorgs.
+    function _getPoolId(
+        CreatePoolParams memory _createPoolParams,
+        LibDIVAStorage.PoolStorage storage _ps
+    ) private view returns (bytes32 poolId) {
+        // @todo Verifiy that the abi.encode version is equivalent ot the one calculated in assembly
+        // Assembly for more efficient computing:
+        // bytes32 _poolId = keccak256(
+        //     abi.encode(
+        //         keccak256(bytes(_createPoolParams.poolParams.referenceAsset)),
+        //         _createPoolParams.poolParams.expiryTime,
+        //         _createPoolParams.poolParams.floor,
+        //         _createPoolParams.poolParams.inflection,
+        //         _createPoolParams.poolParams.cap,
+        //         _createPoolParams.poolParams.gradient,
+        //         _createPoolParams.poolParams.collateralAmount,
+        //         _createPoolParams.poolParams.collateralToken,
+        //         _createPoolParams.poolParams.dataProvider,
+        //         _createPoolParams.poolParams.capacity,
+        //         _createPoolParams.poolParams.longRecipient,
+        //         _createPoolParams.poolParams.shortRecipient,
+        //         _createPoolParams.poolParams.permissionedERC721Token,
+        //         _createPoolParams.collateralAmountMsgSender,
+        //         _createPoolParams.collateralAmountMaker,
+        //         _createPoolParams.maker,
+        //         msg.sender,
+        //         ps.nonce
+        //     )
+        // );
+        assembly {
+            let mem := mload(0x40)
+            // _createPoolParams.poolParams.referenceAsset;
+            // Get memory pointer where the length of the referenceAsset string is stored
+            let poolParams := mload(_createPoolParams) // Reference to struct stored at first position; Read here how to handle structs inside a struct; first https://ethereum.stackexchange.com/questions/77238/accessing-struct-fields-from-assembly-block
+            let referenceAsset := mload(poolParams) 
+            mstore(
+                mem,
+                keccak256(add(referenceAsset, 0x20), mload(referenceAsset))
+            )
+            // _createPoolParams.poolParams.expiryTime;
+            mstore(
+                add(mem, 0x20),
+                and(UINT_96_MASK, mload(add(poolParams, 0x20)))
+            )
+            // _createPoolParams.poolParams.floor;
+            mstore(add(mem, 0x40), mload(add(poolParams, 0x40)))
+            // _createPoolParams.poolParams.inflection;
+            mstore(add(mem, 0x60), mload(add(poolParams, 0x60)))
+            // _createPoolParams.poolParams.cap;
+            mstore(add(mem, 0x80), mload(add(poolParams, 0x80)))
+            // _createPoolParams.poolParams.gradient;
+            mstore(add(mem, 0xA0), mload(add(poolParams, 0xA0)))
+            // _createPoolParams.poolParams.collateralAmount;
+            mstore(add(mem, 0xC0), mload(add(poolParams, 0xC0)))
+            // _createPoolParams.poolParams.collateralToken;
+            mstore(add(mem, 0xE0),
+                and(ADDRESS_MASK, mload(add(poolParams, 0xE0)))
+            )
+            // _createPoolParams.poolParams.dataProvider;
+            mstore(add(mem, 0x100),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x100)))
+            )
+            // _createPoolParams.poolParams.capacity;
+            mstore(add(mem, 0x120), mload(add(poolParams, 0x120)))
+            // _createPoolParams.poolParams.longRecipient;
+            mstore(add(mem, 0x140),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x140)))
+            )
+            // _createPoolParams.poolParams.shortRecipient;
+            mstore(add(mem, 0x160),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x160)))
+            )
+            // _createPoolParams.poolParams.permissionedERC721Token;
+            mstore(add(mem, 0x180),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x180)))
+            )
+            // _createPoolParams.collateralAmountMsgSender;
+            mstore(add(mem, 0x1A0), mload(add(_createPoolParams, 0x20))) // First slot after poolParams struct reference
+            // _createPoolParams.collateralAmountMaker;
+            mstore(add(mem, 0x1C0), mload(add(_createPoolParams, 0x40)))
+            // _createPoolParams.maker;
+            mstore(add(mem, 0x1E0),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x60)))
+            )
+            // msg.sender;
+            mstore(add(mem, 0x200), and(ADDRESS_MASK, caller()))
+            // ps.nonce
+            // IMPORTANT: Assumes `nonce` to be at position zero inside `PoolStorage` struct
+            mstore(add(mem, 0x220), sload(_ps.slot))
+
+            poolId := keccak256(mem, 0x240)
+            // @todo QUESTION: Do I need to update memory pointer in 0x40 here?
+            
+            // mstore(output, 0x240)
+            // mcopy(add(output, 0x20), mem, 0x240)
+
+            // output := mload(add(mem, 0x240)) // Here I want to store the range mem until 0x240. How to do that?
+            // _poolId := sload(add(ps.slot, 0)) // @todo test that when tests are functioning
+        }
+
+        // @todo compare this when tests are functioning
+        // console.log("ps.nonce", ps.nonce);
+        // console.logBytes32(_poolId);
     }
 
     function _validateInputParamsCreateContingentPool(
