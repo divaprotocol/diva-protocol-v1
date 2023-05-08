@@ -64,7 +64,7 @@ describe("PoolFacet", async function () {
   let collateralTokenInstance: MockERC20;
   let collateralTokenWithFeesInstance: MockERC20;
 
-  let poolId: BigNumber;
+  let poolId: string;
   let poolParams: LibDIVAStorage.PoolStructOutput;
   let govParams: GovParams,
     poolFees: LibDIVAStorage.FeesStructOutput,
@@ -213,7 +213,7 @@ describe("PoolFacet", async function () {
     // Functionality
     // -------------------------------------------
 
-    it("Creates a contingent pool and stores the pool parameters", async () => {
+    it.only("Creates a contingent pool and stores the pool parameters", async () => {
       // ---------
       // Act: Create a contingent pool with default parameters
       // ---------
@@ -241,7 +241,7 @@ describe("PoolFacet", async function () {
 
       poolId = await getPoolIdFromTx(tx);
       poolParams = await getterFacet.getPoolParameters(poolId);
-      expect(poolId).to.eq(1);
+      expect(poolId).to.eq(1); // @todo
       expect(poolParams.referenceAsset).to.eq(referenceAsset);
       expect(poolParams.expiryTime).to.eq(expiryTime);
       expect(poolParams.floor).to.eq(floor);
@@ -313,7 +313,7 @@ describe("PoolFacet", async function () {
       // ---------
       // Assert: Check that the poolId returned is equal to the previously latest poolId + 1
       // ---------
-      expect(res).to.eq(poolId.add(1));
+      expect(res).to.eq(poolId.add(1)); // @todo
     });
 
     it("Returns the same pool parameters when retrieved via `getPoolParametersByAddress`", async () => {

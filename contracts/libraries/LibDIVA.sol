@@ -527,7 +527,7 @@ library LibDIVA {
         // Calculate `poolId`
         // bytes32 _poolId = keccak256(
         //     abi.encode(
-        //         _createPoolParams.poolParams.referenceAsset,
+        //         keccak256(bytes(_createPoolParams.poolParams.referenceAsset)),
         //         _createPoolParams.poolParams.expiryTime,
         //         _createPoolParams.poolParams.floor,
         //         _createPoolParams.poolParams.inflection,
@@ -602,9 +602,7 @@ library LibDIVA {
                 and(ADDRESS_MASK, mload(add(_createPoolParams, 0x1E0)))
             )
             // msg.sender;
-            mstore(add(mem, 0x200),
-                and(ADDRESS_MASK, mload(caller()))
-            )
+            mstore(add(mem, 0x200), and(ADDRESS_MASK, caller()))
             // ps.nonce
             // IMPORTANT: Assumes `nonce` to be at position zero inside `PoolStorage` struct
             mstore(add(mem, 0x220), mload(sload(add(ps.slot, 0))))
