@@ -22,7 +22,7 @@ import { GetterFacet } from "../../typechain-types";
 async function main() {
   const API_URL = "https://eip712api.xyz/diva/offer/v1/add_liquidity";
   const network = "goerli";
-  const poolId = BigNumber.from(2);
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
@@ -99,7 +99,6 @@ async function main() {
   // Prepare data to be posted to the api server
   const data = {
     ...offerAddLiquidity,
-    poolId: poolId.toString(), // overwriting poolId inside `offerAddLiquidity` to switch from BigNumber to String type
     chainId,
     verifyingContract,
     signature,

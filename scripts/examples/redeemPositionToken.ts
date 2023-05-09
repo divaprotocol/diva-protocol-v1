@@ -63,7 +63,7 @@ async function main() {
   const network = "goerli";
 
   // INPUT: id of an existing pool
-  const poolId = 6;
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
 
   // Get signer of position token holder
   const [positionTokenHolder] = await ethers.getSigners();

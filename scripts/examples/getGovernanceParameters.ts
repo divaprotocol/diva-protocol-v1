@@ -1,5 +1,5 @@
 /**
- * Script to get the pool parameters for an existing poolId
+ * Script to get the current governance parameters
  * Run: `yarn diva::getGovernanceParameters`
  */
 

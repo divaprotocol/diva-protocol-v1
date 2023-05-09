@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract FakePositionToken is ERC20 {
-    uint256 private _poolId;
+    bytes32 private _poolId;
     address private _owner;
 
     constructor(
         string memory name_,
         string memory symbol_,
-        uint256 poolId_,
+        bytes32 poolId_,
         address owner_
     ) ERC20(name_, symbol_) {
         _owner = owner_;
@@ -30,7 +30,7 @@ contract FakePositionToken is ERC20 {
         _burn(redeemer, amount);
     }
 
-    function poolId() external view returns (uint256) {
+    function poolId() external view returns (bytes32) {
         return _poolId;
     }
 

@@ -17,7 +17,7 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
 
   // Get pool id
-  const poolId = 1;
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
@@ -31,7 +31,7 @@ async function main() {
 
   // Log relevant info
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", poolId.toString());
+  console.log("PoolId: ", poolId);
   console.log("Floor: ", formatUnits(poolParams.floor));
   console.log("Inflection: ", formatUnits(poolParams.inflection));
   console.log("Cap: ", formatUnits(poolParams.cap));

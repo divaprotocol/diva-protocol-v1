@@ -54,7 +54,7 @@ async function main() {
   const network = "goerli";
 
   // Input arguments for `removeLiquidity` function
-  const poolId = 28; // id of an existing pool
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
   const amountTokensNumber = 1; // number of long and short tokens to return to the pool; conversion into large integer happens below in the code
 
   // Get signer of account that will remove liquidity
