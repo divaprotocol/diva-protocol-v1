@@ -10,6 +10,7 @@ import {LibEIP712Storage} from "../libraries/LibEIP712Storage.sol";
 import {LibOwnership} from "../libraries/LibOwnership.sol";
 
 contract GetterFacet is IGetter {
+    // @todo Replace with getPoolCount()
     function getLatestPoolId() external view override returns (bytes32) {
         return LibDIVA._getLatestPoolId();
     }

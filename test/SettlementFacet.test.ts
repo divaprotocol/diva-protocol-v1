@@ -68,9 +68,9 @@ describe("SettlementFacet", async function () {
   let nextBlockTimestamp: number;
   let submissionPeriodEndTime: BigNumber;
 
-  let poolId: BigNumber;
-  let poolId1: BigNumber;
-  let poolId2: BigNumber;
+  let poolId: string;
+  let poolId1: string;
+  let poolId2: string;
   let poolParams: LibDIVAStorage.PoolStructOutput,
     poolParamsBefore: LibDIVAStorage.PoolStructOutput,
     poolParamsBefore1: LibDIVAStorage.PoolStructOutput,

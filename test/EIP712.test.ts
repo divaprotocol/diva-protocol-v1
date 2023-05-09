@@ -232,7 +232,7 @@ describe("EIP712", async function () {
           );
       });
 
-      it.only("Should fully fill a create contingent pool offer and update the relevant parameters", async function () {
+      it("Should fully fill a create contingent pool offer and update the relevant parameters", async function () {
         // ---------
         // Arrange: Set takerFillAmount equal to takerCollateralAmount and get balance of collateral token for both users before creating the pool
         // ---------
@@ -314,27 +314,26 @@ describe("EIP712", async function () {
         shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
-        // Manually calculate the expected poolId
+        // Manually calculate the expected poolId based on the offer details
         currentNonce = await extractNumberFromString(await shortTokenInstance.name());
-        console.log("currentNonce", currentNonce)
         expectedPoolId = getPoolId(
-          createPoolParams.referenceAsset,
-          Number(poolParams.expiryTime),
-          String(createPoolParams.floor),
-          String(createPoolParams.inflection),
-          String(createPoolParams.cap),
-          String(createPoolParams.gradient),
-          String(createPoolParams.collateralAmount),
-          createPoolParams.collateralToken,
-          createPoolParams.dataProvider,
-          String(createPoolParams.capacity),
-          createPoolParams.longRecipient,
-          createPoolParams.shortRecipient,
-          createPoolParams.permissionedERC721Token,
+          offerCreateContingentPool.referenceAsset,
+          Number(offerCreateContingentPool.expiryTime),
+          String(offerCreateContingentPool.floor),
+          String(offerCreateContingentPool.inflection),
+          String(offerCreateContingentPool.cap),
+          String(offerCreateContingentPool.gradient),
+          String(poolFillAmount),
+          offerCreateContingentPool.collateralToken,
+          offerCreateContingentPool.dataProvider,
+          offerCreateContingentPool.capacity,
+          offerCreateContingentPool.makerIsLong ? offerCreateContingentPool.maker : offerCreateContingentPool.taker,
+          offerCreateContingentPool.makerIsLong ? offerCreateContingentPool.taker : offerCreateContingentPool.maker,
+          offerCreateContingentPool.permissionedERC721Token,
           String(takerFillAmount), // collateralAmountMsgSender
           String(makerFillAmount), // collateralAmountMaker
-          user1.address, // maker,
-          user2.address, // msgSender
+          offerCreateContingentPool.maker, // maker,
+          offerCreateContingentPool.taker, // msgSender
           currentNonce // nonce
         )
 
@@ -1394,7 +1393,7 @@ describe("EIP712", async function () {
         OfferStatus.Fillable
       );
       expect(relevantStateParamsBefore1.offerInfo.takerFilledAmount).to.eq(0);
-      expect(poolIdByHashBefore1).to.eq(0);
+      expect(poolIdByHashBefore1).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
       // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
@@ -1458,7 +1457,7 @@ describe("EIP712", async function () {
         OfferStatus.Fillable
       );
       expect(relevantStateParamsBefore2.offerInfo.takerFilledAmount).to.eq(0);
-      expect(poolIdByHashBefore2).to.eq(0);
+      expect(poolIdByHashBefore2).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
       // Get balance of collateral token for both users before fill offer
@@ -1515,6 +1514,33 @@ describe("EIP712", async function () {
       const longTokenInstance1 = await positionTokenAttachFixture(
         poolParams1.longToken
       );
+
+      // Manually calculate the expected poolId based on the first offer details
+      const currentNonce1 = await extractNumberFromString(await shortTokenInstance1.name());
+      const expectedPoolId1 = getPoolId(
+        offerCreateContingentPool1.referenceAsset,
+        Number(offerCreateContingentPool1.expiryTime),
+        String(offerCreateContingentPool1.floor),
+        String(offerCreateContingentPool1.inflection),
+        String(offerCreateContingentPool1.cap),
+        String(offerCreateContingentPool1.gradient),
+        String(poolFillAmount1),
+        offerCreateContingentPool1.collateralToken,
+        offerCreateContingentPool1.dataProvider,
+        offerCreateContingentPool1.capacity,
+        offerCreateContingentPool1.makerIsLong ? offerCreateContingentPool1.maker : offerCreateContingentPool1.taker,
+        offerCreateContingentPool1.makerIsLong ? offerCreateContingentPool1.taker : offerCreateContingentPool1.maker,
+        offerCreateContingentPool1.permissionedERC721Token,
+        String(takerFillAmount1), // collateralAmountMsgSender
+        String(makerFillAmount1), // collateralAmountMaker
+        offerCreateContingentPool1.maker, // maker,
+        offerCreateContingentPool1.taker, // msgSender
+        currentNonce1 // nonce
+      );
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance1.poolId()).to.eq(expectedPoolId1);
+      expect(await longTokenInstance1.poolId()).to.eq(expectedPoolId1);
 
       // Confirm pool params are set correctly
       expect(poolParams1.referenceAsset).to.eq(
@@ -1596,6 +1622,36 @@ describe("EIP712", async function () {
       const longTokenInstance2 = await positionTokenAttachFixture(
         poolParams2.longToken
       );
+
+      // Manually calculate the expected poolId based on the second offer details
+      const currentNonce2 = await extractNumberFromString(await shortTokenInstance2.name());
+      const expectedPoolId2 = getPoolId(
+        offerCreateContingentPool2.referenceAsset,
+        Number(offerCreateContingentPool2.expiryTime),
+        String(offerCreateContingentPool2.floor),
+        String(offerCreateContingentPool2.inflection),
+        String(offerCreateContingentPool2.cap),
+        String(offerCreateContingentPool2.gradient),
+        String(poolFillAmount2),
+        offerCreateContingentPool2.collateralToken,
+        offerCreateContingentPool2.dataProvider,
+        offerCreateContingentPool2.capacity,
+        offerCreateContingentPool2.makerIsLong ? offerCreateContingentPool2.maker : offerCreateContingentPool2.taker,
+        offerCreateContingentPool2.makerIsLong ? offerCreateContingentPool2.taker : offerCreateContingentPool2.maker,
+        offerCreateContingentPool2.permissionedERC721Token,
+        String(takerFillAmount2), // collateralAmountMsgSender
+        String(makerFillAmount2), // collateralAmountMaker
+        offerCreateContingentPool2.maker, // maker,
+        offerCreateContingentPool2.taker, // msgSender
+        currentNonce2 // nonce
+      );
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance2.poolId()).to.eq(expectedPoolId2);
+      expect(await longTokenInstance2.poolId()).to.eq(expectedPoolId2);
+
+      // Confirm that the poolIds of the two pools are different
+      expect(await shortTokenInstance1.poolId()).to.not.eq(await shortTokenInstance2.poolId());
 
       // Confirm pool params are set correctly
       expect(poolParams2.referenceAsset).to.eq(
@@ -4850,10 +4906,11 @@ describe("EIP712", async function () {
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
       poolId = await getterFacet.getLatestPoolId();
-      expect(poolId).to.be.gt(0);
+      // @todo better check here that there is at least one poolId using the new getPoolCount() function (>0 requirement)
+      expect(poolId).to.not.eq(ethers.constants.HashZero);
 
-      // Increase poolId
-      const nonExistentPoolId = poolId.add(1);
+      // Define zero bytes as the non-existent poolId
+      const nonExistentPoolId = ethers.constants.HashZero;
       const nonExistentPoolParams = await getterFacet.getPoolParameters(
         nonExistentPoolId
       );
@@ -7446,10 +7503,11 @@ describe("EIP712", async function () {
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
       poolId = await getterFacet.getLatestPoolId();
-      expect(poolId).to.be.gt(0);
+      // @todo update this part to use the getPoolCount() function and confirm that it's >0
+      expect(poolId).to.not.eq(ethers.constants.HashZero);
 
-      // Increase poolId
-      const nonExistentPoolId = poolId.add(1);
+      // Define zero bytes as the non-existent poolId
+      const nonExistentPoolId = ethers.constants.HashZero;
       const nonExistentPoolParams = await getterFacet.getPoolParameters(
         nonExistentPoolId
       );

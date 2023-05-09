@@ -71,7 +71,7 @@ contract EIP712CreateFacet is IEIP712Create, ReentrancyGuard {
         // If poolId is 0, then no pool has been created yet out of the given offer.
         // poolIds in DIVA Protocol start at 1
         bytes32 _poolId = _es.typedOfferHashToPoolId[_offerInfo.typedOfferHash];
-        if (_poolId == 0) { // @todo confirm that this makes sense and doesn't need to be bytes32(0) or bytes32("")
+        if (_poolId == 0) {
             // If there is no pool created with `typedOfferHash`, then fill create contingent pool offer
             // and store poolId in `typedOfferHashToPoolId` mapping
 

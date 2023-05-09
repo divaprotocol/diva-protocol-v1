@@ -107,7 +107,7 @@ describe("LiquidityFacet", async function () {
     let permissionedERC721TokenInstance: MockERC721;
     let permissionedERC721Token: string;
 
-    let poolId: BigNumber;
+    let poolId: string;
     let poolParams: LibDIVAStorage.PoolStructOutput,
       poolParamsBefore: LibDIVAStorage.PoolStructOutput,
       poolParamsAfter: LibDIVAStorage.PoolStructOutput;

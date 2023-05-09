@@ -34,7 +34,7 @@ const ADD_LIQUIDITY_OFFER_STRUCT = [
   { type: "bool", name: "makerIsLong" },
   { type: "uint256", name: "offerExpiry" },
   { type: "uint256", name: "minimumTakerFillAmount" },
-  { type: "uint256", name: "poolId" },
+  { type: "bytes32", name: "poolId" },
   { type: "uint256", name: "salt" },
 ];
 
@@ -46,7 +46,7 @@ const REMOVE_LIQUIDITY_OFFER_STRUCT = [
   { type: "bool", name: "makerIsLong" },
   { type: "uint256", name: "offerExpiry" },
   { type: "uint256", name: "minimumTakerFillAmount" },
-  { type: "uint256", name: "poolId" },
+  { type: "bytes32", name: "poolId" },
   { type: "uint256", name: "salt" },
 ];
 
