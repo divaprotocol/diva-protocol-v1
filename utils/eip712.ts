@@ -116,7 +116,7 @@ export const generateAddLiquidityOfferDetails = async (
   maker: string,
   taker: string,
   makerIsLong: boolean,
-  poolId: BigNumber,
+  poolId: string,
   collateralTokenDecimals: number
 ): Promise<OfferAddLiquidity> => {
   return {
@@ -139,7 +139,7 @@ export const generateRemoveLiquidityOfferDetails = async (
   maker: string,
   taker: string,
   makerIsLong: boolean,
-  poolId: BigNumber,
+  poolId: string,
   collateralTokenDecimals: number,
   minimumTakerFillAmount?: string,
 ): Promise<OfferRemoveLiquidity> => {

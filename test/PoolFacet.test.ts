@@ -26,7 +26,6 @@ import { deployMain } from "../scripts/deployMain";
 
 import {
   erc20DeployFixture,
-  erc20AttachFixture,
   erc721DeployFixture,
   positionTokenAttachFixture,
   permissionedPositionTokenAttachFixture,
@@ -70,6 +69,9 @@ describe("PoolFacet", async function () {
   let userStartCollateralTokenBalance: BigNumber;
   let collateralTokenInstance: MockERC20;
   let collateralTokenWithFeesInstance: MockERC20;
+
+  let currentNonce: string;
+  let expectedPoolId: string;
 
   let poolId: string;
   let poolParams: LibDIVAStorage.PoolStructOutput;
@@ -220,7 +222,7 @@ describe("PoolFacet", async function () {
     // Functionality
     // -------------------------------------------
 
-    it.only("Creates a contingent pool and stores the pool parameters", async () => {
+    it("Creates a contingent pool and stores the pool parameters", async () => {
       // ---------
       // Act: Create a contingent pool with default parameters
       // ---------
@@ -245,47 +247,34 @@ describe("PoolFacet", async function () {
       // Assert: Check that pool parameters are correctly set
       // ---------
       currentBlockTimestamp = await getLastTimestamp();
-
       poolId = await getPoolIdFromTx(tx);
-      console.log("Actual poolId", poolId)
       poolParams = await getterFacet.getPoolParameters(poolId);
-      const shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-      const currentNonce = await extractNumberFromString(await shortTokenInstance.name());
+      shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+      longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
+      currentNonce = await extractNumberFromString(await shortTokenInstance.name());
 
-      console.log("referenceAsset", referenceAsset)
-      const bytes = ethers.utils.toUtf8Bytes(referenceAsset);
-      // console.log("referencAsset bytes", bytes)
-      const referenceAssetBytes32 = ethers.utils.keccak256(bytes);
-      const expectedPoolId = getPoolId(
-        referenceAssetBytes32,
-        poolParams.expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
+      // Manually calculate the expected poolId
+      expectedPoolId = getPoolId(
+        referenceAsset,
+        Number(poolParams.expiryTime),
+        String(floor),
+        String(inflection),
+        String(cap),
+        String(gradient),
+        String(collateralAmount),
         collateralToken,
         dataProvider,
-        capacity,
+        String(capacity),
         longRecipient,
         shortRecipient,
         permissionedERC721Token,
-        collateralAmount, // collateralAmountMsgSender
+        String(collateralAmount), // collateralAmountMsgSender
         "0", // collateralAmountMaker
         ethers.constants.AddressZero, // maker,
         user1.address, // msgSender
         currentNonce // nonce
       )
       
-      console.log("shortTokenInstance.name", await shortTokenInstance.name())
-      
-      // @todo write test that the poolId is stored inside position token
-      console.log("shortTokenInstance.poolId", await shortTokenInstance.poolId())
-
-      console.log("currentNonce", currentNonce)
-      console.log("poolParams.expiryTime",poolParams.expiryTime)
-      console.log("expectedPoolId", expectedPoolId)
-
       expect(poolId).to.eq(expectedPoolId);
       expect(poolParams.referenceAsset).to.eq(referenceAsset);
       expect(poolParams.expiryTime).to.eq(expiryTime);
@@ -304,6 +293,10 @@ describe("PoolFacet", async function () {
       expect(poolParams.statusTimestamp).to.eq(currentBlockTimestamp);
       expect(poolParams.dataProvider).to.eq(oracle.address);
       expect(poolParams.capacity).to.eq(capacity);
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance.poolId()).to.eq(expectedPoolId);
+      expect(await longTokenInstance.poolId()).to.eq(expectedPoolId);
 
       // Check that the pool has the correct fees set
       poolFees = await getterFacet.getFees(poolParams.indexFees);
@@ -326,39 +319,6 @@ describe("PoolFacet", async function () {
       expect(poolSettlementPeriods.fallbackSubmissionPeriod).to.eq(
         govParams.currentSettlementPeriods.fallbackSubmissionPeriod
       );
-    });
-
-    it("Creates a contingent pool and returns the poolId", async () => {
-      // ---------
-      // Arrange: Get the latest pool Id
-      // ---------
-      poolId = await getPoolIdFromTx(tx);
-
-      // ---------
-      // Act: Create a contingent pool with default parameters
-      // ---------
-      const res = await poolFacet
-        .connect(user1)
-        .callStatic.createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        });
-
-      // ---------
-      // Assert: Check that the poolId returned is equal to the previously latest poolId + 1
-      // ---------
-      expect(res).to.eq(poolId.add(1)); // @todo
     });
 
     it("Returns the same pool parameters when retrieved via `getPoolParametersByAddress`", async () => {
@@ -439,11 +399,6 @@ describe("PoolFacet", async function () {
       expect(await longTokenInstance.poolId()).is.eq(poolId);
     });
 
-    it("Sets the position token names to L1 and S1", async () => {
-      expect(await shortTokenInstance.name()).to.eq("S" + poolId);
-      expect(await longTokenInstance.name()).to.eq("L" + poolId);
-    });
-
     it("Sends position tokens to user1 (pool creator) and user2", async () => {
       expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(
         collateralAmount
@@ -472,33 +427,6 @@ describe("PoolFacet", async function () {
       expect(await collateralTokenInstance.decimals()).to.eq(
         await longTokenInstance.decimals()
       );
-    });
-
-    it("Increments the poolId", async () => {
-      // ---------
-      // Act: Mint a second pair of position tokens
-      // ---------
-      tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
-
-      // ---------
-      // Assert: Check that the `poolId` increased
-      // ---------
-      const secondPoolId = await getPoolIdFromTx(tx);
-      expect(secondPoolId).to.eq(poolId.add(1));
     });
 
     it("Position token holders can transfer their position tokens to any users", async () => {
@@ -1092,6 +1020,8 @@ describe("PoolFacet", async function () {
     // Functionality
     // -------------------------------------------
 
+    // @todo add tests where I create pools with different parameters, users and nonce and confirm that
+    // they are not the same poolId
     it("Should allow to create a contingent pool with permissioned recipients", async () => {
       // ---------
       // Arrange: Check that long recipient and short recipient own the permissioned ERC721 token
@@ -1129,6 +1059,33 @@ describe("PoolFacet", async function () {
       currentBlockTimestamp = await getLastTimestamp();
       poolId = await getPoolIdFromTx(tx);
       poolParams = await getterFacet.getPoolParameters(poolId);
+      shortTokenInstance = await permissionedPositionTokenAttachFixture(poolParams.shortToken);
+      longTokenInstance = await permissionedPositionTokenAttachFixture(poolParams.longToken);
+      currentNonce = await extractNumberFromString(await shortTokenInstance.name());
+
+      // Manually calculate the expected poolId
+      expectedPoolId = getPoolId(
+        referenceAsset,
+        Number(poolParams.expiryTime),
+        String(floor),
+        String(inflection),
+        String(cap),
+        String(gradient),
+        String(collateralAmount),
+        collateralToken,
+        dataProvider,
+        String(capacity),
+        longRecipient,
+        shortRecipient,
+        permissionedERC721Token,
+        String(collateralAmount), // collateralAmountMsgSender
+        "0", // collateralAmountMaker
+        ethers.constants.AddressZero, // maker,
+        user1.address, // msgSender
+        currentNonce // nonce
+      )
+
+      expect(poolId).to.eq(expectedPoolId);
       expect(poolParams.referenceAsset).to.eq(referenceAsset);
       expect(poolParams.expiryTime).to.eq(expiryTime);
       expect(poolParams.floor).to.eq(floor);
@@ -1146,6 +1103,10 @@ describe("PoolFacet", async function () {
       expect(poolParams.statusTimestamp).to.eq(currentBlockTimestamp);
       expect(poolParams.dataProvider).to.eq(oracle.address);
       expect(poolParams.capacity).to.eq(capacity);
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance.poolId()).to.eq(expectedPoolId);
+      expect(await longTokenInstance.poolId()).to.eq(expectedPoolId);
 
       // Check that the pool has the correct fees set
       poolFees = await getterFacet.getFees(poolParams.indexFees);

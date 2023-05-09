@@ -805,7 +805,7 @@ library LibEIP712 {
             mstore(add(mem, 0xC0), mload(add(_offerAddLiquidity, 0xA0)))
             // _offerAddLiquidity.minimumTakerFillAmount;
             mstore(add(mem, 0xE0), mload(add(_offerAddLiquidity, 0xC0)))
-            // _offerAddLiquidity.poolId; // @todo bytes32 has same length as uint256, hence no adjustment needed here
+            // _offerAddLiquidity.poolId;
             mstore(add(mem, 0x100), mload(add(_offerAddLiquidity, 0xE0)))
             // _offerAddLiquidity.salt;
             mstore(add(mem, 0x120), mload(add(_offerAddLiquidity, 0x100)))

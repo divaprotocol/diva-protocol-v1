@@ -77,68 +77,16 @@ interface PoolParams {
   permissionedERC721Token: string;
 }
 
+// The last three fields are only relevant for EIP712 based offers.
+// When creating a contingent pool directly, `collateralAmountMsgSender`
+// is equal to `poolParams.collateralAmount`, `collateralAmountMaker` is zero
+// and `maker` is the zero address.
 interface CreatePoolParams {
   poolParams: PoolParams;
   collateralAmountMsgSender: string;
   collateralAmountMaker: string;
   maker: string;
 }
-
-// // Instantiate the CreatePoolParams object
-// const createPoolParams: CreatePoolParams = {
-//   poolParams: {
-//     referenceAsset: "BTC/USD",
-//     expiryTime: 1683489271,
-//     floor: "0",
-//     inflection: "0",
-//     cap: "0",
-//     gradient: "0",
-//     collateralAmount: "0",
-//     collateralToken: "",
-//     dataProvider: "",
-//     capacity: "0",
-//     longRecipient: "",
-//     shortRecipient: "",
-//     permissionedERC721Token: ""
-//   },
-//   collateralAmountMsgSender: "1000000",
-//   collateralAmountMaker: "0",
-//   maker: "0x1234567890123456789012345678901234567890"
-// };
-
-// // Encode the struct
-// export const encodedParams = ethers.utils.defaultAbiCoder.encode(
-//   [
-//     {
-//       type: 'tuple',
-//       components: [
-//         { type: 'string', name: 'referenceAsset' },
-//         { type: 'uint96', name: 'expiryTime' },
-//         { type: 'uint256', name: 'floor' },
-//         { type: 'uint256', name: 'inflection' },
-//         { type: 'uint256', name: 'cap' },
-//         { type: 'uint256', name: 'gradient' },
-//         { type: 'uint256', name: 'collateralAmount' },
-//         { type: 'string', name: 'collateralToken' },
-//         { type: 'address', name: 'dataProvider' },
-//         { type: 'uint256', name: 'capacity' },
-//         { type: 'address', name: 'longRecipient' },
-//         { type: 'address', name: 'shortRecipient' },
-//         { type: 'address', name: 'permissionedERC721Token' }
-//       ],
-//       name: 'poolParams'
-//     },
-//     { type: 'uint256', name: 'collateralAmountMsgSender' },
-//     { type: 'uint256', name: 'collateralAmountMaker' },
-//     { type: 'address', name: 'maker' }
-//   ],
-//   [
-//     createPoolParams.poolParams,
-//     createPoolParams.collateralAmountMsgSender,
-//     createPoolParams.collateralAmountMaker,
-//     createPoolParams.maker
-//   ]
-// );
 
 export const getPoolId = (
   referenceAsset: string, // keccak256 hash of original string (type: bytes32)
@@ -161,17 +109,27 @@ export const getPoolId = (
   nonce: string,
   ): string => {
   
+  // Convert `referenceAsset` string to bytes32
+  const bytes = ethers.utils.toUtf8Bytes(referenceAsset);
+  const referenceAssetBytes32 = ethers.utils.keccak256(bytes);
+
   const abiCoder = new ethers.utils.AbiCoder();
   const encodedData = abiCoder.encode(
     ["tuple(bytes32, uint96, uint256, uint256, uint256, uint256, uint256, address, address, uint256, address, address, address)", "uint256", "uint256", "address", "address", "uint256"],
-    [[referenceAsset, expiryTime, floor, inflection, cap, gradient, collateralAmount, collateralToken, dataProvider, capacity, longRecipient, shortRecipient, permissionedERC721Token], collateralAmountMsgSender, collateralAmountMaker, maker, msgSender, nonce]
+    [
+      [
+        referenceAssetBytes32, expiryTime, floor, inflection, cap, gradient, collateralAmount, collateralToken, dataProvider, capacity, longRecipient, shortRecipient, permissionedERC721Token
+      ],
+      collateralAmountMsgSender, collateralAmountMaker, maker, msgSender, nonce
+    ]
   );
-  console.log("encodedData", encodedData)
   const poolId = ethers.utils.keccak256(encodedData);
   return poolId;
 };
 
 // Function to extract the nonce from the position token name (e.g., "S3255" or "L3225")
+// @todo mention in the docs that it was a conscious decision to not provide any nonce -> poolId
+// mapping to prevent abuse during chain reorgs
 export async function extractNumberFromString(str: string): Promise<string> {
   const regex = /(\d+)/;
   const match = regex.exec(str);

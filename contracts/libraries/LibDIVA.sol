@@ -9,7 +9,6 @@ import {IPositionToken} from "../interfaces/IPositionToken.sol";
 import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
-import "hardhat/console.sol";
 
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
 // to be returned to user during exceeds the pool's collateral balance
@@ -201,7 +200,8 @@ library LibDIVA {
         return LibDIVAStorage._poolStorage().poolId;
     }
 
-    // @todo Add _getLatestNonce() function?
+    // @todo Add _getLatestNonce() function? Document why the nonce is not accessible, namely
+    // do avoid user error in case of reorgs
 
     function _getClaim(address _collateralToken, address _recipient)
         internal
@@ -528,8 +528,6 @@ library LibDIVA {
         // Calculate `poolId` as the has of pool params, msg.sender and nonce.
         // This is to protect users from malicious pools in case of chain reorgs.
         bytes32 _poolId = _getPoolId(_createPoolParams, ps);
-        console.log("_poolId in SOLIDITY");
-        console.logBytes32(_poolId);
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
@@ -643,7 +641,6 @@ library LibDIVA {
         CreatePoolParams memory _createPoolParams,
         LibDIVAStorage.PoolStorage storage _ps
     ) private view returns (bytes32 poolId) {
-        // @todo Verifiy that the abi.encode version is equivalent ot the one calculated in assembly
         // Assembly for more efficient computing:
         // bytes32 _poolId = keccak256(
         //     abi.encode(
@@ -670,9 +667,14 @@ library LibDIVA {
         assembly {
             let mem := mload(0x40)
             // _createPoolParams.poolParams.referenceAsset;
-            // Get memory pointer where the length of the referenceAsset string is stored
-            let poolParams := mload(_createPoolParams) // Reference to struct stored at first position; Read here how to handle structs inside a struct; first https://ethereum.stackexchange.com/questions/77238/accessing-struct-fields-from-assembly-block
-            let referenceAsset := mload(poolParams) 
+            // Get memory pointer where the `poolParams` struct information is stored.
+            let poolParams := mload(_createPoolParams)
+            // At the `poolParams` location, get the memory pointer where the length
+            // of the `referenceAsset` string is stored.
+            let referenceAsset := mload(poolParams)
+            // Store the hash of the string at position `mem`. `mload(referenceAsset)` is
+            // the string length, `add(referenceAsset, 0x20)` is the location where the
+            // actual string starts.
             mstore(
                 mem,
                 keccak256(add(referenceAsset, 0x20), mload(referenceAsset))
@@ -729,18 +731,8 @@ library LibDIVA {
             mstore(add(mem, 0x220), sload(_ps.slot))
 
             poolId := keccak256(mem, 0x240)
-            // @todo QUESTION: Do I need to update memory pointer in 0x40 here?
-            
-            // mstore(output, 0x240)
-            // mcopy(add(output, 0x20), mem, 0x240)
-
-            // output := mload(add(mem, 0x240)) // Here I want to store the range mem until 0x240. How to do that?
-            // _poolId := sload(add(ps.slot, 0)) // @todo test that when tests are functioning
+            // @todo QUESTION: Do I need to update memory pointer in 0x40 here?            
         }
-
-        // @todo compare this when tests are functioning
-        // console.log("ps.nonce", ps.nonce);
-        // console.logBytes32(_poolId);
     }
 
     function _validateInputParamsCreateContingentPool(

@@ -179,15 +179,15 @@ describe("DiamondTest", async function () {
     );
     assert.equal(
       addresses[3], // LiquidityFacet
-      await diamondLoupeFacet.facetAddress("0x653d588d") // bytes4(keccak256(bytes(addLiquidity(uint256,uint256,address,address))))
+      await diamondLoupeFacet.facetAddress("0x35458660") // bytes4(keccak256(bytes(addLiquidity(bytes32,uint256,address,address))))
     );
     assert.equal(
-      addresses[4], // GetterFacet
+      addresses[4], // GetterFacet // @todo update if getLatestPoolId is removed
       await diamondLoupeFacet.facetAddress("0x4a2fe84d") // bytes4(keccak256(bytes(getLatestPoolId())))
     );
     assert.equal(
       addresses[5], // SettlementFacet
-      await diamondLoupeFacet.facetAddress("0x96cef196") // bytes4(keccak256(bytes(challengeFinalReferenceValue(uint256,uint256))))
+      await diamondLoupeFacet.facetAddress("0x3c8c5fc7") // bytes4(keccak256(bytes(challengeFinalReferenceValue(bytes32,uint256))))
     );
     assert.equal(
       addresses[6], // GovernanceFacet
@@ -203,19 +203,19 @@ describe("DiamondTest", async function () {
     );
     assert.equal(
       addresses[9], // EIP712AddFacet
-      await diamondLoupeFacet.facetAddress("0x36aea01a") // bytes4(keccak256(bytes(fillOfferAddLiquidity((address,address,uint256,uint256,bool,uint256,uint256,uint256,uint256),(uint8,bytes32,bytes32),uint256)))))
+      await diamondLoupeFacet.facetAddress("0x4d483bc6") // bytes4(keccak256(bytes(fillOfferAddLiquidity((address,address,uint256,uint256,bool,uint256,uint256,bytes32,uint256),(uint8,bytes32,bytes32),uint256)))))
     );
     assert.equal(
       addresses[10], // EIP712CancelFacet
       await diamondLoupeFacet.facetAddress("0xc6da33a4") // bytes4(keccak256(bytes(cancelOfferCreateContingentPool((address,address,uint256,uint256,bool,uint256,uint256,string,uint96,uint256,uint256,uint256,uint256,address,address,uint256,address,uint256)))))
     );
     assert.equal(
-      addresses[11], // EIP712CancelFacet
-      await diamondLoupeFacet.facetAddress("0x4358d951") // bytes4(keccak256(bytes(fillOfferRemoveLiquidity((address,address,uint256,uint256,bool,uint256,uint256,uint256,uint256),(uint8,bytes32,bytes32),uint256))))
+      addresses[11], // EIP712RemoveFacet
+      await diamondLoupeFacet.facetAddress("0x33b39d6f") // bytes4(keccak256(bytes(fillOfferRemoveLiquidity((address,address,uint256,uint256,bool,uint256,uint256,bytes32,uint256),(uint8,bytes32,bytes32),uint256))))
     );
     assert.equal(
       addresses[12], // TipFacet
-      await diamondLoupeFacet.facetAddress("0x752d49a1") // bytes4(keccak256(bytes(addTip(uint256,uint256))))
+      await diamondLoupeFacet.facetAddress("0x8691fb58") // bytes4(keccak256(bytes(addTip(bytes32,uint256))))
     );
   });
 

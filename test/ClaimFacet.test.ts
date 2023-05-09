@@ -58,7 +58,7 @@ describe("ClaimFacet", async function () {
   describe("Claim", async () => {
     let user1StartCollateralTokenBalance: number;
     let feeClaimTreasury: BigNumber;
-    let poolId: BigNumber;
+    let poolId: string;
     let referenceAsset: string,
       expiryTime,
       floor: BigNumber,
