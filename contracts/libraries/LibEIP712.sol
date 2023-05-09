@@ -189,7 +189,7 @@ library LibEIP712 {
 
     uint256 private constant ADDRESS_MASK = (1 << 160) - 1;
     uint256 private constant UINT_96_MASK = (1 << 96) - 1;
-    uint256 internal constant UINT_8_MASK = (1 << 8) - 1;
+    uint256 private constant UINT_8_MASK = (1 << 8) - 1;
 
     function _chainId() internal view returns (uint256 chainId) {
         chainId = block.chainid;

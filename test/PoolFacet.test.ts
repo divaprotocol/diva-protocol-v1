@@ -226,6 +226,7 @@ describe("PoolFacet", async function () {
       // ---------
       // Act: Create a contingent pool with default parameters
       // ---------
+      const poolCountBefore = await getterFacet.getPoolCount();
       govParams = await getterFacet.getGovernanceParameters();
       tx = await poolFacet.connect(user1).createContingentPool({
         referenceAsset,
@@ -249,6 +250,7 @@ describe("PoolFacet", async function () {
       currentBlockTimestamp = await getLastTimestamp();
       poolId = await getPoolIdFromTx(tx);
       poolParams = await getterFacet.getPoolParameters(poolId);
+      const poolCountAfter = await getterFacet.getPoolCount();
       shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
       longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
       currentNonce = await extractNumberFromString(await shortTokenInstance.name());
@@ -276,6 +278,7 @@ describe("PoolFacet", async function () {
       )
       
       expect(poolId).to.eq(expectedPoolId);
+      expect(poolCountAfter).to.eq(poolCountBefore.add(1));
       expect(poolParams.referenceAsset).to.eq(referenceAsset);
       expect(poolParams.expiryTime).to.eq(expiryTime);
       expect(poolParams.floor).to.eq(floor);
@@ -399,6 +402,12 @@ describe("PoolFacet", async function () {
       expect(await longTokenInstance.poolId()).is.eq(poolId);
     });
 
+    it("Sets the position token names to L1 and S1", async () => {
+      const poolCount = await getterFacet.getPoolCount();
+      expect(await shortTokenInstance.name()).to.eq("S" + poolCount);
+      expect(await longTokenInstance.name()).to.eq("L" + poolCount);
+    });
+
     it("Sends position tokens to user1 (pool creator) and user2", async () => {
       expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(
         collateralAmount
@@ -427,6 +436,38 @@ describe("PoolFacet", async function () {
       expect(await collateralTokenInstance.decimals()).to.eq(
         await longTokenInstance.decimals()
       );
+    });
+
+    it("Increments the poolCount", async () => {
+      // ---------
+      // Arrange: Get current pool count
+      // ---------
+      const poolCountBefore = await getterFacet.getPoolCount();
+
+      // ---------
+      // Act: Mint a second pair of position tokens
+      // ---------
+      await poolFacet.connect(user1).createContingentPool({
+        referenceAsset,
+        expiryTime,
+        floor,
+        inflection,
+        cap,
+        gradient,
+        collateralAmount,
+        collateralToken,
+        dataProvider,
+        capacity,
+        longRecipient,
+        shortRecipient,
+        permissionedERC721Token,
+      });
+
+      // ---------
+      // Assert: Check that the pool count increased
+      // ---------
+      const poolCountAfter = await getterFacet.getPoolCount();
+      expect(poolCountAfter).to.eq(poolCountBefore.add(1));
     });
 
     it("Position token holders can transfer their position tokens to any users", async () => {

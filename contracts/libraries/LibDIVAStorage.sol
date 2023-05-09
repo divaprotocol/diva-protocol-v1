@@ -82,8 +82,8 @@ library LibDIVAStorage {
         mapping(bytes32 => uint256) poolIdToReservedClaim; // poolId -> reserve amount
     }
 
-    // IMPORTANT: hash calc in `LibDIVA._createContingentPool` assumes that the `nonce` variable
-    // is stored at slot 0 inside the `PoolStorage` struct
+    // IMPORTANT: The hash calculation in `LibDIVA._getPoolId()` assumes
+    // that the `nonce` variable is stored at slot 0 inside the `PoolStorage` struct
     struct PoolStorage {
         uint256 nonce;
         bytes32 poolId;

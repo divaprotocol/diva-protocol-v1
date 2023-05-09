@@ -194,7 +194,7 @@ library LibDIVA {
         return LibDIVAStorage._poolStorage().pools[_poolId];
     }
 
-    function _getPoolCount() internal view returns (uint256) {        
+    function _getPoolCount() internal view returns (uint256) {
         return LibDIVAStorage._poolStorage().nonce;
     }
 
@@ -553,7 +553,7 @@ library LibDIVA {
 
         // Deploy two `PositionToken` contract clones, one that represents shares in the short
         // and one that represents shares in the long position.
-        // Naming convention for short/long token: S13/L13 where 13 is the nonce
+        // Naming convention for short/long token: S13/L13 where 13 is the nonce.
         // Diamond contract (address(this) due to delegatecall) is set as the
         // owner of the position tokens and is the only account that is
         // authorized to call the `mint` and `burn` function therein.
@@ -629,8 +629,8 @@ library LibDIVA {
         return _poolId;
     }
 
-    // Return poolId which is the hash of create pool parameters, msg.sender and nonce.
-    // This is to protect users from malicious pools in case of chain reorgs.
+    // Return `poolId` which is the hash of create pool parameters, msg.sender and nonce.
+    // This is to protect users from depositing into malicious pools in case of chain reorgs.
     function _getPoolId(
         CreatePoolParams memory _createPoolParams,
         LibDIVAStorage.PoolStorage storage _ps

@@ -1328,7 +1328,6 @@ describe("EIP712", async function () {
       // ---------
       // Arrange: Generate 2 create contingent pool offers, and set takerFillAmount equal to takerCollateralAmount, and get balance of collateral token for both users before creating the pool
       // ---------
-
       // Generate first create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
       const offerCreateContingentPool1 =
         await generateCreateContingentPoolOfferDetails({
@@ -1470,6 +1469,9 @@ describe("EIP712", async function () {
         diamondAddress
       );
 
+      // Get current pool count
+      const poolCountBefore = await getterFacet.getPoolCount();
+
       // ---------
       // Act: User2 fills create contingent pool offers
       // ---------
@@ -1500,6 +1502,10 @@ describe("EIP712", async function () {
       const poolId2 = await getterFacet.getPoolIdByTypedCreateOfferHash(
         typedMessageHash2
       );
+
+      // Get current pool count and 
+      const poolCountAfter = await getterFacet.getPoolCount();
+      expect(poolCountAfter).to.eq(poolCountBefore.add(2));
 
       // Get first pool parameters of newly created pool
       const poolParams1 = await getterFacet.getPoolParameters(poolId1);
@@ -1649,6 +1655,7 @@ describe("EIP712", async function () {
 
       // Confirm that the poolIds of the two pools are different
       expect(await shortTokenInstance1.poolId()).to.not.eq(await shortTokenInstance2.poolId());
+      expect(await longTokenInstance1.poolId()).to.not.eq(await longTokenInstance2.poolId());
 
       // Confirm pool params are set correctly
       expect(poolParams2.referenceAsset).to.eq(
