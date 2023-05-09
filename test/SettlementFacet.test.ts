@@ -2098,8 +2098,6 @@ describe("SettlementFacet", async function () {
           });
           poolId = await getPoolIdFromTx(tx);
           poolParamsBefore = await getterFacet.getPoolParameters(poolId);
-          console.log("expiryTime: " + poolParamsBefore.expiryTime);
-          console.log("last block timestamp:" + (await getLastTimestamp()));
           shortTokenInstance = await positionTokenAttachFixture(
             poolParamsBefore.shortToken
           );
@@ -2144,9 +2142,6 @@ describe("SettlementFacet", async function () {
           poolParamsAfter = await getterFacet.getPoolParameters(poolId);
           expect(poolParamsAfter.payoutLong).to.be.gt(0); // sufficient to check that for that particular case; true in that particular case because finalReferenceValue = inflection
           expect(poolParamsAfter.payoutShort).to.be.gt(0); // sufficient to check that for that particular case; true in that particular case because finalReferenceValue = inflection
-
-          console.log("payoutLong: " + poolParamsAfter.payoutLong);
-          console.log("payoutShort: " + poolParamsAfter.payoutShort);
         });
       });
     });

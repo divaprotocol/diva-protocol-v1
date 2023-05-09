@@ -1020,8 +1020,6 @@ describe("PoolFacet", async function () {
     // Functionality
     // -------------------------------------------
 
-    // @todo add tests where I create pools with different parameters, users and nonce and confirm that
-    // they are not the same poolId
     it("Should allow to create a contingent pool with permissioned recipients", async () => {
       // ---------
       // Arrange: Check that long recipient and short recipient own the permissioned ERC721 token

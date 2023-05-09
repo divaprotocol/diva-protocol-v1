@@ -62,7 +62,7 @@ import {
 
 use(solidity);
 
-const collateralTokenDecimals = 18; // @todo test with 6 decimals
+const collateralTokenDecimals = 18;
 
 describe("EIP712", async function () {
   let user1: SignerWithAddress,
@@ -125,8 +125,6 @@ describe("EIP712", async function () {
   before(async () => {
     // Get signers
     [contractOwner, treasury, oracle, user1, user2, user3] = await ethers.getSigners();
-    console.log("Address user1: " + user1.address);
-    console.log("Address user2: " + user2.address);
 
     // ---------
     // Setup: Deploy diamond contract (incl. facets) and connect to the diamond contract via facet specific ABI's
@@ -305,7 +303,6 @@ describe("EIP712", async function () {
         poolId = await getterFacet.getPoolIdByTypedCreateOfferHash(
           typedMessageHash
         );
-        console.log("poolId", poolId)
 
         // Get pool parameters of newly created pool
         poolParams = await getterFacet.getPoolParameters(poolId);

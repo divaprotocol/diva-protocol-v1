@@ -77,7 +77,7 @@ contract TipFacet is ITip, ReentrancyGuard {
         uint256 _after = collateralToken.balanceOf(address(this));
 
         if (_after - _before != _amount) {
-            revert FeeTokensNotSupported(); // @todo add to docs and test and in interace
+            revert FeeTokensNotSupported();
         }
 
         // Log event

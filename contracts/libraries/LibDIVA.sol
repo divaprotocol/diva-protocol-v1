@@ -9,7 +9,6 @@ import {IPositionToken} from "../interfaces/IPositionToken.sol";
 import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
-import "hardhat/console.sol"; // @todo remove at the end
 
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
 // to be returned to user during exceeds the pool's collateral balance
@@ -198,9 +197,6 @@ library LibDIVA {
     function _getPoolCount() internal view returns (uint256) {        
         return LibDIVAStorage._poolStorage().nonce;
     }
-
-    // @todo Document why the nonce is not accessible, namely
-    // do avoid user error in case of reorgs
 
     function _getClaim(address _collateralToken, address _recipient)
         internal
@@ -519,13 +515,12 @@ library LibDIVA {
             )
         ) revert InvalidInputParamsCreateContingentPool();
 
-        // @todo update comments in code and docs
-        // Increment `nonce` every time a new pool is created. Index
+        // Increment internal `nonce` every time a new pool is created. Index
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
         ++ps.nonce;
 
         // Calculate `poolId` as the hash of pool params, msg.sender and nonce.
-        // This is to protect users from malicious pools in case of chain reorgs.
+        // This is to protect users from malicious pools in the event of chain reorgs.
         bytes32 _poolId = _getPoolId(_createPoolParams, ps);
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
@@ -663,16 +658,6 @@ library LibDIVA {
         //         ps.nonce
         //     )
         // );
-        // @todo remove after testing
-        // bytes32 slot1;
-        // bytes32 slot2;
-        // bytes32 slot3;
-        // bytes32 slot4;
-        // bytes32 slot5;
-        // bytes32 slot6;
-        // bytes32 slot7;
-        // bytes32 slot8;
-        // bytes32 slot9;
         assembly {
             let mem := mload(0x40)
             // _createPoolParams.poolParams.referenceAsset;
@@ -740,30 +725,7 @@ library LibDIVA {
             mstore(add(mem, 0x220), sload(_ps.slot))
 
             poolId := keccak256(mem, 0x240)
-            // @todo QUESTION: Do I need to update memory pointer in 0x40 here?            
-            
-            // @todo remove after testing
-            // slot1 := mload(add(mem, 0x20))
-            // slot2 := mload(add(mem, 0x40))
-            // slot3 := mload(add(mem, 0x60))
-            // slot4 := mload(add(mem, 0x80))
-            // slot5 := mload(add(mem, 0xA0))
-            // slot6 := mload(add(mem, 0xC0))
-            // slot7 := mload(add(mem, 0xE0))
-            // slot8 := mload(add(mem, 0x100))
-            // slot9 := mload(add(mem, 0x120))
         }
-        // @todo remove after testing
-        // console.log("SLOTS: ");
-        // console.logBytes32(slot1);
-        // console.logBytes32(slot2);
-        // console.logBytes32(slot3);
-        // console.logBytes32(slot4);
-        // console.logBytes32(slot5);
-        // console.logBytes32(slot6);
-        // console.logBytes32(slot7);
-        // console.logBytes32(slot8);
-        // console.logBytes32(slot9);
     }
 
     function _validateInputParamsCreateContingentPool(

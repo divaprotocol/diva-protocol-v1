@@ -2370,8 +2370,7 @@ describe("GovernanceFacet", async function () {
       // Arrange: Define the new protocol parameters
       // ---------
       govParamsBefore = await getterFacet.getGovernanceParameters();
-      console.log(govParamsBefore)
-      console.log("Fees length before", await getterFacet.getFeesHistoryLength())
+
       // Define new fees and make sure it's not equal to the current ones
       newFee = parseUnits("0.01"); // 1%
       expect(govParamsBefore.currentFees.protocolFee).to.not.eq(newFee);

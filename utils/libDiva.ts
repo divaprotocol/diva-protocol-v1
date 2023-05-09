@@ -128,8 +128,8 @@ export const getPoolId = (
 };
 
 // Function to extract the nonce from the position token name (e.g., "S3255" or "L3225")
-// @todo mention in the docs that it was a conscious decision to not provide any nonce -> poolId
-// mapping to prevent abuse during chain reorgs
+// It was a conscious decision to not provide a mapping from `nonce` to `poolId` to
+// protect users from being exploited in the event of chain reorgs.
 export async function extractNumberFromString(str: string): Promise<string> {
   const regex = /(\d+)/;
   const match = regex.exec(str);
