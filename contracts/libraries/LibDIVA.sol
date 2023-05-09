@@ -526,7 +526,7 @@ library LibDIVA {
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
         ++ps.nonce;
 
-        // Calculate `poolId` as the has of pool params, msg.sender and nonce.
+        // Calculate `poolId` as the hash of pool params, msg.sender and nonce.
         // This is to protect users from malicious pools in case of chain reorgs.
         bytes32 _poolId = _getPoolId(_createPoolParams, ps);
 
