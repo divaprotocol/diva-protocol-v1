@@ -195,13 +195,11 @@ library LibDIVA {
         return LibDIVAStorage._poolStorage().pools[_poolId];
     }
 
-    // @todo Confirm with Sascha that no update of this function is needed as it's
-    // already returnen the latest poolId; maybe check whether docs need update
-    function _getLatestPoolId() internal view returns (bytes32) {        
-        return LibDIVAStorage._poolStorage().poolId;
+    function _getPoolCount() internal view returns (uint256) {        
+        return LibDIVAStorage._poolStorage().nonce;
     }
 
-    // @todo Add _getLatestNonce() function? Document why the nonce is not accessible, namely
+    // @todo Document why the nonce is not accessible, namely
     // do avoid user error in case of reorgs
 
     function _getClaim(address _collateralToken, address _recipient)

@@ -182,8 +182,8 @@ describe("DiamondTest", async function () {
       await diamondLoupeFacet.facetAddress("0x35458660") // bytes4(keccak256(bytes(addLiquidity(bytes32,uint256,address,address))))
     );
     assert.equal(
-      addresses[4], // GetterFacet // @todo update if getLatestPoolId is removed
-      await diamondLoupeFacet.facetAddress("0x4a2fe84d") // bytes4(keccak256(bytes(getLatestPoolId())))
+      addresses[4], // GetterFacet
+      await diamondLoupeFacet.facetAddress("0x8eec5d70") // bytes4(keccak256(bytes(getPoolCount())))
     );
     assert.equal(
       addresses[5], // SettlementFacet

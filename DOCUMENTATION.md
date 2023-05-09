@@ -273,7 +273,7 @@ DIVA Protocol implements the following functions:
 | [`revokePendingFallbackDataProviderUpdate`](#revokependingfallbackdataproviderupdate)                                   | Function to revoke a pending fallback data provider update and restore the previous one.                                                             |
 | [`revokePendingTreasuryUpdate`](#revokependingtreasuryupdate)                                   | Function to revoke a pending treasury address update and restore the previous one.                                                             |
 | **Getter functions**                                                                      |                                                                                                                                                             |
-| [`getLatestPoolId`](#getlatestpoolid)                                                     | Function to return the latest pool Id.                                                                                                                      |
+| [`getPoolCount`](#getpoolcount)                                                     | Function to return the total number of pools created.                                                                                                                      |
 | [`getPoolParameters`](#getpoolparameters)                                                 | Function to return the pool parameters for a given pool Id.                                                                                                 |
 | [`getPoolParametersByAddress`](#getpoolparametersbyaddress)                               | Function to return the pool parameters for a given position token address.                                                                                  |
 | [`getGovernanceParameters`](#getgovernanceparameters)                                     | Function to return current applicable protocol parameters. Ignores pending updates.                                                                                                              |
@@ -1637,17 +1637,18 @@ function revokePendingTreasuryUpdate() external;
 <h2 id="getter-functions-1">Getter functions</h2>
 DIVA Protocol implements the following getter functions.
 
-// @todo update
-### getLatestPoolId
+### getPoolCount
 
-Function to return the latest pool Id.
+Function to return the total number of pools created (equal to the latest nonce).
 
 ```js
-function getLatestPoolId()
+function getPoolCount()
     external
     view
-    returns (bytes32);
+    returns (uint256);
 ```
+
+>**Note:** It was a conscious decision to not provide a mapping from `nonce` to `poolId` to protect users from being exploited in the event of chain reorgs.
 
 ### getPoolParameters
 

@@ -4905,9 +4905,8 @@ describe("EIP712", async function () {
       // Arrange: Create an offer with a poolId that does not yet exist
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
-      poolId = await getterFacet.getLatestPoolId();
-      // @todo better check here that there is at least one poolId using the new getPoolCount() function (>0 requirement)
-      expect(poolId).to.not.eq(ethers.constants.HashZero);
+      const poolCount = await getterFacet.getPoolCount();
+      expect(poolCount).to.be.gt(0);
 
       // Define zero bytes as the non-existent poolId
       const nonExistentPoolId = ethers.constants.HashZero;
@@ -7502,9 +7501,8 @@ describe("EIP712", async function () {
       // Arrange: Create an offer with a poolId that does not yet exist
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
-      poolId = await getterFacet.getLatestPoolId();
-      // @todo update this part to use the getPoolCount() function and confirm that it's >0
-      expect(poolId).to.not.eq(ethers.constants.HashZero);
+      const poolCount = await getterFacet.getPoolCount();
+      expect(poolCount).to.be.gt(0);
 
       // Define zero bytes as the non-existent poolId
       const nonExistentPoolId = ethers.constants.HashZero;

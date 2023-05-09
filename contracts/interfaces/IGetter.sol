@@ -6,10 +6,11 @@ import {LibEIP712} from "../libraries/LibEIP712.sol";
 
 interface IGetter {
     /**
-     * @notice Returns the latest pool Id.
-     * @return Pool Id.
+     * @notice Returns the total number of pools created (equal to
+     * the latest nonce).
+     * @return Number of pools.
      */
-    function getLatestPoolId() external view returns (bytes32);
+    function getPoolCount() external view returns (uint256);
 
     /**
      * @notice Returns the pool parameters for a given pool Id. To
