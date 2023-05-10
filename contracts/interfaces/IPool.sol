@@ -22,7 +22,8 @@ interface IPool {
      * redeemed by calling `redeemPositionToken` or `removeLiquidity`.
      * @dev Position token supply equals `collateralAmount` (minimum 1e6).
      * Position tokens have the same number of decimals as the collateral token.
-     * Only ERC20 tokens with 6 <= decimals <= 18 are accepted as collateral.
+     * Only ERC20 tokens that do not charge fees on transfers and have a decimal
+     * precision between 6 and 18 are accepted as collateral.
      * Tokens with flexible supply like Ampleforth should not be used. When
      * interest/yield bearing tokens are considered, only use tokens with a
      * constant balance mechanism such as Compound's cToken or the wrapped

@@ -127,13 +127,14 @@ describe("LiquidityFacet", async function () {
       additionalCollateralAmount = parseUnits("5000", decimals);
       positionTokensToRedeem = parseUnits("66", decimals);
 
-      // Mint ERC20 collateral token with `decimals` decimals and send it to user 1
+      // Mint ERC20 collateral token with `decimals` decimals and without fees and send it to user 1
       collateralTokenInstance = await erc20DeployFixture(
         "DummyCollateralToken",
         "DCT",
         parseUnits(user1StartCollateralTokenBalance.toString(), decimals),
         user1.address,
-        decimals
+        decimals,
+        "0"
       );
 
       // Transfer half of user1's DCT balance to user2 who will add liquidity
@@ -688,6 +689,89 @@ describe("LiquidityFacet", async function () {
             zeroXShortRecipient // shortRecipient
           )
         ).to.be.revertedWith("ERC20: mint to the zero address");
+      });
+
+      it("Reverts if fee is activated and succeeds if deactivated again", async () => {
+        // ---------
+        // Arrange 1: Confirm that token transfer fees are zero and define collateral amount to add
+        // ---------
+        expect(await collateralTokenInstance.getFee()).to.eq(0);
+        additionalCollateralAmount = parseUnits("1", decimals);
+
+        // ---------
+        // Act 1: Add liquidity in the absence of fees
+        // ---------
+        await liquidityFacet.connect(user2).addLiquidity(
+          poolId,
+          additionalCollateralAmount,
+          user2.address, // longRecipient
+          user3.address // shortRecipient
+        );
+
+        // ---------
+        // Assert 1: Confirm that it was successful and check parameters
+        // ---------
+        const poolParamsAfter1 = await getterFacet.getPoolParameters(poolId);
+        newCollateralBalance = poolParamsBefore.collateralBalance.add(
+          additionalCollateralAmount
+        );
+        expect(await shortTokenInstance.totalSupply()).to.eq(
+          poolParamsAfter1.collateralBalance
+        );
+        expect(await longTokenInstance.totalSupply()).to.eq(
+          poolParamsAfter1.collateralBalance
+        );
+        expect(poolParamsAfter1.collateralBalance).to.eq(newCollateralBalance);
+
+        // ---------
+        // Arrange 2: Activate token transfer fees
+        // ---------
+        const fee = 100;
+        await collateralTokenInstance.setFee(fee);
+        expect(await collateralTokenInstance.getFee()).to.eq(fee);
+
+        // ---------
+        // Act & Assert 2: Check that adding collateral fails if a fee is activated
+        // ---------        
+        await expect(
+          liquidityFacet.connect(user2).addLiquidity(
+            poolId,
+            additionalCollateralAmount,
+            user2.address, // longRecipient
+            user3.address // shortRecipient
+          )
+        ).to.be.revertedWith("FeeTokensNotSupported()");
+
+        // ---------
+        // Arrange 3: Set token transfer fees back to 0
+        // ---------
+        await collateralTokenInstance.setFee(0);
+        expect(await collateralTokenInstance.getFee()).to.eq(0);
+
+        // ---------
+        // Act 3: Add liquidity and confirm that it doesn't fail
+        // ---------
+        await liquidityFacet.connect(user2).addLiquidity(
+          poolId,
+          additionalCollateralAmount,
+          user2.address, // longRecipient
+          user3.address // shortRecipient
+        );
+
+        // ---------
+        // Assert 3: Confirm that it was successful and check parameters
+        // ---------
+        const poolParamsAfter2 = await getterFacet.getPoolParameters(poolId);
+        newCollateralBalance = poolParamsAfter1.collateralBalance.add(
+          additionalCollateralAmount
+        );
+        expect(await shortTokenInstance.totalSupply()).to.eq(
+          poolParamsAfter2.collateralBalance
+        );
+        expect(await longTokenInstance.totalSupply()).to.eq(
+          poolParamsAfter2.collateralBalance
+        );
+        expect(poolParamsAfter2.collateralBalance).to.eq(newCollateralBalance);        
       });
     });
 

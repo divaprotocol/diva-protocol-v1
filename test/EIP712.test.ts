@@ -160,7 +160,8 @@ describe("EIP712", async function () {
       "TTT",
       parseUnits("100000", collateralTokenDecimals),
       user1.address,
-      collateralTokenDecimals
+      collateralTokenDecimals,
+      "0"
     );
 
     // Transfer collateral token from user1 to user2

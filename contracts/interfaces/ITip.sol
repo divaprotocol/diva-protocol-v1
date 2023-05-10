@@ -6,6 +6,9 @@ interface ITip {
     // is no longer "Open"
     error FinalValueAlreadySubmitted();
 
+    // Thrown in `addTip` if the collateral token implements a fee
+    error FeeTokensNotSupported();
+
     // Struct for `batchAddTip` function input
     struct ArgsBatchAddTip {
         uint256 poolId;
@@ -17,7 +20,7 @@ interface ITip {
      * @param tipper Tipper address
      * @param poolId Pool Id tipped
      * @param collateralToken Collateral token address
-     * @param amount Tip amount
+     * @param amount Tip amount (net of fees, if any)
      */
     event TipAdded(
         address indexed tipper,
@@ -29,6 +32,7 @@ interface ITip {
     /**
      * @notice Function to add a tip in collateral token to a specific pool.
      * @dev Requires prior approval from `msg.sender` to transfer the token.
+     * Fee-on-transfer tokens are not supported.
      * @param _poolId Id of pool to tip
      * @param _amount Collateral token amount to add as a tip (expressed as
      * an integer with collateral token decimals)

@@ -69,8 +69,16 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Update claim mapping
         _fs.poolIdToReservedClaim[_poolId] += _amount;
 
-        // Transfer approved collateral tokens from `msg.sender` to `this`
+        // Check collateral token balance before and after the transfer to account
+        // for potential fees. Transfer approved collateral token from `msg.sender`
+        // if no fees are charged. Otherwise, revert.
+        uint256 _before = collateralToken.balanceOf(address(this));
         collateralToken.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _after = collateralToken.balanceOf(address(this));
+
+        if (_after - _before != _amount) {
+            revert FeeTokensNotSupported(); // @todo add to docs and test and in interace
+        }
 
         // Log event
         emit TipAdded(msg.sender, _poolId, address(collateralToken), _amount);

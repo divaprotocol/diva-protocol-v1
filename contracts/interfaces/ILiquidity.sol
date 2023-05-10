@@ -58,7 +58,8 @@ interface ILiquidity {
      * long and short position tokens with supply equal to collateral
      * amount added and sends them to `_longRecipient` and `_shortRecipient`,
      * respectively.
-     * @dev Requires prior ERC20 approval.
+     * @dev Requires prior ERC20 approval. The transaction will fail if the
+     * underlying collateral token charges a fee on transfers.
      * @param _poolId Id of the pool to add collateral to.
      * @param _collateralAmountIncr Incremental collateral amount that `msg.sender`
      * is going to add to the pool expressed as an integer with collateral token decimals.

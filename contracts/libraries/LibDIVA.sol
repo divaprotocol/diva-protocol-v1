@@ -24,6 +24,10 @@ error PoolExpired();
 // Thrown in `createContingentPool` if the input parameters are invalid
 error InvalidInputParamsCreateContingentPool();
 
+// Thrown in `createContingentPool` and `addLiquidity` if the collateral token
+// implements a fee
+error FeeTokensNotSupported();
+
 // Thrown in `addLiquidity` if adding additional collateral would
 // result in the pool capacity being exceeded
 error PoolCapacityExceeded();
@@ -515,21 +519,32 @@ library LibDIVA {
         // Cache new poolId to avoid reading from storage
         uint256 _poolId = ps.poolId;
 
-        // Transfer approved collateral tokens from `msg.sender` to `this`.
-        collateralToken.safeTransferFrom(
-            msg.sender,
-            address(this),
-            _createPoolParams.collateralAmountMsgSender
-        );
-
-        // Transfer approved collateral tokens from maker. Applies only for `fillOfferCreateContingentPool`
-        // when makerFillAmount > 0. Requires prior approval from `maker` to execute this transaction.
-        if (_createPoolParams.collateralAmountMaker != 0) {
+        // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
+        // the transfer will revert for fee tokens.
+        // Block scoping applied to avoid stack-too-deep error.
+        {
+            uint256 _before = collateralToken.balanceOf(address(this));
             collateralToken.safeTransferFrom(
-                _createPoolParams.maker,
+                msg.sender,
                 address(this),
-                _createPoolParams.collateralAmountMaker
+                _createPoolParams.collateralAmountMsgSender
             );
+
+            // Transfer approved collateral tokens from maker. Applies only for `fillOfferCreateContingentPool`
+            // when makerFillAmount > 0. Requires prior approval from `maker` to execute this transaction.
+            if (_createPoolParams.collateralAmountMaker != 0) {
+                collateralToken.safeTransferFrom(
+                    _createPoolParams.maker,
+                    address(this),
+                    _createPoolParams.collateralAmountMaker
+                );
+            }
+            uint256 _after = collateralToken.balanceOf(address(this));
+
+            // Revert if a fee was applied during transfer. Throws if `_before > _after`.
+            if (_after - _before != _createPoolParams.collateralAmountMsgSender + _createPoolParams.collateralAmountMaker) {
+                revert FeeTokensNotSupported();
+            }
         }
 
         // Deploy two `PositionToken` contract clones, one that represents shares in the short
@@ -680,21 +695,32 @@ library LibDIVA {
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
         // Transfer approved collateral tokens from `msg.sender` (taker in `fillOfferAddLiquidity`) to `this`.
-        // Requires prior approval from `msg.sender` to execute this transaction.
-        collateralToken.safeTransferFrom(
-            msg.sender,
-            address(this),
-            addLiquidityParams.collateralAmountMsgSender
-        );
-
-        // Transfer approved collateral tokens from maker. Applies only for `fillOfferAddLiquidity`
-        // when makerFillAmount > 0. Requires prior approval from `maker` to execute this transaction.
-        if (addLiquidityParams.collateralAmountMaker != 0) {
+        // Requires prior approval from `msg.sender` to execute this transaction. Note that
+        // the transfer will revert for fee tokens.
+        // Block scoping applied to avoid stack-too-deep error.
+        {
+            uint256 _before = collateralToken.balanceOf(address(this));
             collateralToken.safeTransferFrom(
-                addLiquidityParams.maker,
+                msg.sender,
                 address(this),
-                addLiquidityParams.collateralAmountMaker
+                addLiquidityParams.collateralAmountMsgSender
             );
+
+            // Transfer approved collateral tokens from maker. Applies only for `fillOfferAddLiquidity`
+            // when makerFillAmount > 0. Requires prior approval from `maker` to execute this transaction.
+            if (addLiquidityParams.collateralAmountMaker != 0) {
+                collateralToken.safeTransferFrom(
+                    addLiquidityParams.maker,
+                    address(this),
+                    addLiquidityParams.collateralAmountMaker
+                );
+            }
+            uint256 _after = collateralToken.balanceOf(address(this));
+
+            // Revert if a fee was applied during transfer. Throws if `_before > _after`.
+            if (_after - _before != addLiquidityParams.collateralAmountMsgSender + addLiquidityParams.collateralAmountMaker) {
+                revert FeeTokensNotSupported();
+            }
         }
 
         uint256 _collateralAmountIncr = addLiquidityParams
