@@ -20,7 +20,7 @@ interface ITip {
      * @param tipper Tipper address
      * @param poolId Pool Id tipped
      * @param collateralToken Collateral token address
-     * @param amount Tip amount (net of fees, if any)
+     * @param amount Tip amount
      */
     event TipAdded(
         address indexed tipper,
