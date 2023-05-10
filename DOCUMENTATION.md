@@ -2431,8 +2431,8 @@ Function to reduce an existing stake for a contract owner candidate. This functi
 The function executes the following steps in the following order:
 1. Confirm that the 7-day minimum staking period has been respected.
 1. Confirm that triggered outside of the ownership claim submission period.
-1. Reduce the amount staked for the candidate by `msg.sender`. Will revert on underflow as Solidity version > 0.8.0 is used.
-1. Reduce the amount staked for the candidate overall. Will revert on underflow as Solidity version > 0.8.0 is used.
+1. Reduce the amount staked for the candidate by `msg.sender`. Will revert on underflow as Solidity version > 0.8.19 is used.
+1. Reduce the amount staked for the candidate overall. Will revert on underflow as Solidity version > 0.8.19 is used.
 1. Transfer the corresponding amount to `msg.sender` using OpenZeppelin's `safeTransfer` method.
 1. Emit an [`Unstaked`](#unstaked) event on success.
 

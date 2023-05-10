@@ -158,7 +158,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         }
  
         // Update staking balances. Both operations will revert on underflow as
-        // Solidity version > 0.8.0 is used
+        // Solidity version > 0.8.19 is used
         _voterToCandidateToStakedAmount[msg.sender][_candidate] -= _amount;
         _candidateToStakedAmount[_candidate] -= _amount;
         

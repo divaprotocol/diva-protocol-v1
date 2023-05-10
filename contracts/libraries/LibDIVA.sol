@@ -9,6 +9,7 @@ import {IPositionToken} from "../interfaces/IPositionToken.sol";
 import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
+import "hardhat/console.sol";
 
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
 // to be returned to user during exceeds the pool's collateral balance
@@ -495,6 +496,26 @@ library LibDIVA {
         internal
         returns (bytes32)
     {
+        {
+            bytes32 pointerCreatePoolParams;
+            bytes32 memInternal;
+            assembly {
+                pointerCreatePoolParams := _createPoolParams // 0x260, the free memory pointer from the main function `_createContingentPool`
+                // As we are dealing with a nested struct, at 0x260, the reference to the first struct is stored, which is at 0x80 because it was 
+                // already loaded in the overarching function (to get the 0x80, do mload(_createPoolParams)).
+                // At 0x280, collateralAmountMsgSender is stored
+                // At 0x2A0, collateralAmountMaker is stored
+                // At 0x2C0, maker is stored
+                // -> Next free memory pointer expected at 0x2E0 (set at the beginnign of the `_createContingentPoolLib` function)
+                memInternal := mload(0x40) // 0x2E0 confirmed
+            }
+            // console.log("pointerCreatePoolParams");
+            // console.logBytes32(pointerCreatePoolParams);
+            // console.log("memInternal");
+            // console.logBytes32(memInternal);
+        }
+        
+
         // Get reference to relevant storage slots
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
@@ -505,7 +526,18 @@ library LibDIVA {
             _createPoolParams.poolParams.collateralToken
         );
 
+        // External call -> stores returned data in memory and updates free memory pointer
+        // New expected free memory pointer: 0x300
         uint8 _collateralTokenDecimals = collateralToken.decimals();
+
+        {
+            bytes32 memBeforeGetPoolId;
+            assembly {
+                memBeforeGetPoolId := mload(0x40) // 0x300, as expected
+            }
+            // console.log("memBeforeGetPoolId");
+            // console.logBytes32(memBeforeGetPoolId);
+        }
 
         // Check validity of input parameters
         if (
@@ -515,24 +547,69 @@ library LibDIVA {
             )
         ) revert InvalidInputParamsCreateContingentPool();
 
+        
+
         // Increment internal `nonce` every time a new pool is created. Index
-        // starts at 1. No overflow risk when using compiler version >= 0.8.0.
+        // starts at 1. No overflow risk when using compiler version >= 0.8.19.
         ++ps.nonce;
+
+        {
+            bytes32 memBeforeGetPoolId;
+            assembly {
+                memBeforeGetPoolId := mload(0x40) // Still 0x300 as we haven't written to memory after the collateralToken.decimals() external call
+            }
+            // console.log("memBeforeGetPoolId");
+            // console.logBytes32(memBeforeGetPoolId);
+        }
 
         // Calculate `poolId` as the hash of pool params, msg.sender and nonce.
         // This is to protect users from malicious pools in the event of chain reorgs.
         bytes32 _poolId = _getPoolId(_createPoolParams, ps);
+
+        // As the free memory pointer is not updated within `_getPoolId`, I'd expect it to be 0x300
+        {
+            bytes32 memAfterGetPoolId;
+            bytes32 slot;
+            assembly {
+                memAfterGetPoolId := mload(0x40) // 0x300 as expected
+                slot := mload(0x300) // should contain the hash
+                // 0x300 -> hash of BTC/USD
+                // 0x320 -> expiryTime
+                // ... -> floor
+                // ...
+                // add(0x300, 0x220): nonce
+                // Note that the actual poolId hash is not stored in memory by in `_poolId`, which sits 
+                // in the stack
+            }
+            // console.log("memAfterGetPoolId");
+            // console.logBytes32(memAfterGetPoolId);
+            // console.log("slot");
+            // console.logBytes32(slot);
+        }
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
         // Block scoping applied to avoid stack-too-deep error.
         {
             uint256 _before = collateralToken.balanceOf(address(this));
+            bytes32 mem;
+            assembly {
+                mem := mload(0x40) // 0x320
+            }
+            // console.log("mem");
+            // console.logBytes32(mem);
+
             collateralToken.safeTransferFrom(
                 msg.sender,
                 address(this),
                 _createPoolParams.collateralAmountMsgSender
             );
+
+            assembly {
+                mem := mload(0x40) // hard to determine how much the return size of safeTransferFrom but the memory pointer should be updated
+            }
+            // console.log("mem");
+            console.logBytes32(mem);
 
             // Transfer approved collateral tokens from maker. Applies only for `fillOfferCreateContingentPool`
             // when makerFillAmount > 0. Requires prior approval from `maker` to execute this transaction.
@@ -549,6 +626,17 @@ library LibDIVA {
             if (_after - _before != _createPoolParams.collateralAmountMsgSender + _createPoolParams.collateralAmountMaker) {
                 revert FeeTokensNotSupported();
             }
+        }
+
+        // There are four external call operations above, which should increase the pointer from
+        // 0x300 to something else
+        {
+            bytes32 memAfterBalance;
+            assembly {
+                memAfterBalance := mload(0x40)
+            }
+            // console.log("memAfterBalance");
+            console.logBytes32(memAfterBalance);
         }
 
         // Deploy two `PositionToken` contract clones, one that represents shares in the short
@@ -658,11 +746,15 @@ library LibDIVA {
         //         ps.nonce
         //     )
         // );
+        bytes32 slot1;
+        bytes32 slot2;
         assembly {
             let mem := mload(0x40)
             // _createPoolParams.poolParams.referenceAsset;
             // Get memory pointer where the `poolParams` struct information is stored.
             let poolParams := mload(_createPoolParams)
+            slot1 := mem
+            slot2 := _createPoolParams
             // At the `poolParams` location, get the memory pointer where the length
             // of the `referenceAsset` string is stored.
             let referenceAsset := mload(poolParams)
@@ -725,7 +817,16 @@ library LibDIVA {
             mstore(add(mem, 0x220), sload(_ps.slot))
 
             poolId := keccak256(mem, 0x240)
+
+            // mstore(0x40, add(mem, 0x240))
+            // slot2 := mload(add(mem, 0x240))
         }
+        // console.log("memPrivate");
+        // console.logBytes32(slot1);
+        // console.log("slot2");
+        // console.logBytes32(slot2);
+        // console.log("poolId");
+        // console.logBytes32(poolId);
     }
 
     function _validateInputParamsCreateContingentPool(

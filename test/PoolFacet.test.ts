@@ -222,7 +222,7 @@ describe("PoolFacet", async function () {
     // Functionality
     // -------------------------------------------
 
-    it("Creates a contingent pool and stores the pool parameters", async () => {
+    it.only("Creates a contingent pool and stores the pool parameters", async () => {
       // ---------
       // Act: Create a contingent pool with default parameters
       // ---------
