@@ -4,6 +4,12 @@ pragma solidity 0.8.19;
 import {IDIVAOwnershipShared} from "../interfaces/IDIVAOwnershipShared.sol";
 
 interface IDIVAOwnershipMain is IDIVAOwnershipShared {
+    // Thrown in constructor if zero address is provided for initial owner.
+    error ZeroOwnerAddress();
+
+    // Thrown in constructor if zero address is provided for the DIVA Token.
+    error ZeroDIVATokenAddress();
+    
     // Thrown in `stake` or `unstake` if called during the ownership claim
     // submission period
     error WithinSubmitOwnershipClaimPeriod(

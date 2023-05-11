@@ -64,6 +64,13 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         address _initialOwner,
         IERC20Metadata _divaToken
     ) payable {
+        if (_initialOwner == address(0)) {
+            revert ZeroOwnerAddress();
+        }
+        if (address(_divaToken) == address(0)) {
+            revert ZeroDIVATokenAddress();
+        }
+
         _owner = _initialOwner;
         _DIVA_TOKEN = _divaToken;
     }
