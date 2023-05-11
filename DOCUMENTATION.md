@@ -2828,7 +2828,7 @@ event OwnerSet(
 
 ## Errors
 
-The following errors may be emitted when interacting with secondary ownership contract specific functions.
+The following errors may be emitted when interacting with secondary ownership contract specific functions (ignoring errors thrown in constructor at contract deployment).
 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
