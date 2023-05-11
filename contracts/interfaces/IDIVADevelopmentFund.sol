@@ -4,6 +4,9 @@ pragma solidity 0.8.19;
 import {IDIVAOwnershipShared} from "./IDIVAOwnershipShared.sol";
 
 interface IDIVADevelopmentFund {
+    // Thrown in constructor if zero address is provided for DIVA ownership address
+    error ZeroDIVAOwnershipAddress();
+
     // Thrown in `withdraw` if `msg.sender` is not the owner of DIVA protocol
     error NotDIVAOwner(address _user, address _divaOwner);
 

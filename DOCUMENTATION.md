@@ -3071,7 +3071,7 @@ event Withdrawn(
 
 ## Errors
 
-The following errors may be emitted when interacting with DIVA Development Fund contract specific functions.
+The following errors may be emitted when interacting with DIVA Development Fund contract specific functions (ignoring errors thrown in constructor at contract deployment).
 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
