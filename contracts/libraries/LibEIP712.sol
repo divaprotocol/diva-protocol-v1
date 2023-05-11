@@ -559,14 +559,14 @@ library LibEIP712 {
         uint256 _takerCollateralAmount,
         OfferInfo memory _offerInfo
     ) internal view returns (uint256 actualTakerFillableAmount) {
-        if (_makerCollateralAmount == 0) {
-            // Use case: donation request by maker
-            return (_takerCollateralAmount - _offerInfo.takerFilledAmount);
-        }
-
         if (_offerInfo.status != OfferStatus.FILLABLE) {
             // Not fillable. This also includes the case where `_takerCollateralAmount` = 0
             return 0;
+        }
+
+        if (_makerCollateralAmount == 0) {
+            // Use case: donation request by maker
+            return (_takerCollateralAmount - _offerInfo.takerFilledAmount);
         }
 
         // Get the fillable maker amount based on the offer quantities and
