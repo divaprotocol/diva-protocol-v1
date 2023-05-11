@@ -36,6 +36,10 @@ interface IGovernance {
     // has passed
     error TooEarlyToPauseAgain();
 
+    // Thrown in `unpauseReturnCollateral` if contract owner attempts to unpause
+    // when the return of collateral is already unpaused.
+    error AlreadyUnpaused();
+
     // Thrown in `updateFees` if there is already a pending fees update
     error PendingFeesUpdate(uint256 _timestampBlock, uint256 _startTimeFees);
 

@@ -229,6 +229,11 @@ contract GovernanceFacet is IGovernance {
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
             ._governanceStorage();
 
+        // Revert if the contract is already unpaused
+        if (block.timestamp >= gs.pauseReturnCollateralUntil) {
+            revert AlreadyUnpaused();
+        }
+
         // Unpause return of collateral by setting `pauseReturnCollateralUntil` to
         // the current block's timestamp
         gs.pauseReturnCollateralUntil = block.timestamp;

@@ -1580,7 +1580,7 @@ function pauseReturnCollateral() external;
 
 ### unpauseReturnCollateral
 
-Function to unpause the withdrawal of collateral. This is achieved by updating the `pauseReturnCollateralUntil` storage variable equal to the block's timestamp prevailing at the time of the call. The function does not implement a delay.
+Function to unpause the withdrawal of collateral. This is achieved by updating the `pauseReturnCollateralUntil` storage variable equal to the block's timestamp prevailing at the time of the call. If the return of collateral is already unpaused, the function will revert. The function does not implement a delay.
 
 ```js
 function unpauseReturnCollateral() external;
@@ -2313,6 +2313,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `OutOfBounds()`                            | `updateSettlementPeriods` | Thrown if contract owner attempts to set a settlement related period to less than 3 days or more than 15 days                                                        |
 | `ZeroAddress()`                            | `updateTreasury` / `updateFallbackDataProvider`                                                 | Thrown if contract owner attempts to set the treasury or fallback data provider address equal to the zero address                                                                      |
 | `TooEarlyToPauseAgain()`                   | `pauseReturnCollateral`                                                                       | Thrown if contract owner attempts to pause `redeemPositionToken` and `removeLiquidity` before the two day delay period has passed                                   |
+| `AlreadyUnpaused()`                   | `unpauseReturnCollateral`                                                                       | Thrown if contract owner attempts to unpause when the return of collateral was already unpaused                                   |
 | `PendingFeesUpdate(uint256 _timestampBlock, uint256 _startTimeFees)`                   | `updateFees`                                                                       | Thrown if there is already a pending fees update                                   |
 | `PendingSettlementPeriodsUpdate(uint256 _timestampBlock, uint256 _startTimeSettlementPeriods)`                   | `updateSettlementPeriods`                                                                       | Thrown if there is already a pending settlement periods update                                   |
 | `PendingFallbackDataProviderUpdate(uint256 _timestampBlock, uint256 _startTimeFallbackDataProvider)`                   | `updateSettlementPeriods`                                                                       | Thrown if there is already a pending fallback data provider update                                   |
