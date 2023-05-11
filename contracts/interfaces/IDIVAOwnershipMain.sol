@@ -131,9 +131,13 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
         returns (uint256);
 
     /**
-     * @notice Function to get the timestamp of the last stake operation for a given `_user`.
+     * @notice Function to get the timestamp of the last stake operation for a
+     * given `_user` and `candidate`.
      */
-    function getTimestampLastStake(address _user)
+    function getTimestampLastStakedForCandidate(
+        address _user,
+        address _candidate
+    )
         external
         view
         returns (uint256);

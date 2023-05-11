@@ -2388,7 +2388,7 @@ The `DIVAOwnershipMain` contract implements the following functions:
 | **Getter functions**                                                                      |                                                                                                                                                             |
 | [`getCurrentOwner`](#getcurrentowner)                                                                         | Function to return the current DIVA Protocol owner address.                                                                                                |
 | [`getStakedAmount`](#getstakedamount)                                                                         | Function to return the amount staked by a given/all voters for a given candidate.                                                                                                |
-| [`getTimestampLastStake`](#gettimestamplaststake)                                                                         | Function to get the timestamp of the last stake operation for a given user.                                                                                                |
+| [`getTimestampLastStakedForCandidate`](#gettimestamplaststakedforcandidate)                                                                         | Function to get the timestamp of the last stake operation for a given user.                                                                                                |
 | [`getShowdownPeriodEnd`](#getshowdownperiodend)                                                                         | Function to return the showdown period end.                                                                                                |
 | [`getSubmitOwnershipClaimPeriodEnd`](#getsubmitownershipclaimperiodend)                                                                         | Function to return the ownership claim submission period end.                                                                                                |
 | [`getCooldownPeriodEnd`](#getcooldownperiodend)                                                                         | Function to return the cooldown period end.                                                                                                |
@@ -2435,6 +2435,8 @@ The function executes the following steps in the following order:
 1. Reduce the amount staked for the candidate overall. Will revert on underflow as Solidity version > 0.8.0 is used.
 1. Transfer the corresponding amount to `msg.sender` using OpenZeppelin's `safeTransfer` method.
 1. Emit an [`Unstaked`](#unstaked) event on success.
+
+>**Note:** The minimum staking period of 7 days applies at the user-candidate level. If a user stakes for different candidates, the waiting period for the first stake remains unaffected by any subsequent stakes. However, if a user adds additional stake to a candidate they are already staking, the waiting period for the previous stake will be reset to 7 days.
 
 The function reverts under the following conditions:
 * Called before the 7 day minimum staking period expired.
@@ -2553,12 +2555,13 @@ function getCooldownPeriodEnd()
     returns (uint256);
 ```
 
-### getTimestampLastStake
-Function to get the timestamp of the last stake operation for a given `_user`.
+### getTimestampLastStakedForCandidate
+Function to get the timestamp of the last stake operation for a given `_user` and `_candidate`.
 
 ```js
-function getTimestampLastStake(
-    address _user
+function getTimestampLastStakedForCandidate(
+    address _user,
+    address _candidate
 ) 
     external
     view
