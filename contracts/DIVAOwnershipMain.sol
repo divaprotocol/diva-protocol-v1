@@ -161,7 +161,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
 
         // Check that outside of ownership claim submission period
         if (_isWithinSubmitOwnershipClaimPeriod()) {
-            revert WithinSubmitOwnershipClaimPeriod(block.timestamp, _submitOwnershipClaimPeriodEnd) ;
+            revert WithinSubmitOwnershipClaimPeriod(block.timestamp, _submitOwnershipClaimPeriodEnd);
         }
  
         // Update staking balances. Both operations will revert on underflow as
