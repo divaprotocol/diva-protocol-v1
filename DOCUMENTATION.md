@@ -2922,6 +2922,8 @@ struct Deposit {
 }
 ```
 
+>**Note:** Before the first claim, the `lastClaimedAt` variable represents the timestamp of the deposit.
+
 ## Withdrawals
 
 Deposits that have vested can be claimed by the DIVA owner using the [`withdraw`](#withdraw) function. Direct deposits can be claimed using the [`withdrawDirectDeposit`](#withdrawdirectdeposit) function. Only the DIVA owner has access to withdraw funds.

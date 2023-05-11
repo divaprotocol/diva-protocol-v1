@@ -29,6 +29,7 @@ interface IDIVADevelopmentFund {
         uint256 endTime; // Timestamp in seconds since epoch when release period ends at
         uint256 lastClaimedAt; // Timestamp in seconds since epoch when user last claimed deposit at
     }
+    // Note: Before the first claim, the `lastClaimedAt` variable represents the timestamp of the deposit.
 
     /**
      * @notice Emitted when a user deposits a token or a native asset via
