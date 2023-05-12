@@ -29,6 +29,7 @@ import {
   erc721DeployFixture,
   positionTokenAttachFixture,
   permissionedPositionTokenAttachFixture,
+  fakePositionTokenDeployFixture,
 } from "./fixtures";
 
 // -------
@@ -971,6 +972,45 @@ describe("PoolFacet", async function () {
           permissionedERC721Token,
         })
       ).to.be.revertedWith("FeeTokensNotSupported()");
+    });
+
+    it("`getPoolParametersByAddress` reverts with `InvalidPositionToken` if an invalid position token address is porivded", async () => {
+
+      tx = await poolFacet.connect(user1).createContingentPool({
+        referenceAsset,
+        expiryTime,
+        floor,
+        inflection,
+        cap,
+        gradient,
+        collateralAmount,
+        collateralToken,
+        dataProvider,
+        capacity,
+        longRecipient,
+        shortRecipient,
+        permissionedERC721Token,
+      });
+
+      poolId = await getPoolIdFromTx(tx);
+      expect(poolId).to.not.eq(ethers.constants.HashZero);
+      
+      // Create a fake position token with an existing poolId
+      const fakePositionTokenInstance = await fakePositionTokenDeployFixture(
+        "L1",
+        "L1",
+        poolId,
+        user1.address
+      );
+
+      // ---------
+      // Act & Assert: Check that `getPoolParametersByAddress` returns the default struct
+      // (checking that `collateralToken` address and `expiryTime` are equal to their default values)
+      // ---------
+      poolParams = await getterFacet.getPoolParametersByAddress(fakePositionTokenInstance.address);
+      expect(poolParams.collateralToken).to.eq(ethers.constants.AddressZero);
+      expect(poolParams.dataProvider).to.eq(ethers.constants.AddressZero);
+      expect(poolParams.expiryTime).to.eq(0)
     });
   });
 

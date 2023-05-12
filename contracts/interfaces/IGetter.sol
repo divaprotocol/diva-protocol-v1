@@ -27,8 +27,13 @@ interface IGetter {
         returns (LibDIVAStorage.Pool memory);
 
     /**
-     * @notice Same as `getPoolParameters` but using the position token
-     * address as input.
+     * @notice Same as `getPoolParameters`, but the pool parameters are
+     * retrieved based on a provided position token address instead of a `poolId`.
+     * @dev If the provided position token address does not match any pool, the
+     * function will return the default `Pool` struct with zero values. This
+     * default struct can be identified by properties such as
+     * `collateralToken = 0x0000000000000000000000000000000000000000` or
+     * `dataProvider = 0x0000000000000000000000000000000000000000`, for example.
      * @param _positionToken Position token address.
      * @return Pool struct.
      */
