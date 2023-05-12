@@ -309,15 +309,15 @@ describe("SettlementFacet", async function () {
 
       it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
         // ---------
-        // Arrange: Set a non-existent poolId
+        // Arrange: Set a non-existent poolId and prepare parameters for call
         // ---------
         const nonExistentPoolId = ethers.constants.HashZero;
+        finalReferenceValue = parseUnits("1605.33");
+        allowChallenge = false;
 
         // ---------
         // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
         // ---------
-        finalReferenceValue = parseUnits("1605.33");
-        allowChallenge = false;
         await expect(
           settlementFacet
             .connect(oracle)
