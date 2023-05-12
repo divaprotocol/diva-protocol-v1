@@ -725,6 +725,7 @@ function setFinalReferenceValue(
 
 The function executes the following steps in the following order:
 
+1. Checks whether the provided `_poolId` is valid.
 1. Checks whether a final value can be submitted, which is only possible when status is "Open" or "Challenged".
 1. Evaluates the current state of the settlement process based on the status of the final reference value (`statusFinalReferenceValue`), the prevailing submission windows and the current `block.timestamp`.
 1. Updates `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
@@ -734,6 +735,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
+- The provided `_poolId` is invalid.
 - The status of the final value is already "Submitted" or "Confirmed".
 - If the status is "Open", it reverts if:
   - Pool has not yet expired (i.e., `block.timestamp < expiryTime`).
@@ -2327,6 +2329,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `InsufficientShortOrLongBalance()`         | `removeLiquidity`                                                                               | Thrown if a user's short or long position token balance is smaller than the indicated amount                                                                        |
 | `ZeroProtocolFee()`                        | `removeLiquidity`                                                                               | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
 | `ZeroSettlementFee()`                      | `removeLiquidity`                                                                              | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
+| `InvalidPoolId()`            | `setFinalReferenceValue`                                                                      | Thrown if an invalid `poolId` was provided                                                                            |
 | `AlreadySubmittedOrConfirmed()`            | `setFinalReferenceValue`                                                                      | Thrown if data provider attempts to submit a value when status is submitted or confirmed                                                                            |
 | `PoolNotExpired()`                         | `setFinalReferenceValue`                                                                       | Thrown if data provider attempts to submit a value for a pool that didn't expire yet                                                                                |
 | `NotDataProvider()`                        | `setFinalReferenceValue`                                                                    | Thrown if `msg.sender` is not the data provider for the given pool                                                                            |

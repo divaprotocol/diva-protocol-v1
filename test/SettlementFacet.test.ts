@@ -303,6 +303,28 @@ describe("SettlementFacet", async function () {
         expect(poolParamsAfter.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
       });
 
+      // -------------------------------------------
+      // Reverts
+      // -------------------------------------------
+
+      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+        // ---------
+        // Arrange: Set a non-existent poolId
+        // ---------
+        const nonExistentPoolId = ethers.constants.HashZero;
+
+        // ---------
+        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // ---------
+        finalReferenceValue = parseUnits("1605.33");
+        allowChallenge = false;
+        await expect(
+          settlementFacet
+            .connect(oracle)
+            .setFinalReferenceValue(nonExistentPoolId, finalReferenceValue, allowChallenge)
+        ).to.be.revertedWith("InvalidPoolId()");
+      });
+
       describe("Tests requiring final value submission within the submission period without the possibility to challenge", async () => {
         beforeEach(async () => {
           // ---------
