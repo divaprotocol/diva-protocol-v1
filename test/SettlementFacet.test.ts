@@ -2515,6 +2515,23 @@ describe("SettlementFacet", async function () {
       // Reverts
       // -------------------------------------------
 
+      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+        // ---------
+        // Arrange: Set a non-existent poolId and prepare parameters for call
+        // ---------
+        const nonExistentPoolId = ethers.constants.HashZero;
+        proposedFinalReferenceValue = parseUnits("1800.03");
+
+        // ---------
+        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // ---------
+        await expect(
+          settlementFacet
+            .connect(user1)
+            .challengeFinalReferenceValue(nonExistentPoolId, proposedFinalReferenceValue)
+        ).to.be.revertedWith("InvalidPoolId()");
+      });
+
       it("Reverts if user doesn`t hold any position tokens", async () => {
         // ---------
         // Arrange: Confirm that user2 does not own any long or short tokens

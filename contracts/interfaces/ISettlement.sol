@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import {LibDIVAStorage} from "../libraries/LibDIVAStorage.sol";
 
 interface ISettlement {
-    // Thrown in `setFinalReferenceValue` if an invalid `poolId`
-    // was provided
+    // Thrown in `setFinalReferenceValue` and `challengeFinalReferenceValue`
+    // if an invalid `poolId` was provided
     error InvalidPoolId();
     
     // Thrown in `setFinalReferenceValue` if data provider attempts
