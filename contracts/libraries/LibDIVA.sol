@@ -10,8 +10,8 @@ import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
 
-// Thrown in `addLiquidity` and `fillOfferAddLiquidity` if an invalid
-// `poolId` was provided
+// Thrown in `addLiquidity`, `fillOfferAddLiquidity`, `removeLiquidity`,
+// and `fillOfferRemoveLiquidity` if an invalid `poolId` was provided
 error InvalidPoolId();
 
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
