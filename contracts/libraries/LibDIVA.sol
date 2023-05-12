@@ -872,10 +872,10 @@ library LibDIVA {
     }
 
     function _removeLiquidityLib(
-        RemoveLiquidityParams memory _removeLiquidityParams
-    ) internal returns (uint256 collateralAmountRemovedNet) {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
+        RemoveLiquidityParams memory _removeLiquidityParams,
+        LibDIVAStorage.Pool storage _pool
+    ) internal returns (uint256 collateralAmountRemovedNet) {        
+        // Get reference to relevant storage slot
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
             ._governanceStorage();
 
@@ -883,10 +883,8 @@ library LibDIVA {
         if (block.timestamp < gs.pauseReturnCollateralUntil)
             revert ReturnCollateralPaused();
 
-        // Initialize Pool struct
-        LibDIVAStorage.Pool storage _pool = ps.pools[
-            _removeLiquidityParams.poolId
-        ];
+        // Check if pool exists
+        if (!_isValidPoolId(_pool.collateralToken)) revert InvalidPoolId();
 
         // If status is Confirmed, users should use `redeemPositionToken` function
         // to withdraw collateral

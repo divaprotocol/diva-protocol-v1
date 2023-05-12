@@ -558,6 +558,7 @@ As the position token supply is equal to the collateral amount, the collateral a
 
 The function executes the following steps in the following order:
 
+1. Check whether the provided `_poolId` is valid.
 1. Check that the withdrawal of liquidity is not [paused](#pausability).
 1. Check that the status of the final reference value is not in "Confirmed" stage yet. The reason for this condition is that when the status is set to "Confirmed", the protocol and settlement fees are already fully allocated to the treasury and the data provider (see [`setFinalReferenceValue`](#setfinalreferencevalue) and [`redeemPositionToken`](#redeempositiontoken)). If users were allowed to remove liquidity when status is "Confirmed", then fees would be charged twice.
 1. Check that `msg.sender` owns the provided `_amount` of both long and short position tokens. Passing `_amount = 0` is possible if both settlement and protocol fees are zero, but will not result in any state changes. If either the settlement or protocol fee are non-zero, passing `_amount = 0` will fail as the minimum fee check will not pass (see next bullet).
@@ -569,6 +570,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
+- The provided `_poolId` is invalid.
 - Function is [paused](#pausability).
 - `statusFinalReferenceValue` is already "Confirmed".
 - `msg.sender` doesn't own the provided amount of long and short position tokens. In particular, if a user passes in an amount that exceeds the total position token supply, it will fail as the user cannot own more tokens than the total supply.
@@ -725,10 +727,10 @@ function setFinalReferenceValue(
 
 The function executes the following steps in the following order:
 
-1. Checks whether the provided `_poolId` is valid.
-1. Checks whether a final value can be submitted, which is only possible when status is "Open" or "Challenged".
-1. Evaluates the current state of the settlement process based on the status of the final reference value (`statusFinalReferenceValue`), the prevailing submission windows and the current `block.timestamp`.
-1. Updates `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
+1. Check whether the provided `_poolId` is valid.
+1. Check whether a final value can be submitted, which is only possible when status is "Open" or "Challenged".
+1. Evaluate the current state of the settlement process based on the status of the final reference value (`statusFinalReferenceValue`), the prevailing submission windows and the current `block.timestamp`.
+1. Update `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
 1. If the final value _is_ confirmed within the function call (e.g., when challenge is disabled), [fees](#fees), [tips](#tips) and any reserved fees are allocated to the respective recipients, `collateralBalance` in pool parameters is reduced by the fees portion and the `payoutLong` and `payoutShort` amounts are set, net of fees.
 1. If the final value _is not_ confirmed within the call (e.g., when challenge is enabled), `statusFinalReferenceValue` is set to "Submitted" and `finalReferenceValue` is set to the value passed into the function by `msg.sender`.
 1. On successful execution, it emits a [`StatusChanged`](#statuschanged) event, two [`FeeClaimAllocated`](#feeclaimallocated) and one [`ReservedClaimAllocated`](#reservedclaimallocated) events, if the final value is confirmed within the function call (e.g., when a challenge is disabled). If the data provider submits a value and enables the possibility to challenge, only the [`StatusChanged`](#statuschanged) event is emitted as the status switches to "Submitted" and no fees or tips are allocated in that case.
@@ -1253,6 +1255,7 @@ The function executes the following steps in the following order:
 1. Update the `takerFilledAmount` for the respective offer hash.
 
 The next steps are the same as in [`removeLiquidity`](#removeliquidity) except that the long and short position tokens are submitted by two different parties, `maker` and `taker`, and collateral is returned to them according to the split specified in the offer:
+1. Check whether the provided `_poolId` is valid.
 1. Check that the withdrawal of liquidity is not [paused](#pausability).
 1. Check that the status of the final reference value is not in "Confirmed" stage yet.
 1. Check that `maker` owns sufficient long/short and `taker` sufficient short/long position token.
