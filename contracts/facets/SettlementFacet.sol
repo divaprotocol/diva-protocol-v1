@@ -416,11 +416,8 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
-        // Revert early if pool doesn't exist. Similarly to
-        // `LibEIP712._getOfferRelevantStateAddLiquidity`, using
-        // collateralToken == address(0) condition to determine the
-        // existence of a pool.
-        if (_pool.collateralToken == address(0)) {
+        // Check if pool exists
+        if (!LibDIVA._isValidPoolId(_pool.collateralToken)) {
             revert InvalidPoolId();
         }
 
