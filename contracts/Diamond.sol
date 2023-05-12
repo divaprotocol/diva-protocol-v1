@@ -37,12 +37,14 @@ import {IERC165} from "./interfaces/IERC165.sol";
 import {IGetter} from "./interfaces/IGetter.sol";
 import {IGovernance} from "./interfaces/IGovernance.sol";
 import {ILiquidity} from "./interfaces/ILiquidity.sol";
-import {IDIVAOwnershipShared} from "./interfaces/IDIVAOwnershipShared.sol";
+import {IDIVAOwnershipMain} from "./interfaces/IDIVAOwnershipMain.sol";
+import {IDIVAOwnershipSecondary} from "./interfaces/IDIVAOwnershipSecondary.sol";
 import {IPermissionedPositionToken} from "./interfaces/IPermissionedPositionToken.sol";
 import {IPool} from "./interfaces/IPool.sol";
 import {IPositionToken} from "./interfaces/IPositionToken.sol";
 import {IPositionTokenFactory} from "./interfaces/IPositionTokenFactory.sol";
 import {ISettlement} from "./interfaces/ISettlement.sol";
+import {ITip} from "./interfaces/ITip.sol";
 
 
 // Thrown if no function exists for function called
@@ -139,7 +141,6 @@ contract Diamond {
 
         // Adding ERC165 data
         ds.supportedInterfaces[type(IClaim).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IEIP712Add).interfaceId] = true;
         ds.supportedInterfaces[type(IEIP712Cancel).interfaceId] = true;
@@ -149,12 +150,17 @@ contract Diamond {
         ds.supportedInterfaces[type(IGetter).interfaceId] = true;
         ds.supportedInterfaces[type(IGovernance).interfaceId] = true;
         ds.supportedInterfaces[type(ILiquidity).interfaceId] = true;
-        ds.supportedInterfaces[type(IDIVAOwnershipShared).interfaceId] = true;
+        if (block.chainid == 1) {
+            ds.supportedInterfaces[type(IDIVAOwnershipMain).interfaceId] = true;
+        } else {
+            ds.supportedInterfaces[type(IDIVAOwnershipSecondary).interfaceId] = true;
+        }
         ds.supportedInterfaces[type(IPermissionedPositionToken).interfaceId] = true;
         ds.supportedInterfaces[type(IPool).interfaceId] = true;
         ds.supportedInterfaces[type(IPositionToken).interfaceId] = true;
         ds.supportedInterfaces[type(IPositionTokenFactory).interfaceId] = true;
         ds.supportedInterfaces[type(ISettlement).interfaceId] = true;
+        ds.supportedInterfaces[type(ITip).interfaceId] = true;
     }
 
     // Find facet for function that is called and execute the
