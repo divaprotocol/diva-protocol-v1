@@ -443,6 +443,24 @@ describe("TipFacet", async function () {
         // Reverts
         // -------------------------------------------
 
+        it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+          // ---------
+          // Arrange: Set a non-existent poolId and prepare parameters for call
+          // ---------
+          const nonExistentPoolId = ethers.constants.HashZero;
+          tipAmount = parseUnits("10", decimals);
+          tipper = user2;
+
+          // ---------
+          // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+          // ---------
+          await expect(
+              tipFacet
+                  .connect(tipper)
+                  .addTip(nonExistentPoolId, tipAmount)
+          ).to.be.revertedWith("InvalidPoolId()");
+      })
+        
         it("Reverts if statusFinalReferenceValue = Submitted", async () => {
             // ---------
             // Arrange: Prepare for tipping call and fast forward in time after pool expiration time

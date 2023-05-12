@@ -5,6 +5,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@solidstate/contracts/utils/ReentrancyGuard.sol";
 import {ITip} from "../interfaces/ITip.sol";
+import {LibDIVA} from "../libraries/LibDIVA.sol";
 import {LibDIVAStorage} from "../libraries/LibDIVAStorage.sol";
 
 contract TipFacet is ITip, ReentrancyGuard {
@@ -58,13 +59,18 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Load pool
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
-        // Confirm that no value has been submitted yet
-        if (_pool.statusFinalReferenceValue != LibDIVAStorage.Status.Open) {
-            revert FinalValueAlreadySubmitted();
+        // Check if pool exists
+        if (!LibDIVA._isValidPoolId(_pool.collateralToken)) {
+            revert InvalidPoolId();
         }
 
         // Cache collateral token
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
+
+        // Confirm that no value has been submitted yet
+        if (_pool.statusFinalReferenceValue != LibDIVAStorage.Status.Open) {
+            revert FinalValueAlreadySubmitted();
+        }
 
         // Update claim mapping
         _fs.poolIdToReservedClaim[_poolId] += _amount;
