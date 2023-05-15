@@ -398,7 +398,6 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - `cap` is greater than `1e59`
 - `dataProvider` is equal to the zero address
 - `gradient` is greater than 1 base unit in collateral token terms (i.e. `10**collateralTokenDecimals`)
-- `collateralAmount` is smaller than `1e6`
 - `collateralAmount` exceeds `capacity`
 - Collateral token has more than 18 or less than 6 decimals
 - Either `longRecipient` or `shortRecipient` are equal to the zero address (throws inside the ERC20 token as mint to the zero address is disabled)
@@ -413,7 +412,6 @@ The function performs checks on the pool parameters provided by `msg.sender` and
 - The `owner` of the position tokens is set equal to the DIVA smart contract address at creation and cannot be modified afterwards. Only the `owner` is authorized to execute the `mint` and `burn` functions inside the `PositionToken` contract.
 - The `capacity` field allows to cap the size of a pool which can be useful for private pools or when dealing with metrics that are at risk of being manipulated.
 - Final reference value cannot be negative. Metrics that can go negative (e.g., interest rates) should be transformed into something that will remain positive (e.g., current interest rate + 100) before being used as a reference asset.
-- Minimum collateral balance of `1e6` was introduced to increase the precision in calculations. For USDC which has 6 decimals places, this means that the minimum collateral amount is 1 USDC.
 - The maximum `cap` value of `1e59` was introduced to prevent an overflow in the payoff calculations when `cap > _finalReferenceValue > _inflection` and `_finalReferenceValue` is very close to the `cap`. While the actual maximum value for `cap` is slightly larger than `1e59`, this value was chosen for ease of readability and reviewability.
 - Position tokens are deployed using [clones](#https://blog.openzeppelin.com/workshop-recap-cheap-contract-deployment-through-clones/) which allows for very cheap deployment. The only trade-off made is that interacting with the position token is a bit more expensive (+700 gas/call) compared to a naively deployed contract as it involves one `delegatecall`. 
 
