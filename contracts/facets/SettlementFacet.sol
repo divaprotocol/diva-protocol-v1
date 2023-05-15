@@ -416,6 +416,11 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
+        // Check if pool exists
+        if (!LibDIVA._isValidPoolId(_pool.collateralToken)) {
+            revert InvalidPoolId();
+        }
+
         // Get settlement periods
         LibDIVAStorage.SettlementPeriods memory _settlementPeriods = _gs
             .settlementPeriods[_pool.indexSettlementPeriods];

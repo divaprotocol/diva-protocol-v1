@@ -2,6 +2,9 @@
 pragma solidity 0.8.19;
 
 interface ITip {
+    // Thrown in `addTip` if an invalid `poolId` was provided
+    error InvalidPoolId();
+
     // Thrown in `addTip` if status of `finalReferenceValue`
     // is no longer "Open"
     error FinalValueAlreadySubmitted();

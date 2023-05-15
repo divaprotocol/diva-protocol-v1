@@ -979,6 +979,15 @@ library LibDIVA {
         );
     }
 
+    // Returns whether pool exists or not. Uses collateralToken != address(0)
+    // to determine the existence of a pool. This works because this case
+    // is excluded when creating a contingent pool as the zero address
+    // doesn't implement the required functions (e.g., `transferFrom`)
+    // required to create a contingent pool.
+    function _isValidPoolId(address _collateralToken) internal pure returns (bool) {
+        return _collateralToken != address(0);
+    }
+
     function _getFeesHistory(
         uint256 _nbrLastUpdates,
         LibDIVAStorage.GovernanceStorage storage _gs

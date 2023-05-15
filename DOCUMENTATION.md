@@ -725,6 +725,7 @@ function setFinalReferenceValue(
 
 The function executes the following steps in the following order:
 
+1. Checks whether the provided `_poolId` is valid.
 1. Checks whether a final value can be submitted, which is only possible when status is "Open" or "Challenged".
 1. Evaluates the current state of the settlement process based on the status of the final reference value (`statusFinalReferenceValue`), the prevailing submission windows and the current `block.timestamp`.
 1. Updates `finalReferenceValue` and `statusFinalReferenceValue` in the contract's storage based on the current state of the settlement process.
@@ -734,6 +735,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
+- The provided `_poolId` is invalid.
 - The status of the final value is already "Submitted" or "Confirmed".
 - If the status is "Open", it reverts if:
   - Pool has not yet expired (i.e., `block.timestamp < expiryTime`).
@@ -978,12 +980,14 @@ Function to add a tip in collateral token to a specific pool. This function uses
 
 The function executes the following steps in the following order:
 
+1. Checks whether the provided `_poolId` is valid.
 1. Check that `statusFinalReferenceValue` is "Open", meaning that no value has been submitted by the data provider yet.
 1. Increase the amount reserved for the data provider by the tip amount.
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard.
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts if:
+- the provided `_poolId` is invalid.
 - a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`, or
 - the collateral token charges a fee on transfers.
 
@@ -2327,6 +2331,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `InsufficientShortOrLongBalance()`         | `removeLiquidity`                                                                               | Thrown if a user's short or long position token balance is smaller than the indicated amount                                                                        |
 | `ZeroProtocolFee()`                        | `removeLiquidity`                                                                               | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
 | `ZeroSettlementFee()`                      | `removeLiquidity`                                                                              | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
+| `InvalidPoolId()`            | `setFinalReferenceValue` / `addTip`                                                                      | Thrown if an invalid `poolId` was provided                                                                            |
 | `AlreadySubmittedOrConfirmed()`            | `setFinalReferenceValue`                                                                      | Thrown if data provider attempts to submit a value when status is submitted or confirmed                                                                            |
 | `PoolNotExpired()`                         | `setFinalReferenceValue`                                                                       | Thrown if data provider attempts to submit a value for a pool that didn't expire yet                                                                                |
 | `NotDataProvider()`                        | `setFinalReferenceValue`                                                                    | Thrown if `msg.sender` is not the data provider for the given pool                                                                            |

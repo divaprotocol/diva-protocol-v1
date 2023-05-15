@@ -1062,11 +1062,8 @@ library LibEIP712 {
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
         LibDIVAStorage.Pool storage _pool = ps.pools[_offerAddLiquidity.poolId];
 
-        // Using collateralToken != address(0) to determine the existence of a pool. This works
-        // because this case is excluded when creating a contingent pool as the zero address
-        // doesn't implement the required functions (e.g., `transferFrom`) required to create
-        // a contingent pool.
-        if (_pool.collateralToken != address(0)) {
+        // Set `actualTakerFillableAmount` depending on whether pool exists or not 
+        if (LibDIVA._isValidPoolId(_pool.collateralToken)) {
             // Calc actual taker fillable amount
             actualTakerFillableAmount = _getActualTakerFillableAmount(
                 _offerAddLiquidity.maker,
