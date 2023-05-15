@@ -774,9 +774,9 @@ library LibDIVA {
         }
 
         // Collateral amount should not be smaller than 1e6
-        if (_poolParams.collateralAmount < 10**6) {
-            return false;
-        }
+        // if (_poolParams.collateralAmount < 10**6) {
+        //     return false;
+        // } // @todo remove and update docs and test
 
         // Collateral amount should not be greater than pool capacity
         if (_poolParams.collateralAmount > _poolParams.capacity) {

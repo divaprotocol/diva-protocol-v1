@@ -177,7 +177,7 @@ describe("PoolFacet", async function () {
       inflection = parseUnits("1605.33");
       cap = parseUnits("2001.17");
       gradient = parseUnits("0.33", decimals);
-      collateralAmount = parseUnits("15001.358", decimals);
+      collateralAmount = parseUnits("0.001", decimals);
       collateralToken = collateralTokenInstance.address;
       dataProvider = oracle.address;
       capacity = MAX_UINT; // Uncapped
@@ -709,33 +709,33 @@ describe("PoolFacet", async function () {
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
 
-    it("Reverts if total collateral amount is less than 10**6", async () => {
-      // ---------
-      // Arrange: Set collateralAmount < 10**6
-      // ---------
-      const invalidCollateralAmount = parseUnits("1", 6).sub(1);
+    // it("Reverts if total collateral amount is less than 10**6", async () => {
+    //   // ---------
+    //   // Arrange: Set collateralAmount < 10**6
+    //   // ---------
+    //   const invalidCollateralAmount = parseUnits("1", 6).sub(1); // @todo remove test
 
-      // ---------
-      // Act & Assert: Check that contingent pool creation fails
-      // ---------
-      await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount: invalidCollateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        })
-      ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
-    });
+    //   // ---------
+    //   // Act & Assert: Check that contingent pool creation fails
+    //   // ---------
+    //   await expect(
+    //     poolFacet.connect(user1).createContingentPool({
+    //       referenceAsset,
+    //       expiryTime,
+    //       floor,
+    //       inflection,
+    //       cap,
+    //       gradient,
+    //       collateralAmount: invalidCollateralAmount,
+    //       collateralToken,
+    //       dataProvider,
+    //       capacity,
+    //       longRecipient,
+    //       shortRecipient,
+    //       permissionedERC721Token,
+    //     })
+    //   ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
+    // });
 
     it("Reverts if data provider is zero address", async () => {
       // ---------
@@ -1044,7 +1044,7 @@ describe("PoolFacet", async function () {
       inflection = parseUnits("1605.33");
       cap = parseUnits("2001.17");
       gradient = parseUnits("0.33", decimals);
-      collateralAmount = parseUnits("15001.358", decimals);
+      collateralAmount = parseUnits("0.001", decimals);
       collateralToken = collateralTokenInstance.address;
       dataProvider = oracle.address;
       capacity = MAX_UINT; // Uncapped

@@ -1,6 +1,8 @@
-import { ethers, BigNumber } from "ethers";
+import { ethers, BigNumber, ContractTransaction } from "ethers";
+import { getExpiryTime } from "../utils";
+import { PoolFacet } from "../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { parseUnits } from "@ethersproject/units";
-
 import { PayoffsPerToken } from "../constants";
 
 // Returns payoff per long and short token in collateral token decimals net of fees
@@ -59,35 +61,58 @@ export const calcPayout = (
   return payout;
 };
 
+// Collateral token decimals (>= 6 && <= 18). Use those decimals in the test files
+// in order to match the decimals used in `createContingentPool` (see function below).
+export const decimals = 6;
 
-// Define the PoolParams and CreatePoolParams structs
-interface PoolParams {
-  referenceAsset: string;
-  expiryTime: number;
-  floor: string;
-  inflection: string;
-  cap: string;
-  gradient: string;
-  collateralAmount: string;
+// Function to create a contingent pool pre-populated with default values that can be overwritten depending
+// on the test case. The `CreateContingentPoolParams` type is specific for this test function.
+export const defaultPoolParameters = {
+  referenceAsset: "BTC/USD",
+  expireInSeconds: 7200,
+  floor: parseUnits("1198.53"),
+  inflection: parseUnits("1605.33"),
+  cap: parseUnits("2001.17"),
+  gradient: parseUnits("0.33", decimals),
+  collateralAmount: parseUnits("15001.358", decimals),
+  capacity: parseUnits("100000000", decimals),
+  permissionedERC721Token: ethers.constants.AddressZero,
+};
+
+export type CreateContingentPoolParams = {
   collateralToken: string;
   dataProvider: string;
-  capacity: string;
   longRecipient: string;
   shortRecipient: string;
-  permissionedERC721Token: string;
+  poolCreater: SignerWithAddress;
+  poolFacet: PoolFacet;
+} & typeof defaultPoolParameters;
+
+export async function createContingentPool(params: CreateContingentPoolParams): Promise<ContractTransaction> {
+  const mergedParams: CreateContingentPoolParams = {
+    ...defaultPoolParameters,
+    ...params,
+  };
+
+  return await mergedParams.poolFacet.connect(mergedParams.poolCreater).createContingentPool({
+    referenceAsset: mergedParams.referenceAsset,
+    expiryTime: await getExpiryTime(mergedParams.expireInSeconds),
+    floor: mergedParams.floor,
+    inflection: mergedParams.inflection,
+    cap: mergedParams.cap,
+    gradient: mergedParams.gradient,
+    collateralAmount: mergedParams.collateralAmount,
+    collateralToken: mergedParams.collateralToken,
+    dataProvider: mergedParams.dataProvider,
+    capacity: mergedParams.capacity,
+    longRecipient: mergedParams.longRecipient,
+    shortRecipient: mergedParams.shortRecipient,
+    permissionedERC721Token: mergedParams.permissionedERC721Token,
+  });
 }
 
-// The last three fields are only relevant for EIP712 based offers.
-// When creating a contingent pool directly, `collateralAmountMsgSender`
-// is equal to `poolParams.collateralAmount`, `collateralAmountMaker` is zero
-// and `maker` is the zero address.
-interface CreatePoolParams {
-  poolParams: PoolParams;
-  collateralAmountMsgSender: string;
-  collateralAmountMaker: string;
-  maker: string;
-}
-
+// Function to calculate the poolId by hashing the pool parameters, the msg.sender and an
+// internal nonce to ensure uniqueness of the Id.
 export const getPoolId = (
   referenceAsset: string, // keccak256 hash of original string (type: bytes32)
   expiryTime: number,
@@ -114,6 +139,11 @@ export const getPoolId = (
   const referenceAssetBytes32 = ethers.utils.keccak256(bytes);
 
   const abiCoder = new ethers.utils.AbiCoder();
+  // Prepare data for hashing by encoding the relevant values. Note that 
+  // the three fields `collateralAmountMsgSender`, `collateralAmountMaker`, and `maker`
+  // are only relevant for EIP712 based offers. When creating a contingent pool directly,
+  // `collateralAmountMsgSender` is equal to `poolParams.collateralAmount`, `collateralAmountMaker` is zero
+  // and `maker` is the zero address.
   const encodedData = abiCoder.encode(
     ["tuple(bytes32, uint96, uint256, uint256, uint256, uint256, uint256, address, address, uint256, address, address, address)", "uint256", "uint256", "address", "address", "uint256"],
     [
