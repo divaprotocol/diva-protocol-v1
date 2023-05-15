@@ -34,6 +34,9 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
     }
 
     constructor(IDIVAOwnershipShared _divaOwnership) payable {
+        if (address(_divaOwnership) == address(0)) {
+            revert ZeroDIVAOwnershipAddress();
+        }
         _DIVA_OWNERSHIP = _divaOwnership;
     }
 

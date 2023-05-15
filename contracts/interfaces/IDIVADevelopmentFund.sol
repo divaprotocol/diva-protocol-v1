@@ -4,6 +4,9 @@ pragma solidity 0.8.19;
 import {IDIVAOwnershipShared} from "./IDIVAOwnershipShared.sol";
 
 interface IDIVADevelopmentFund {
+    // Thrown in constructor if zero address is provided for DIVA ownership address
+    error ZeroDIVAOwnershipAddress();
+
     // Thrown in `withdraw` if `msg.sender` is not the owner of DIVA protocol
     error NotDIVAOwner(address _user, address _divaOwner);
 
@@ -26,6 +29,7 @@ interface IDIVADevelopmentFund {
         uint256 endTime; // Timestamp in seconds since epoch when release period ends at
         uint256 lastClaimedAt; // Timestamp in seconds since epoch when user last claimed deposit at
     }
+    // Note: Before the first claim, the `lastClaimedAt` variable represents the timestamp of the deposit.
 
     /**
      * @notice Emitted when a user deposits a token or a native asset via

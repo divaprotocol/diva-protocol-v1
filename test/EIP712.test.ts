@@ -2705,6 +2705,105 @@ describe("EIP712", async function () {
       );
     });
 
+    it("Should return actualTakerFillableAmount = 0 if makerCollateralAmount = 0 and OfferStatus = EXPIRED in a partially filled create pool offer", async function () {
+      // ---------
+      // Arrange: Create a contingent pool offer with makerCollateralAmount = 0
+      // ---------
+      offerCreateContingentPool.makerCollateralAmount = "0";
+
+      // Generate signature
+      [signature] = await generateSignatureAndTypedMessageHash(
+        user1,
+        divaDomain,
+        CREATE_POOL_TYPE,
+        offerCreateContingentPool,
+        "OfferCreateContingentPool"
+      );
+
+      // Set takerFillAmount equal to takerCollateralAmount
+      expect(
+        offerCreateContingentPool.minimumTakerFillAmount
+      ).to.be.lt(BigNumber.from(offerCreateContingentPool.takerCollateralAmount));
+      takerFillAmount = offerCreateContingentPool.minimumTakerFillAmount;
+
+      // ---------
+      // Act: Partially fill offer and cancel it
+      // ---------
+      await eip712CreateFacet
+        .connect(user2)
+        .fillOfferCreateContingentPool(
+          offerCreateContingentPool,
+          signature,
+          takerFillAmount
+        );
+
+      // Let the offer expiry
+      nextBlockTimestamp = Number(offerCreateContingentPool.offerExpiry) + 1;
+      await mineBlock(nextBlockTimestamp);
+
+      // ---------
+      // Assert: Confirm that actualTakerFillableAmount is equal 0
+      // ---------
+      const relevantStateParams =
+        await getterFacet.getOfferRelevantStateCreateContingentPool(
+          offerCreateContingentPool,
+          signature
+        );
+      expect(relevantStateParams.offerInfo.status).to.eq(OfferStatus.Expired);
+      expect(relevantStateParams.offerInfo.takerFilledAmount).to.eq(takerFillAmount);
+      expect(relevantStateParams.actualTakerFillableAmount).to.eq(0);
+    });
+
+    it("Should return actualTakerFillableAmount = 0 if makerCollateralAmount = 0 and OfferStatus = CANCELLED in a partially filled create pool offer", async function () {
+      // ---------
+      // Arrange: Create a contingent pool offer with makerCollateralAmount = 0
+      // ---------
+      offerCreateContingentPool.makerCollateralAmount = "0";
+
+      // Generate signature
+      [signature] = await generateSignatureAndTypedMessageHash(
+        user1,
+        divaDomain,
+        CREATE_POOL_TYPE,
+        offerCreateContingentPool,
+        "OfferCreateContingentPool"
+      );
+
+      // Set takerFillAmount equal to takerCollateralAmount
+      expect(
+        offerCreateContingentPool.minimumTakerFillAmount
+      ).to.be.lt(BigNumber.from(offerCreateContingentPool.takerCollateralAmount));
+      takerFillAmount = offerCreateContingentPool.minimumTakerFillAmount;
+
+      // ---------
+      // Act: Partially fill offer and cancel it
+      // ---------
+      await eip712CreateFacet
+        .connect(user2)
+        .fillOfferCreateContingentPool(
+          offerCreateContingentPool,
+          signature,
+          takerFillAmount
+        );
+
+      // Cancel the offer
+      await eip712CancelFacet
+          .connect(user1)
+          .cancelOfferCreateContingentPool(offerCreateContingentPool);
+
+      // ---------
+      // Assert: Confirm that actualTakerFillableAmount is equal 0
+      // ---------
+      const relevantStateParams =
+        await getterFacet.getOfferRelevantStateCreateContingentPool(
+          offerCreateContingentPool,
+          signature
+        );
+      expect(relevantStateParams.offerInfo.status).to.eq(OfferStatus.Cancelled);  
+      expect(relevantStateParams.offerInfo.takerFilledAmount).to.eq(ethers.constants.MaxUint256);
+      expect(relevantStateParams.actualTakerFillableAmount).to.eq(0);
+    });
+
     it("Should return the right parameters for an unfilled create contingent pool offer", async function () {
       // ---------
       // Arrange: Get offer relevant state

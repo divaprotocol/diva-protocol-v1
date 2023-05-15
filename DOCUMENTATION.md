@@ -2657,7 +2657,7 @@ event OwnershipClaimSubmitted(
 
 ## Errors
 
-The following errors may be emitted when interacting with main ownership contract specific functions.
+The following errors may be emitted when interacting with main ownership contract specific functions (ignoring errors thrown in constructor at contract deployment).
 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -2828,7 +2828,7 @@ event OwnerSet(
 
 ## Errors
 
-The following errors may be emitted when interacting with secondary ownership contract specific functions.
+The following errors may be emitted when interacting with secondary ownership contract specific functions (ignoring errors thrown in constructor at contract deployment).
 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -2921,6 +2921,8 @@ struct Deposit {
     uint256 lastClaimedAt;  // Timestamp in seconds since epoch when user last claimed deposit at
 }
 ```
+
+>**Note:** Before the first claim, the `lastClaimedAt` variable represents the timestamp of the deposit.
 
 ## Withdrawals
 
@@ -3071,7 +3073,7 @@ event Withdrawn(
 
 ## Errors
 
-The following errors may be emitted when interacting with DIVA Development Fund contract specific functions.
+The following errors may be emitted when interacting with DIVA Development Fund contract specific functions (ignoring errors thrown in constructor at contract deployment).
 
 | Error name                                 | Function                                                                                         | Description                                                                                                                                                         |
 | :----------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -10,7 +10,8 @@ import {
     GetterFacet,
     GovernanceFacet,
     DIVAOwnershipSecondary,
-    DIVADevelopmentFund
+    DIVAOwnershipMain,
+    TellorPlayground
 } from "../typechain-types";
 
 import { TELLOR_PLAYGROUND_ADDRESS, ONE_DAY, ONE_HOUR } from "../constants";
@@ -70,7 +71,7 @@ describe("DIVAOwnershipSecondary", async function () {
         dummyOwner: SignerWithAddress;
 
     let diamondAddressMain: string;
-    let diamondSecondaryDeployment: [string, number, string];
+    let diamondSecondaryDeployment: [string, number];
     let diamondAddressSecondary: string;
     let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
     let getterFacetMain: GetterFacet,
@@ -138,7 +139,7 @@ describe("DIVAOwnershipSecondary", async function () {
         diamondSecondaryDeployment = await deploySecondary(
             contractOwner.address,
             tellorPlaygroundAddress,
-            mainChainId,
+            mainChainId.toString(),
             ownershipContractAddressMain
         );
         diamondAddressSecondary = diamondSecondaryDeployment[0];
@@ -255,7 +256,7 @@ describe("DIVAOwnershipSecondary", async function () {
             );
 
             // Let the minimum dispute period of 12 hours expire
-            nextBlockTimestamp = tellorDataTimestamp.add(disputePeriod + 1);
+            nextBlockTimestamp = Number(tellorDataTimestamp.add(disputePeriod + 1));
             await time.setNextBlockTimestamp(nextBlockTimestamp);
 
             // ---------
@@ -521,7 +522,7 @@ describe("DIVAOwnershipSecondary", async function () {
             );
 
             // Set the next block's timestamp before the minimum dispute period of 12 hours expires
-            nextBlockTimestamp = tellorDataTimestamp.add(disputePeriod - 1);
+            nextBlockTimestamp = Number(tellorDataTimestamp.add(disputePeriod - 1));
             await time.setNextBlockTimestamp(nextBlockTimestamp);
 
             // ---------
@@ -551,7 +552,7 @@ describe("DIVAOwnershipSecondary", async function () {
             );
 
             // Set the next block's timestamp more than 36 hours after time of reporting
-            nextBlockTimestamp = tellorDataTimestamp.add(maxAllowedAgeOfReportedValue + 1);
+            nextBlockTimestamp = Number(tellorDataTimestamp.add(maxAllowedAgeOfReportedValue + 1));
             await time.setNextBlockTimestamp(nextBlockTimestamp);
 
             const maxAllowedTimestampRetrieved = nextBlockTimestamp - maxAllowedAgeOfReportedValue;
@@ -583,7 +584,7 @@ describe("DIVAOwnershipSecondary", async function () {
             );
 
             // Let the minimum dispute period of 12 hours pass
-            nextBlockTimestamp = tellorDataTimestamp.add(disputePeriod + 1);
+            nextBlockTimestamp = Number(tellorDataTimestamp.add(disputePeriod + 1));
             await time.setNextBlockTimestamp(nextBlockTimestamp);
 
             // Set owner information on secondary chain

@@ -17,6 +17,7 @@ contract UsingTellor {
      * @param _tellor is the Tellor Oracle address
      */
     constructor(address payable _tellor) {
+        require(_tellor != address(0), "Zero Tellor address");
         tellor = ITellor(_tellor);
     }
 

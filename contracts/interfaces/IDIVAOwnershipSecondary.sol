@@ -4,6 +4,16 @@ pragma solidity 0.8.19;
 import {IDIVAOwnershipShared} from "../interfaces/IDIVAOwnershipShared.sol";
 
 interface IDIVAOwnershipSecondary is IDIVAOwnershipShared {
+    // Thrown in constructor if zero address is provided for initial owner.
+    error ZeroOwnerAddress();
+
+    // Thrown in constructor if zero is provided as the main chain Id.
+    error ZeroMainChainId();
+
+    // Thrown in constructor if zero address is provided for ownership contract
+    // on main chain.
+    error ZeroOwnershipContractAddress();
+    
     // Thrown in `setOwner` if Tellor reporting timestamp is older than 36 hours
     error ValueTooOld(
         uint256 _timestampRetrieved,

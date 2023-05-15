@@ -45,7 +45,18 @@ contract DIVAOwnershipSecondary is UsingTellor, IDIVAOwnershipSecondary {
         uint256 _mainChainId,
         address _ownershipContractMainChain
     ) payable UsingTellor(_tellorAddress) {
-        _owner = _initialOwner; 
+        if (_initialOwner == address(0)) {
+            revert ZeroOwnerAddress();
+        }
+        if (_mainChainId == 0) {
+            revert ZeroMainChainId();
+        }
+        if (_ownershipContractMainChain == address(0)) {
+            revert ZeroOwnershipContractAddress();
+        }
+        // Zero address check for `_tellorAddress` is done inside `UsingTellor.sol`
+
+        _owner = _initialOwner;
         _MAIN_CHAIN_ID = _mainChainId;
         _OWNERSHIP_CONTRACT_MAIN_CHAIN = _ownershipContractMainChain;
     }

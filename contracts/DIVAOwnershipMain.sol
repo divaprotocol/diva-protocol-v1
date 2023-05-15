@@ -64,6 +64,13 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         address _initialOwner,
         IERC20Metadata _divaToken
     ) payable {
+        if (_initialOwner == address(0)) {
+            revert ZeroOwnerAddress();
+        }
+        if (address(_divaToken) == address(0)) {
+            revert ZeroDIVATokenAddress();
+        }
+
         _owner = _initialOwner;
         _DIVA_TOKEN = _divaToken;
     }
@@ -154,7 +161,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
 
         // Check that outside of ownership claim submission period
         if (_isWithinSubmitOwnershipClaimPeriod()) {
-            revert WithinSubmitOwnershipClaimPeriod(block.timestamp, _submitOwnershipClaimPeriodEnd) ;
+            revert WithinSubmitOwnershipClaimPeriod(block.timestamp, _submitOwnershipClaimPeriodEnd);
         }
  
         // Update staking balances. Both operations will revert on underflow as

@@ -51,6 +51,8 @@ error FunctionNotFound(bytes4 _functionSelector);
 error ZeroOwnershipContractAddress();
 // Thrown if zero address is provided as fallback data provider
 error ZeroFallbackDataProviderAddress();
+// Thrown if zero address is provided as the DiamondCutFacet
+error ZeroDiamondCutFacetAddress();
 // Thrown if zero address is provided as treasury
 error ZeroTreasuryAddress();
 // Thrown if zero address is provided as position token factory contract
@@ -69,6 +71,7 @@ contract Diamond {
     ) payable {
         if (_ownershipContract == address(0)) revert ZeroOwnershipContractAddress();
         if (_fallbackDataProvider == address(0)) revert ZeroFallbackDataProviderAddress();
+        if (_diamondCutFacet == address(0)) revert ZeroDiamondCutFacetAddress();
         if (_treasury == address(0)) revert ZeroTreasuryAddress();
         if (_positionTokenFactory == address(0)) revert ZeroPositionTokenFactoryAddress();
 
