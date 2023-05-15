@@ -1950,6 +1950,7 @@
     "stateMutability": "view",
     "type": "function"
   },
+  { "inputs": [], "name": "AlreadyUnpaused", "type": "error" },
   {
     "inputs": [
       {

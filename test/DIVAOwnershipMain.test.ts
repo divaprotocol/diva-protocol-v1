@@ -733,7 +733,7 @@ describe("DIVAOwnershipMain", async function () {
 
             // Fast forward in time to respect the 7 day minimum staking period
             const timestampLastStake =
-                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, candidate.address); // @todo check whether user2.address as candidate is correct here
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, candidate.address);
             nextBlockTimestamp = timestampLastStake.add(minStakingPeriod + 1).toNumber();
             await time.setNextBlockTimestamp(nextBlockTimestamp);
             

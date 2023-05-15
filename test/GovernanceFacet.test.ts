@@ -2072,6 +2072,10 @@ describe("GovernanceFacet", async function () {
       );
     });
 
+    // -------------------------------------------
+    // Reverts
+    // -------------------------------------------
+
     it("Reverts if contract owner tries to pause before the 2 day waiting period expired", async () => {
       // ---------
       // Arrange: Pause and unpause withdrawals and set the following block's timestamp such that it's within
@@ -2135,9 +2139,100 @@ describe("GovernanceFacet", async function () {
       );
     });
 
-    it("Emits a ReturnCollateralUnpaused event", async () => {
+    it("Reverts with `AlreadyUnpaused` if contract owner attempts to unpause after the contract was already unpaused (scenario with early manual unpause)", async () => {
       // ---------
-      // Act: Unpause withdrawals (can be triggered anytime without consequences)
+      // Arrange: Pause and unpause withdrawals early (i.e. before 8 days expired)
+      // ---------
+      // Confirm that `pauseReturnCollateralUntil` is in the past to ensure that `pauseReturnCollateral` will work
+      blockTimestamp = await getLastTimestamp();
+      govParamsBefore = await getterFacet.getGovernanceParameters();
+      expect(blockTimestamp).to.be.gt(
+        govParamsBefore.pauseReturnCollateralUntil
+      );
+
+      // Pause
+      await governanceFacet
+        .connect(contractOwner)
+        .pauseReturnCollateral();
+
+      // Unpause
+      await governanceFacet
+        .connect(contractOwner)
+        .unpauseReturnCollateral();
+
+      // ---------
+      // Act & Assert: Confirm that the contract owner cannot unpause again
+      // ---------
+      await expect(
+        governanceFacet.connect(contractOwner).unpauseReturnCollateral()
+      ).to.be.revertedWith("AlreadyUnpaused()");
+
+      // ---------
+      // Reset: Fast forward 2 days in time to enable the possibility a pause for the next tests
+      // ---------
+      nextBlockTimestamp = (await getLastTimestamp()) + 2 * ONE_DAY;
+      await mineBlock(nextBlockTimestamp);
+    });
+
+    it("Reverts with `AlreadyUnpaused` if contract owner attempts to unpause after the contract was already unpaused (scenario with automatic unpause after 8 days)", async () => {
+      // ---------
+      // Arrange: Pause withdrawals and unpause by waiting for more than 8 days
+      // ---------
+      // Confirm that `pauseReturnCollateralUntil` is in the past to ensure that `pauseReturnCollateral` will work
+      blockTimestamp = await getLastTimestamp();
+      govParamsBefore = await getterFacet.getGovernanceParameters();
+      expect(blockTimestamp).to.be.gt(
+        govParamsBefore.pauseReturnCollateralUntil
+      );
+
+      // Pause
+      await governanceFacet
+        .connect(contractOwner)
+        .pauseReturnCollateral();
+
+      // Fast forward 9 days in time to automatically unpause the contract      
+      govParamsAfter = await getterFacet.getGovernanceParameters();
+      nextBlockTimestamp = (govParamsAfter.pauseReturnCollateralUntil).toNumber() + ONE_DAY;
+      await mineBlock(nextBlockTimestamp);
+
+      // At this point withdrawals are already unpaused as the 8 days have passed
+
+      // ---------
+      // Act & Assert: Confirm that the contract owner cannot unpause again
+      // ---------
+      await expect(
+        governanceFacet.connect(contractOwner).unpauseReturnCollateral()
+      ).to.be.revertedWith("AlreadyUnpaused()");
+
+      // ---------
+      // Reset: Fast forward 2 days in time to enable the possibility a pause for the next tests
+      // ---------
+      nextBlockTimestamp = (await getLastTimestamp()) + 2 * ONE_DAY;
+      await mineBlock(nextBlockTimestamp);
+    });
+
+    // -------------------------------------------
+    // Events
+    // -------------------------------------------
+
+    it("Emits a `ReturnCollateralUnpaused` event", async () => {
+      // ---------
+      // Arrange: Pause withdrawals
+      // ---------      
+      // Confirm that `pauseReturnCollateralUntil` is in the past to ensure that `pauseReturnCollateral` will work
+      blockTimestamp = await getLastTimestamp();
+      govParamsBefore = await getterFacet.getGovernanceParameters();
+      expect(blockTimestamp).to.be.gt(
+        govParamsBefore.pauseReturnCollateralUntil.add(2 * ONE_DAY)
+      );
+
+      // Pause
+      await governanceFacet
+        .connect(contractOwner)
+        .pauseReturnCollateral();
+
+      // ---------
+      // Act: Unpause withdrawals
       // ---------
       const tx = await governanceFacet
         .connect(contractOwner)
@@ -2147,7 +2242,7 @@ describe("GovernanceFacet", async function () {
       lastBlockTimestamp = await getLastTimestamp();
 
       // ---------
-      // Act & Assert: Check that it emits a ReturnCollateralUnpaused event
+      // Assert: Check that it emits a `ReturnCollateralUnpaused` event
       // ---------
       govParams = await getterFacet.getGovernanceParameters();
       const returnCollateralUnpausedEvent = receipt.events?.find(
@@ -2161,7 +2256,7 @@ describe("GovernanceFacet", async function () {
       );
     });
 
-    it("Emits a ReturnCollateralPaused event", async () => {
+    it("Emits a `ReturnCollateralPaused` event", async () => {
       // ---------
       // Act: Pause withdrawals
       // ---------
@@ -2171,7 +2266,7 @@ describe("GovernanceFacet", async function () {
       const receipt = await tx.wait();
 
       // ---------
-      // Act & Assert: Check that it emits a ReturnCollateralPaused event
+      // Assert: Check that it emits a ReturnCollateralPaused event
       // ---------
       govParams = await getterFacet.getGovernanceParameters();
       const returnCollateralPausedEvent = receipt.events?.find(
