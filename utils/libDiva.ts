@@ -1,9 +1,10 @@
-import { ethers, BigNumber, ContractTransaction } from "ethers";
+import { ethers, BigNumber, ContractTransaction, BigNumberish } from "ethers";
 import { getExpiryTime } from "../utils";
 import { PoolFacet } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { parseUnits } from "@ethersproject/units";
 import { PayoffsPerToken } from "../constants";
+import type { PromiseOrValue } from "../typechain-types/common";
 
 // Returns payoff per long and short token in collateral token decimals net of fees
 export const calcPayoffPerToken = (
@@ -80,6 +81,7 @@ export const defaultPoolParameters = {
 };
 
 export type CreateContingentPoolParams = {
+  expiryTime?: PromiseOrValue<BigNumberish>; // if expiryTime is defined, it will overwrite the expiryTime set based on `expireInSeconds`
   collateralToken: string;
   dataProvider: string;
   longRecipient: string;
@@ -94,9 +96,18 @@ export async function createContingentPool(params: CreateContingentPoolParams): 
     ...params,
   };
 
+  // If expiryTime attribute is set, use that. If not, derive it based on `expireInSeconds`
+  let expiryTime: PromiseOrValue<BigNumberish>;
+
+  if (mergedParams.expiryTime) {
+    expiryTime = mergedParams.expiryTime;
+  } else {
+    expiryTime = await getExpiryTime(mergedParams.expireInSeconds);
+  }
+
   return await mergedParams.poolFacet.connect(mergedParams.poolCreater).createContingentPool({
     referenceAsset: mergedParams.referenceAsset,
-    expiryTime: await getExpiryTime(mergedParams.expireInSeconds),
+    expiryTime: expiryTime,
     floor: mergedParams.floor,
     inflection: mergedParams.inflection,
     cap: mergedParams.cap,
@@ -115,19 +126,19 @@ export async function createContingentPool(params: CreateContingentPoolParams): 
 // internal nonce to ensure uniqueness of the Id.
 export const getPoolId = (
   referenceAsset: string, // keccak256 hash of original string (type: bytes32)
-  expiryTime: number,
-  floor: string,
-  inflection: string,
-  cap: string,
-  gradient: string,
-  collateralAmount: string,
+  expiryTime: BigNumberish,
+  floor: BigNumberish,
+  inflection: BigNumberish,
+  cap: BigNumberish,
+  gradient: BigNumberish,
+  collateralAmount: BigNumberish,
   collateralToken: string,
   dataProvider: string,
-  capacity: string,
+  capacity: BigNumberish,
   longRecipient: string,
   shortRecipient: string,
   permissionedERC721Token: string,
-  collateralAmountMsgSender: string,
+  collateralAmountMsgSender: BigNumberish,
   collateralAmountMaker: string,
   maker: string,
   msgSender: string,
