@@ -60,14 +60,14 @@ interface ISettlement {
 
     // Struct for `batchSetFinalReferenceValue` function input
     struct ArgsBatchSetFinalReferenceValue {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 finalReferenceValue;
         bool allowChallenge;
     }
 
     // Struct for `batchChallengeFinalReferenceValue` function input
     struct ArgsBatchChallengeFinalReferenceValue {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 proposedFinalReferenceValue;
     }
 
@@ -89,7 +89,7 @@ interface ISettlement {
     event StatusChanged(
         LibDIVAStorage.Status indexed statusFinalReferenceValue,
         address indexed by,
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         uint256 proposedFinalReferenceValue
     );
 
@@ -102,7 +102,7 @@ interface ISettlement {
      * @param returnedTo Address that is returned collateral.
      */
     event PositionTokenRedeemed(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed positionToken,
         uint256 amountPositionToken,
         uint256 collateralAmountReturned,
@@ -113,7 +113,7 @@ interface ISettlement {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event FeeClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
@@ -122,7 +122,7 @@ interface ISettlement {
     // library functions are not reflected in the contract ABI. Read more about it here:
     // https://web.archive.org/web/20180922101404/https://blog.aragon.org/library-driven-development-in-solidity-2bebcaf88736/
     event ReservedClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
@@ -141,7 +141,7 @@ interface ISettlement {
      * dispute mechanism doesn't make sense.
      */
     function setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _finalReferenceValue,
         bool _allowChallenge
     ) external;
@@ -168,7 +168,7 @@ interface ISettlement {
      * challenger expressed as an integer with 18 decimals.
      */
     function challengeFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _proposedFinalReferenceValue
     ) external;
 

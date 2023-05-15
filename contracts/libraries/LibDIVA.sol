@@ -82,7 +82,7 @@ library LibDIVA {
 
     // Argument for `_addLiquidityLib` to avoid stack-too-deep error
     struct AddLiquidityParams {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 collateralAmountMsgSender;
         uint256 collateralAmountMaker;
         address maker;
@@ -92,7 +92,7 @@ library LibDIVA {
 
     // Argument for `_removeLiquidityLib` to avoid stack-too-deep error
     struct RemoveLiquidityParams {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 amount;
         address longTokenHolder;
         address shortTokenHolder;
@@ -107,7 +107,7 @@ library LibDIVA {
      * @param amount Fee amount allocated.
      */
     event FeeClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
@@ -121,7 +121,7 @@ library LibDIVA {
      * @param amount Fee amount reserved.
      */
     event FeeClaimReserved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         uint256 amount
     );
 
@@ -135,7 +135,7 @@ library LibDIVA {
      * restrictions apply to.
      */
     event PoolIssued(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount,
@@ -150,7 +150,7 @@ library LibDIVA {
      * @param collateralAmount The collateral amount added.
      */
     event LiquidityAdded(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longRecipient,
         address indexed shortRecipient,
         uint256 collateralAmount
@@ -164,7 +164,7 @@ library LibDIVA {
      * @param collateralAmount The collateral amount removed from the pool.
      */
     event LiquidityRemoved(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed longTokenHolder,
         address indexed shortTokenHolder,
         uint256 collateralAmount
@@ -178,12 +178,15 @@ library LibDIVA {
      * @param amount Reserve amount allocated (in collateral token)
      */
     event ReservedClaimAllocated(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         address indexed recipient,
         uint256 amount
     );
 
-    function _poolParameters(uint256 _poolId)
+    uint256 private constant ADDRESS_MASK = (1 << 160) - 1;
+    uint256 private constant UINT_96_MASK = (1 << 96) - 1;
+
+    function _poolParameters(bytes32 _poolId)
         internal
         view
         returns (LibDIVAStorage.Pool memory)
@@ -191,8 +194,8 @@ library LibDIVA {
         return LibDIVAStorage._poolStorage().pools[_poolId];
     }
 
-    function _getLatestPoolId() internal view returns (uint256) {
-        return LibDIVAStorage._poolStorage().poolId;
+    function _getPoolCount() internal view returns (uint256) {
+        return LibDIVAStorage._poolStorage().nonce;
     }
 
     function _getClaim(address _collateralToken, address _recipient)
@@ -206,7 +209,7 @@ library LibDIVA {
             ][_recipient];
     }
 
-    function _getReservedClaim(uint256 _poolId) internal view returns (uint256) {
+    function _getReservedClaim(bytes32 _poolId) internal view returns (uint256) {
         return LibDIVAStorage._feeClaimStorage().poolIdToReservedClaim[_poolId];
     }
 
@@ -280,7 +283,7 @@ library LibDIVA {
      * @param _collateralTokenDecimals Collateral token decimals.
      */
     function _calcAndAllocateFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         uint96 _fee,
         address _recipient,
@@ -307,7 +310,7 @@ library LibDIVA {
      * collateral token decimals.
      */
     function _allocateFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         address _recipient,
         uint256 _feeAmount
@@ -340,7 +343,7 @@ library LibDIVA {
      * collateral token decimals.
      */
     function _reserveFeeClaim(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         uint256 _feeAmount
     ) internal {
@@ -367,7 +370,7 @@ library LibDIVA {
      * @param _poolId Id of pool.
      * @param _recipient Reserve recipient.
      */
-    function _allocateReservedClaim(uint256 _poolId, address _recipient) internal {
+    function _allocateReservedClaim(bytes32 _poolId, address _recipient) internal {
         // Get references to relevant storage slots
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
@@ -490,7 +493,7 @@ library LibDIVA {
 
     function _createContingentPoolLib(CreatePoolParams memory _createPoolParams)
         internal
-        returns (uint256)
+        returns (bytes32)
     {
         // Get reference to relevant storage slots
         LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
@@ -512,12 +515,13 @@ library LibDIVA {
             )
         ) revert InvalidInputParamsCreateContingentPool();
 
-        // Increment `poolId` every time a new pool is created. Index
+        // Increment internal `nonce` every time a new pool is created. Index
         // starts at 1. No overflow risk when using compiler version >= 0.8.0.
-        ++ps.poolId;
+        ++ps.nonce;
 
-        // Cache new poolId to avoid reading from storage
-        uint256 _poolId = ps.poolId;
+        // Calculate `poolId` as the hash of pool params, msg.sender and nonce.
+        // This is to protect users from malicious pools in the event of chain reorgs.
+        bytes32 _poolId = _getPoolId(_createPoolParams, ps);
 
         // Transfer approved collateral tokens from `msg.sender` to `this`. Note that
         // the transfer will revert for fee tokens.
@@ -549,14 +553,14 @@ library LibDIVA {
 
         // Deploy two `PositionToken` contract clones, one that represents shares in the short
         // and one that represents shares in the long position.
-        // Naming convention for short/long token: S13/L13 where 13 is the poolId
+        // Naming convention for short/long token: S13/L13 where 13 is the nonce.
         // Diamond contract (address(this) due to delegatecall) is set as the
         // owner of the position tokens and is the only account that is
         // authorized to call the `mint` and `burn` function therein.
         // Note that position tokens have same number of decimals as collateral token.
         address _shortToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("S", Strings.toString(_poolId))), // name is equal to symbol
+                string(abi.encodePacked("S", Strings.toString(ps.nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
@@ -565,7 +569,7 @@ library LibDIVA {
 
         address _longToken = IPositionTokenFactory(ps.positionTokenFactory)
             .createPositionToken(
-                string(abi.encodePacked("L", Strings.toString(_poolId))), // name is equal to symbol
+                string(abi.encodePacked("L", Strings.toString(ps.nonce))), // name is equal to symbol
                 _poolId,
                 _collateralTokenDecimals,
                 address(this),
@@ -574,6 +578,9 @@ library LibDIVA {
 
         (uint48 _indexFees, ) = _getCurrentFees(gs);
         (uint48 _indexSettlementPeriods, ) = _getCurrentSettlementPeriods(gs);
+
+        // Store `poolId`
+        ps.poolId = _poolId;
 
         // Store `Pool` struct in `pools` mapping for the newly generated `poolId`
         ps.pools[_poolId] = LibDIVAStorage.Pool(
@@ -620,6 +627,105 @@ library LibDIVA {
         );
 
         return _poolId;
+    }
+
+    // Return `poolId` which is the hash of create pool parameters, msg.sender and nonce.
+    // This is to protect users from depositing into malicious pools in case of chain reorgs.
+    function _getPoolId(
+        CreatePoolParams memory _createPoolParams,
+        LibDIVAStorage.PoolStorage storage _ps
+    ) private view returns (bytes32 poolId) {
+        // Assembly for more efficient computing:
+        // bytes32 _poolId = keccak256(
+        //     abi.encode(
+        //         keccak256(bytes(_createPoolParams.poolParams.referenceAsset)),
+        //         _createPoolParams.poolParams.expiryTime,
+        //         _createPoolParams.poolParams.floor,
+        //         _createPoolParams.poolParams.inflection,
+        //         _createPoolParams.poolParams.cap,
+        //         _createPoolParams.poolParams.gradient,
+        //         _createPoolParams.poolParams.collateralAmount,
+        //         _createPoolParams.poolParams.collateralToken,
+        //         _createPoolParams.poolParams.dataProvider,
+        //         _createPoolParams.poolParams.capacity,
+        //         _createPoolParams.poolParams.longRecipient,
+        //         _createPoolParams.poolParams.shortRecipient,
+        //         _createPoolParams.poolParams.permissionedERC721Token,
+        //         _createPoolParams.collateralAmountMsgSender,
+        //         _createPoolParams.collateralAmountMaker,
+        //         _createPoolParams.maker,
+        //         msg.sender,
+        //         ps.nonce
+        //     )
+        // );
+        assembly {
+            let mem := mload(0x40)
+            // _createPoolParams.poolParams.referenceAsset;
+            // Get memory pointer where the `poolParams` struct information is stored.
+            let poolParams := mload(_createPoolParams)
+            // At the `poolParams` location, get the memory pointer where the length
+            // of the `referenceAsset` string is stored.
+            let referenceAsset := mload(poolParams)
+            // Store the hash of the string at position `mem`. `mload(referenceAsset)` is
+            // the string length, `add(referenceAsset, 0x20)` is the location where the
+            // actual string starts.
+            mstore(
+                mem,
+                keccak256(add(referenceAsset, 0x20), mload(referenceAsset))
+            )
+            // _createPoolParams.poolParams.expiryTime;
+            mstore(
+                add(mem, 0x20),
+                and(UINT_96_MASK, mload(add(poolParams, 0x20)))
+            )
+            // _createPoolParams.poolParams.floor;
+            mstore(add(mem, 0x40), mload(add(poolParams, 0x40)))
+            // _createPoolParams.poolParams.inflection;
+            mstore(add(mem, 0x60), mload(add(poolParams, 0x60)))
+            // _createPoolParams.poolParams.cap;
+            mstore(add(mem, 0x80), mload(add(poolParams, 0x80)))
+            // _createPoolParams.poolParams.gradient;
+            mstore(add(mem, 0xA0), mload(add(poolParams, 0xA0)))
+            // _createPoolParams.poolParams.collateralAmount;
+            mstore(add(mem, 0xC0), mload(add(poolParams, 0xC0)))
+            // _createPoolParams.poolParams.collateralToken;
+            mstore(add(mem, 0xE0),
+                and(ADDRESS_MASK, mload(add(poolParams, 0xE0)))
+            )
+            // _createPoolParams.poolParams.dataProvider;
+            mstore(add(mem, 0x100),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x100)))
+            )
+            // _createPoolParams.poolParams.capacity;
+            mstore(add(mem, 0x120), mload(add(poolParams, 0x120)))
+            // _createPoolParams.poolParams.longRecipient;
+            mstore(add(mem, 0x140),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x140)))
+            )
+            // _createPoolParams.poolParams.shortRecipient;
+            mstore(add(mem, 0x160),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x160)))
+            )
+            // _createPoolParams.poolParams.permissionedERC721Token;
+            mstore(add(mem, 0x180),
+                and(ADDRESS_MASK, mload(add(poolParams, 0x180)))
+            )
+            // _createPoolParams.collateralAmountMsgSender;
+            mstore(add(mem, 0x1A0), mload(add(_createPoolParams, 0x20))) // First slot after poolParams struct reference
+            // _createPoolParams.collateralAmountMaker;
+            mstore(add(mem, 0x1C0), mload(add(_createPoolParams, 0x40)))
+            // _createPoolParams.maker;
+            mstore(add(mem, 0x1E0),
+                and(ADDRESS_MASK, mload(add(_createPoolParams, 0x60)))
+            )
+            // msg.sender;
+            mstore(add(mem, 0x200), and(ADDRESS_MASK, caller()))
+            // ps.nonce
+            // IMPORTANT: Assumes `nonce` to be at position zero inside `PoolStorage` struct
+            mstore(add(mem, 0x220), sload(_ps.slot))
+
+            poolId := keccak256(mem, 0x240)
+        }
     }
 
     function _validateInputParamsCreateContingentPool(

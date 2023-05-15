@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { ethers, BigNumber } from "ethers";
 import { parseUnits } from "@ethersproject/units";
 
 import { PayoffsPerToken } from "../constants";
@@ -58,3 +58,85 @@ export const calcPayout = (
 
   return payout;
 };
+
+
+// Define the PoolParams and CreatePoolParams structs
+interface PoolParams {
+  referenceAsset: string;
+  expiryTime: number;
+  floor: string;
+  inflection: string;
+  cap: string;
+  gradient: string;
+  collateralAmount: string;
+  collateralToken: string;
+  dataProvider: string;
+  capacity: string;
+  longRecipient: string;
+  shortRecipient: string;
+  permissionedERC721Token: string;
+}
+
+// The last three fields are only relevant for EIP712 based offers.
+// When creating a contingent pool directly, `collateralAmountMsgSender`
+// is equal to `poolParams.collateralAmount`, `collateralAmountMaker` is zero
+// and `maker` is the zero address.
+interface CreatePoolParams {
+  poolParams: PoolParams;
+  collateralAmountMsgSender: string;
+  collateralAmountMaker: string;
+  maker: string;
+}
+
+export const getPoolId = (
+  referenceAsset: string, // keccak256 hash of original string (type: bytes32)
+  expiryTime: number,
+  floor: string,
+  inflection: string,
+  cap: string,
+  gradient: string,
+  collateralAmount: string,
+  collateralToken: string,
+  dataProvider: string,
+  capacity: string,
+  longRecipient: string,
+  shortRecipient: string,
+  permissionedERC721Token: string,
+  collateralAmountMsgSender: string,
+  collateralAmountMaker: string,
+  maker: string,
+  msgSender: string,
+  nonce: string,
+  ): string => {
+  
+  // Convert `referenceAsset` string to bytes32
+  const bytes = ethers.utils.toUtf8Bytes(referenceAsset);
+  const referenceAssetBytes32 = ethers.utils.keccak256(bytes);
+
+  const abiCoder = new ethers.utils.AbiCoder();
+  const encodedData = abiCoder.encode(
+    ["tuple(bytes32, uint96, uint256, uint256, uint256, uint256, uint256, address, address, uint256, address, address, address)", "uint256", "uint256", "address", "address", "uint256"],
+    [
+      [
+        referenceAssetBytes32, expiryTime, floor, inflection, cap, gradient, collateralAmount, collateralToken, dataProvider, capacity, longRecipient, shortRecipient, permissionedERC721Token
+      ],
+      collateralAmountMsgSender, collateralAmountMaker, maker, msgSender, nonce
+    ]
+  );
+  const poolId = ethers.utils.keccak256(encodedData);
+  return poolId;
+};
+
+// Function to extract the nonce from the position token name (e.g., "S3255" or "L3225")
+// It was a conscious decision to not provide a mapping from `nonce` to `poolId` to
+// protect users from being exploited in the event of chain reorgs.
+export async function extractNumberFromString(str: string): Promise<string> {
+  const regex = /(\d+)/;
+  const match = regex.exec(str);
+  if (match) {
+    return String(match[0]);
+  } else {
+    return "";
+  }
+}
+

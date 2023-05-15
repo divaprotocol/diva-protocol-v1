@@ -273,7 +273,7 @@ DIVA Protocol implements the following functions:
 | [`revokePendingFallbackDataProviderUpdate`](#revokependingfallbackdataproviderupdate)                                   | Function to revoke a pending fallback data provider update and restore the previous one.                                                             |
 | [`revokePendingTreasuryUpdate`](#revokependingtreasuryupdate)                                   | Function to revoke a pending treasury address update and restore the previous one.                                                             |
 | **Getter functions**                                                                      |                                                                                                                                                             |
-| [`getLatestPoolId`](#getlatestpoolid)                                                     | Function to return the latest pool Id.                                                                                                                      |
+| [`getPoolCount`](#getpoolcount)                                                     | Function to return the total number of pools created.                                                                                                                      |
 | [`getPoolParameters`](#getpoolparameters)                                                 | Function to return the pool parameters for a given pool Id.                                                                                                 |
 | [`getPoolParametersByAddress`](#getpoolparametersbyaddress)                               | Function to return the pool parameters for a given position token address.                                                                                  |
 | [`getGovernanceParameters`](#getgovernanceparameters)                                     | Function to return current applicable protocol parameters. Ignores pending updates.                                                                                                              |
@@ -357,7 +357,7 @@ function createContingentPool(
     PoolParams calldata _poolParams     // List of parameters specifying the contingent pool
 )
     external
-    returns (uint256);                  // Id of the newly created contingent pool
+    returns (bytes32);                  // Id of the newly created contingent pool
 ```
 
 The `PoolParams` struct has the following fields in the following order:
@@ -381,7 +381,7 @@ The `PoolParams` struct has the following fields in the following order:
 The function executes the following steps in the following order:
 
 1. Check provided pool parameters for validity. Refer to the revert section below for invalid parameters.
-1. Generate a new `poolId` by incrementing an integer of type `uint256` (`poolId` starts at 1).
+1. Generate a new `poolId` by hashing the pool parameters, the `msg.sender` and a monotonically increasing internal `nonce`. This approach ensures that the `poolId` is unique and cannot be replicated to trick users to deposit into a malicious pool in the event of a chain reorg. For more information, refer to the corresponding [audit finding](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/Summary.md#-h-04-_createcontingentpoollib-is-suspicious-of-the-reorg-attack).
 1. Transfer the collateral token from `msg.sender` to the DIVA smart contract, with prior approval from `msg.sender`. The transfer is executed using the `safeTransferFrom` from OpenZeppelin's [SafeERC20][safeerc20] library to accommodate different implementations of the ERC20 standard. For details, see [here][safe-erc20-article-1] and [here][safe-erc20-article-2].
 1. Deploy two [`PositionToken`](#position-tokens) contracts (clones), one representing shares in the long position and one shares in the short position.
 1. Store the pool parameters including the addresses of the two `PositionToken` contracts in the `pools` mapping: `poolId` => [`Pool`](#pool-struct)
@@ -454,7 +454,7 @@ Batch version of [`createContingentPool`](#createcontingentpool) to create multi
 ```js
 function batchCreateContingentPool(PoolParams[] memory _poolsParams)
     external
-    returns (uint256[] memory);             // Array of poolIds created
+    returns (bytes32[] memory);             // Array of poolIds created
 ```
 
 ## Payoffs
@@ -489,7 +489,7 @@ This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy]
 
 ```js
 function addLiquidity(
-    uint256 _poolId,                // Id of the pool that a user wants to add collateral to
+    bytes32 _poolId,                // Id of the pool that a user wants to add collateral to
     uint256 _collateralAmountIncr,  // Incremental collateral amount that `msg.sender` is going to add to the pool expressed as an integer with collateral token decimals
     address _longRecipient,         // Address that shall receive the long position tokens
     address _shortRecipient         // Address that shall receive the short position tokens
@@ -525,7 +525,7 @@ where `ArgsBatchAddLiquidity` is defined as
 
 ```js
 struct ArgsBatchAddLiquidity {
-    uint256 poolId;                 // Id of the pool that a user wants to add collateral to
+    bytes32 poolId;                 // Id of the pool that a user wants to add collateral to
     uint256 collateralAmountIncr;   // Incremental collateral amount to be added to the pool expressed as an integer with collateral token decimals
     address longRecipient;          // Address that shall receive the long position tokens
     address shortRecipient;         // Address that shall receive the short position tokens
@@ -548,7 +548,7 @@ This function uses [solidstate's `nonReentrant` modifier][solidstate-reentrancy]
 
 ```js
 function removeLiquidity(
-    uint256 _poolId,                // Id of the pool that a user wants to remove collateral from
+    bytes32 _poolId,                // Id of the pool that a user wants to remove collateral from
     uint256 _amount                 // Number of position tokens to return (expressed as an integer with position token decimals)
 )
     external;
@@ -592,7 +592,7 @@ where `ArgsBatchRemoveLiquidity` struct is defined as
 
 ```js
 struct ArgsBatchRemoveLiquidity {
-    uint256 poolId;                 // Id of the pool that a user wants to remove collateral from
+    bytes32 poolId;                 // Id of the pool that a user wants to remove collateral from
     uint256 amount;                 // Number of position tokens to return (expressed as an integer with position token decimals)
 }
 ```
@@ -716,7 +716,7 @@ Function to submit the final value of the reference asset. This function uses [s
 
 ```js
 function setFinalReferenceValue(
-    uint256 _poolId,                // The pool Id for which the final value is submitted
+    bytes32 _poolId,                // The pool Id for which the final value is submitted
     uint256 _finalReferenceValue,   // Proposed final value by the data provider expressed as an integer with 18 decimals
     bool _allowChallenge            // Flag indicating whether the challenge functionality should be enabled (1) or not (0)
 )
@@ -757,7 +757,7 @@ where `ArgsBatchSetFinalReferenceValue` struct is defined as
 
 ```js
 struct ArgsBatchSetFinalReferenceValue {
-    uint256 poolId;                 // The pool Id for which the final value is submitted
+    bytes32 poolId;                 // The pool Id for which the final value is submitted
     uint256 finalReferenceValue;    // Proposed final value by the data provider expressed as an integer with 18 decimals
     bool allowChallenge;            // Flag indicating whether the challenge functionality should be enabled (1) or not (0)
 }
@@ -781,7 +781,7 @@ Function to challenge the final reference value submitted by the data provider. 
 
 ```js
 function challengeFinalReferenceValue(
-    uint256 _poolId,                        // Id for which the submitted final value is challenged
+    bytes32 _poolId,                        // Id for which the submitted final value is challenged
     uint256 _proposedFinalReferenceValue    // The proposed final value by the challenger expressed as an integer with 18 decimals
 )
     external;
@@ -815,7 +815,7 @@ where `ArgsBatchChallengeFinalReferenceValue` struct is defined as
 
 ```js
 struct ArgsBatchChallengeFinalReferenceValue {
-    uint256 poolId;                         // Id for which the submitted final value is challenged
+    bytes32 poolId;                         // Id for which the submitted final value is challenged
     uint256 proposedFinalReferenceValue;    // The proposed final value by the challenger expressed as an integer with 18 decimals
 }
 ```
@@ -991,7 +991,7 @@ The tip is allocated to the corresponding data provider if the final value is co
 
 ```js
 function addTip(
-    uint256 _poolId,    // Id of pool to tip
+    bytes32 _poolId,    // Id of pool to tip
     uint256 _amount     // Collateral token amount to add as a tip (expressed as an integer with collateral token decimals)
 )
     external;
@@ -1012,7 +1012,7 @@ where `ArgsBatchAddTip` is defined as
 
 ```js
 struct ArgsBatchAddTip {
-    uint256 poolId;     // Pool Id to tip
+    bytes32 poolId;     // Pool Id to tip
     uint256 amount;     // Tip amount to transfer to recipient (expressed as an integer with collateral token decimals) 
 }
 ```
@@ -1082,7 +1082,7 @@ The `OfferAddLiquidity` struct has the following fields:
 | `makerIsLong`         | bool    | Side              | True (false) if maker shall receive the long (short) position token.                          |
 | `offerExpiry`            | uint256 | Offer fillability | Offer expiration time.                                                                        |
 | `minimumTakerFillAmount` | uint256 | Offer fillability | Minimum taker fill amount on first fill.                                                      |
-| `poolId`                 | uint256 | Pool              | Id of an existing pool.                                                                       |
+| `poolId`                 | bytes32 | Pool              | Id of an existing pool.                                                                       |
 | `salt`                   | uint256 | Other             | Arbitrary number to enforce uniqueness of the offer hash.                                     |
 
 ### OfferRemoveLiquidity
@@ -1098,7 +1098,7 @@ The `OfferRemoveLiquidity` struct has the following fields:
 | `makerIsLong`         | bool    | Side              | True (false) if maker provides the long (short) position token.                          |
 | `offerExpiry`            | uint256 | Offer fillability | Offer expiration time.                                                                        |
 | `minimumTakerFillAmount` | uint256 | Offer fillability | Minimum taker fill amount on first fill.                                                      |
-| `poolId`                 | uint256 | Pool              | Id of an existing pool.                                                                       |
+| `poolId`                 | bytes32 | Pool              | Id of an existing pool.                                                                       |
 | `salt`                   | uint256 | Other             | Arbitrary number to enforce uniqueness of the offer hash.   
 
 ### Signature
@@ -1151,7 +1151,7 @@ The function executes the following steps in the following order:
    1. `msg.sender` is allowed to fill the offer (i.e. `taker` specified in the offer is equal to `msg.sender` or zero address).
 1. Check whether a `poolId` has already been created for the underlying offer hash.
    1. **Scenario A (`poolId = 0`):** The offer has not been filled and as a result no pool has been created yet. Proceed with creating a new contingent pool and storing the `poolId` for the corresponding offer hash. The detailed steps are outlined below.
-   1. **Scenario B (`poolId > 0`):** the offer was already partially filled and a `poolId` exists. Proceed with adding liquidity to the respective pool.
+   1. **Scenario B (`poolId != 0`):** the offer was already partially filled and a `poolId` exists. Proceed with adding liquidity to the respective pool.
 1. Emit [`OfferFilled`](#offerfilled) and [`PoolIssued`](#poolissued) events on successful first fill and [`OfferFilled`](#offerfilled) and [`LiquidityAdded`](#liquidityadded) otherwise.
 
 The detailed execution steps for scenario A are outlined below. Please refer to [`fillOfferAddLiquidity`](#fillofferaddliquidity) for the detailed steps for scenario B (starting from step 3):
@@ -1637,16 +1637,18 @@ function revokePendingTreasuryUpdate() external;
 <h2 id="getter-functions-1">Getter functions</h2>
 DIVA Protocol implements the following getter functions.
 
-### getLatestPoolId
+### getPoolCount
 
-Function to return the latest pool Id.
+Function to return the total number of pools created (equal to the latest nonce).
 
 ```js
-function getLatestPoolId()
+function getPoolCount()
     external
     view
     returns (uint256);
 ```
+
+>**Note:** It was a conscious decision to not provide a mapping from `nonce` to `poolId` to protect users from being exploited in the event of chain reorgs.
 
 ### getPoolParameters
 
@@ -1654,7 +1656,7 @@ Function to return the [pool parameters](#pool-struct) for a given `_poolId`. To
 
 ```js
 function getPoolParameters(
-    uint256 _poolId
+    bytes32 _poolId
 )
     external
     view
@@ -1849,7 +1851,7 @@ Returns zero after a pool has been confirmed and the reserved amount has been cr
 
 ```js
 function getReservedClaim(
-    uint256 _poolId     // Id of pool
+    bytes32 _poolId     // Id of pool
 )
     external
     view
@@ -1858,7 +1860,7 @@ function getReservedClaim(
 
 ### getPoolIdByTypedCreateOfferHash
 
-Function to return the pool Id associated with a given create contingent pool offer hash (EIP712 specific). Note that for an add liquidity offer, the function will return 0 as the `poolId` is part of the offer terms and not stored inside the contract.
+Function to return the `poolId` associated with a given create contingent pool offer hash (EIP712 specific). Note that for an add liquidity offer, the function will return 0 as the `poolId` is part of the offer terms and not stored inside the contract.
 
 ```js
 function getPoolIdByTypedCreateOfferHash(
@@ -1866,7 +1868,7 @@ function getPoolIdByTypedCreateOfferHash(
 )
     external
     view
-    returns (uint256);
+    returns (bytes32);
 ```
 
 ### getTakerFilledAmount
@@ -2003,7 +2005,7 @@ Emitted when a contingent pool is created.
 
 ```
 event PoolIssued(
-    uint256 indexed poolId,         // Id of the newly created contingent pool
+    bytes32 indexed poolId,         // Id of the newly created contingent pool
     address indexed longRecipient,  // Address of the long position token recipient
     address indexed shortRecipient, // Address of the short position token recipient
     uint256 collateralAmount,       // Collateral amount expressed as an integer in collateral token decimals
@@ -2017,7 +2019,7 @@ Emitted when additional collateral is added to an existing pool.
 
 ```
 event LiquidityAdded(
-    uint256 indexed poolId,         // Id of an existing contingent pool
+    bytes32 indexed poolId,         // Id of an existing contingent pool
     address indexed longRecipient,  // Address of the long position token recipient
     address indexed shortRecipient, // Address of the short position token recipient
     uint256 collateralAmount        // Collateral amount added expressed as an integer in collateral token decimals
@@ -2030,7 +2032,7 @@ Emitted when collateral is removed from an existing pool.
 
 ```
 event LiquidityRemoved(
-    uint256 indexed poolId,            // Id of an existing contingent pool
+    bytes32 indexed poolId,            // Id of an existing contingent pool
     address indexed longTokenHolder,   // Account that contributed the long token
     address indexed shortTokenHolder,  // Account that contributed the short token
     uint256 collateralAmount           // Collateral amount removed expressed as an integer in collateral token decimals
@@ -2043,7 +2045,7 @@ Emitted when tips and reserved fees (the "reserve") have been allocated to the d
 
 ```
 event ReservedClaimAllocated(
-    uint256 indexed poolId,     // Id of the pool for which the reserve has been allocated
+    bytes32 indexed poolId,     // Id of the pool for which the reserve has been allocated
     address indexed recipient,  // Address of the reserve recipient, typically the data provider
     uint256 amount              // Reserve amount allocated (in collateral token)
 );
@@ -2179,7 +2181,7 @@ Emitted when the status of the final reference value changes.
 event StatusChanged(
     Status indexed statusFinalReferenceValue,   // New status of final reference value (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed)
     address indexed by,                         // Address that triggered the status change
-    uint256 indexed poolId,                     // Id of the affected pool
+    bytes32 indexed poolId,                     // Id of the affected pool
     uint256 proposedFinalReferenceValue         // Proposed final reference value expressed as an integer with 18 decimals
 );
 ```
@@ -2190,7 +2192,7 @@ Emitted when a user redeems their position tokens.
 
 ```
 event PositionTokenRedeemed(
-    uint256 indexed poolId,             // The Id of the pool that the position token belongs to
+    bytes32 indexed poolId,             // The Id of the pool that the position token belongs to
     address indexed positionToken,      // Address of the position token to redeem
     uint256 amountPositionToken,        // Position token amount returned by user
     uint256 collateralAmountReturned,   // Collateral amount returned to user
@@ -2204,7 +2206,7 @@ Emitted when the final reference value is confirmed and fees are allocated to th
 
 ```
 event FeeClaimAllocated(
-    uint256 indexed poolId,             // Id of the corresponding contingent pool
+    bytes32 indexed poolId,             // Id of the corresponding contingent pool
     address indexed recipient,          // Fee recipient
     uint256 amount                      // Fee amount expressed as an integer with collateral token decimals
 );
@@ -2216,7 +2218,7 @@ Emitted when fees are reserved for the data provider in `removeLiquidity`.
 
 ```
 event FeeClaimReserved(
-    uint256 indexed poolId,             // Id of the corresponding contingent pool
+    bytes32 indexed poolId,             // Id of the corresponding contingent pool
     uint256 amount                      // Fee amount reserved expressed as an integer with collateral token decimals
 );
 ```
@@ -2253,9 +2255,9 @@ Emitted when a tip is added to a pool.
 ```
 event TipAdded(
     address indexed tipper,            // Tipper address
-    uint256 indexed poolId,            // Pool Id tipped
+    bytes32 indexed poolId,            // Pool Id tipped
     address indexed collateralToken,   // Collateral token address
-    uint256 amount                     // Tip amount (net of fees, if any)
+    uint256 amount                     // Tip amount
 );
 ```
 

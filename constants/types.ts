@@ -30,7 +30,7 @@ export type OfferAddLiquidity = {
   makerIsLong: boolean; // false if signer keeps the short position, true if signer keeps the long position
   offerExpiry: string; // offer expiration time
   minimumTakerFillAmount: string; // minimum collateral amount that the taker has to contribute; if equal to takerCollateralAmount, then only full fill is possible
-  poolId: BigNumber;
+  poolId: string;
   salt: string;
 };
 
@@ -42,7 +42,7 @@ export type OfferRemoveLiquidity = {
   makerIsLong: boolean; // 1 [0] if maker returns long [short] position token
   offerExpiry: string; // Offer expiration time
   minimumTakerFillAmount: string; // Minimum position token fill amount on first fill
-  poolId: BigNumber; // Id of an existing pool
+  poolId: string; // Id of an existing pool
   salt: string; // Arbitrary number to enforce uniqueness of the offer hash
 };
 

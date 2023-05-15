@@ -6,10 +6,11 @@ import {LibEIP712} from "../libraries/LibEIP712.sol";
 
 interface IGetter {
     /**
-     * @notice Returns the latest pool Id.
-     * @return Pool Id.
+     * @notice Returns the total number of pools created (equal to
+     * the latest nonce).
+     * @return Number of pools.
      */
-    function getLatestPoolId() external view returns (uint256);
+    function getPoolCount() external view returns (uint256);
 
     /**
      * @notice Returns the pool parameters for a given pool Id. To
@@ -20,7 +21,7 @@ interface IGetter {
      * @param _poolId Id of the pool.
      * @return Pool struct.
      */
-    function getPoolParameters(uint256 _poolId)
+    function getPoolParameters(bytes32 _poolId)
         external
         view
         returns (LibDIVAStorage.Pool memory);
@@ -180,7 +181,7 @@ interface IGetter {
      * @param _poolId Id of pool.
      * @return Tip amount expressed as an integer in collateral token decimals.
      */
-    function getReservedClaim(uint256 _poolId) external view returns (uint256);
+    function getReservedClaim(bytes32 _poolId) external view returns (uint256);
 
     /**
      * @notice Returns the poolId for a given `_typedOfferHash` derived from a
@@ -193,7 +194,7 @@ interface IGetter {
     function getPoolIdByTypedCreateOfferHash(bytes32 _typedOfferHash)
         external
         view
-        returns (uint256);
+        returns (bytes32);
 
     /**
      * @notice Returns the filled amount for a given `_typedOfferHash` (EIP712 specific).

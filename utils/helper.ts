@@ -17,10 +17,10 @@ export const calcFee = (
 
 export const getPoolIdFromTx = async (
   tx: ContractTransaction
-): Promise<BigNumber> => {
+): Promise<string> => {
   const receipt = await tx.wait();
   return (
     receipt.events?.find((x: any) => x.event === "PoolIssued")?.args?.poolId ||
-    BigNumber.from(0)
+    "0"
   );
 };

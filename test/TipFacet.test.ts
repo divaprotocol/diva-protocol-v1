@@ -69,7 +69,7 @@ describe("TipFacet", async function () {
     let nextBlockTimestamp: number;
     let currentBlockTimestamp: number;
 
-    let poolId: BigNumber;
+    let poolId: string;
     let poolParamsBefore: LibDIVAStorage.PoolStructOutput,
       poolParamsAfter: LibDIVAStorage.PoolStructOutput;
     let govParams: GovParams;
@@ -562,8 +562,8 @@ describe("TipFacet", async function () {
         let tipAmount1: BigNumber,
             tipAmount2: BigNumber;
         
-        let poolId1: BigNumber,
-            poolId2: BigNumber;
+        let poolId1: string,
+            poolId2: string;
 
         let pool1ParamsBefore: LibDIVAStorage.PoolStructOutput,
             pool2ParamsBefore: LibDIVAStorage.PoolStructOutput;

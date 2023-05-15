@@ -8,7 +8,7 @@ use(solidity);
 export const fakePositionTokenDeployFixture = async (
   name: string,
   symbol: string,
-  poolId: BigNumber,
+  poolId: string,
   owner: string
 ) => {
   const factory = await ethers.getContractFactory("FakePositionToken");

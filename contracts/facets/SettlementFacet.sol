@@ -10,7 +10,7 @@ import {LibDIVAStorage} from "../libraries/LibDIVAStorage.sol";
 
 contract SettlementFacet is ISettlement, ReentrancyGuard {
     function setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _finalReferenceValue,
         bool _allowChallenge
     ) external override nonReentrant {
@@ -53,7 +53,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
     }
 
     function challengeFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _proposedFinalReferenceValue
     ) external override nonReentrant {
         // Get references to relevant storage slots
@@ -138,7 +138,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
      * caller expressed as an integer with 18 decimals.
      */
     function _updateFinalReferenceValueState(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         LibDIVAStorage.Status _newStatus,
         uint256 _finalReferenceValue
@@ -172,7 +172,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
      * @param _gs Governance storage pointer.
      */
     function _confirmFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         LibDIVAStorage.Pool storage _pool,
         address _receiverProtocolFee,
         address _receiverSettlementFee,
@@ -244,7 +244,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         IPositionToken _positionTokenInstance = IPositionToken(_positionToken);
 
         // Read the poolId from the position token
-        uint256 _poolId = _positionTokenInstance.poolId();
+        bytes32 _poolId = _positionTokenInstance.poolId();
 
         // Load corresponding pool data
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
@@ -347,7 +347,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
     }
 
     function _challengeFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _proposedFinalReferenceValue,
         LibDIVAStorage.PoolStorage storage _ps,
         LibDIVAStorage.GovernanceStorage storage _gs
@@ -407,7 +407,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
     }
 
     function _setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _finalReferenceValue,
         bool _allowChallenge,
         LibDIVAStorage.PoolStorage storage _ps,

@@ -13,7 +13,7 @@ interface IPositionTokenFactory {
      */
     function createPositionToken(
         string memory _symbol,
-        uint256 _poolId,
+        bytes32 _poolId,
         uint8 _decimals,
         address _owner,
         address _permissionedERC721Token

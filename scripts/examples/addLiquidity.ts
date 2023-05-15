@@ -64,7 +64,7 @@ async function main() {
   const network = "goerli";
 
   // Input arguments for `addLiquidity` function
-  const poolId = 28; // id of an existing pool
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
   const additionalAmountNumber = 3; // collateral token amount to be added to an existing pool; parseUnits conversion is done below as it depends on the collateral token decimals
   const longRecipient = "0x245B8ABbC1B70B370d1b81398dE0a7920B25E7ca";
   const shortRecipient = "0x2ADdE7aBe04Bc1F14a3c397251A01276344Cc8a8";

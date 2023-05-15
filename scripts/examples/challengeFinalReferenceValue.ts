@@ -61,7 +61,7 @@ async function main() {
   const network = "goerli";
 
   // INPUT: arguments into `setFinalReferenceValue` function
-  const poolId = 5; // id of an existing pool
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
   const proposedFinalReferenceValue = parseUnits("1670"); // 18 decimals
 
   // Get signer of position token holder

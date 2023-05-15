@@ -12,6 +12,7 @@ import {
   PoolFacet,
   GetterFacet,
   MockERC20,
+  PositionToken,
   EIP712RemoveFacet,
   SettlementFacet,
   GovernanceFacet,
@@ -33,7 +34,12 @@ import {
   REMOVE_LIQUIDITY_TYPE,
   ONE_DAY,
 } from "../constants";
-import { getExpiryTime, getLastTimestamp } from "../utils";
+import {
+  getExpiryTime,
+  getLastTimestamp,
+  extractNumberFromString,
+  getPoolId,
+} from "../utils";
 import {
   calcFee,
   calcNewCollateralBalance,
@@ -49,7 +55,10 @@ import {
 } from "../utils";
 import { deployMain } from "../scripts/deployMain";
 
-import { erc20DeployFixture, erc20AttachFixture } from "./fixtures";
+import {
+  erc20DeployFixture,
+  positionTokenAttachFixture
+} from "./fixtures";
 
 use(solidity);
 
@@ -86,8 +95,8 @@ describe("EIP712", async function () {
   let expectedCollateralBalance: string;
   let positionTokenFillAmount: string;
 
-  let shortTokenInstance: MockERC20;
-  let longTokenInstance: MockERC20;
+  let shortTokenInstance: PositionToken;
+  let longTokenInstance: PositionToken;
 
   let balanceOfCollateralTokenBeforeUser1: BigNumber;
   let balanceOfCollateralTokenBeforeUser2: BigNumber;
@@ -96,10 +105,13 @@ describe("EIP712", async function () {
   let balanceOfLongTokenBeforeUser1: BigNumber;
   let balanceOfShortTokenBeforeUser2: BigNumber;
 
-  let poolId: BigNumber;
+  let poolId: string;
   let poolParams: LibDIVAStorage.PoolStructOutput;
   let nextBlockTimestamp: number;
   let governanceDelay: number = 60 * ONE_DAY;
+
+  let currentNonce: string;
+  let expectedPoolId: string;
 
   let createPoolParams: PoolParams;
   let offerCreateContingentPool: OfferCreateContingentPool;
@@ -113,8 +125,6 @@ describe("EIP712", async function () {
   before(async () => {
     // Get signers
     [contractOwner, treasury, oracle, user1, user2, user3] = await ethers.getSigners();
-    console.log("Address user1: " + user1.address);
-    console.log("Address user2: " + user2.address);
 
     // ---------
     // Setup: Deploy diamond contract (incl. facets) and connect to the diamond contract via facet specific ABI's
@@ -268,7 +278,7 @@ describe("EIP712", async function () {
           OfferStatus.Fillable
         );
         expect(relevantStateParamsBefore.offerInfo.takerFilledAmount).to.eq(0);
-        expect(poolIdByHashBefore).to.eq(0);
+        expect(poolIdByHashBefore).to.eq(ethers.constants.HashZero);
 
         // ---------
         // Act: User2 fills create contingent pool offer
@@ -283,7 +293,6 @@ describe("EIP712", async function () {
         const receipt = await tx.wait();
         console.log("Gas used for fillOfferCreateContingentPool function:");
         console.log(receipt.gasUsed.toString());
-        const lastBlockTimestamp = await getLastTimestamp();
 
         // ---------
         // Assert: Confirm that relevant parameters are updated correctly and the
@@ -299,8 +308,31 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
+
+        // Manually calculate the expected poolId based on the offer details
+        currentNonce = await extractNumberFromString(await shortTokenInstance.name());
+        expectedPoolId = getPoolId(
+          offerCreateContingentPool.referenceAsset,
+          Number(offerCreateContingentPool.expiryTime),
+          String(offerCreateContingentPool.floor),
+          String(offerCreateContingentPool.inflection),
+          String(offerCreateContingentPool.cap),
+          String(offerCreateContingentPool.gradient),
+          String(poolFillAmount),
+          offerCreateContingentPool.collateralToken,
+          offerCreateContingentPool.dataProvider,
+          offerCreateContingentPool.capacity,
+          offerCreateContingentPool.makerIsLong ? offerCreateContingentPool.maker : offerCreateContingentPool.taker,
+          offerCreateContingentPool.makerIsLong ? offerCreateContingentPool.taker : offerCreateContingentPool.maker,
+          offerCreateContingentPool.permissionedERC721Token,
+          String(takerFillAmount), // collateralAmountMsgSender
+          String(makerFillAmount), // collateralAmountMaker
+          offerCreateContingentPool.maker, // maker,
+          offerCreateContingentPool.taker, // msgSender
+          currentNonce // nonce
+        )
 
         // Confirm pool params are set correctly
         expect(poolParams.referenceAsset).to.eq(
@@ -406,7 +438,12 @@ describe("EIP712", async function () {
         expect(relevantStateParamsAfter.offerInfo.takerFilledAmount).to.eq(
           takerFillAmount
         );
+        expect(poolId).to.eq(expectedPoolId);
         expect(poolId).to.eq(poolIdByHashAfter);
+
+        // Confirm that the position tokens store the correct poolId
+        expect(await shortTokenInstance.poolId()).to.eq(expectedPoolId);
+        expect(await longTokenInstance.poolId()).to.eq(expectedPoolId);
       });
 
       it("Should fill a create contingent pool offer in two steps", async function () {
@@ -441,8 +478,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Get balance of collateral token for both users before adding liquidity via a second fill
         balanceOfCollateralTokenBeforeUser1 = await collateralToken.balanceOf(
@@ -1119,8 +1156,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Confirm that collateralBalance has increased to poolFillAmount
         expect(poolParams.collateralBalance).to.eq(poolFillAmount);
@@ -1241,8 +1278,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Confirm that collateralBalance has increased to poolFillAmount
         expect(poolParams.collateralBalance).to.eq(poolFillAmount);
@@ -1291,7 +1328,6 @@ describe("EIP712", async function () {
       // ---------
       // Arrange: Generate 2 create contingent pool offers, and set takerFillAmount equal to takerCollateralAmount, and get balance of collateral token for both users before creating the pool
       // ---------
-
       // Generate first create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
       const offerCreateContingentPool1 =
         await generateCreateContingentPoolOfferDetails({
@@ -1353,7 +1389,7 @@ describe("EIP712", async function () {
         OfferStatus.Fillable
       );
       expect(relevantStateParamsBefore1.offerInfo.takerFilledAmount).to.eq(0);
-      expect(poolIdByHashBefore1).to.eq(0);
+      expect(poolIdByHashBefore1).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
       // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
@@ -1417,7 +1453,7 @@ describe("EIP712", async function () {
         OfferStatus.Fillable
       );
       expect(relevantStateParamsBefore2.offerInfo.takerFilledAmount).to.eq(0);
-      expect(poolIdByHashBefore2).to.eq(0);
+      expect(poolIdByHashBefore2).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
       // Get balance of collateral token for both users before fill offer
@@ -1432,6 +1468,9 @@ describe("EIP712", async function () {
       balanceOfCollateralTokenBeforeDiva = await collateralToken.balanceOf(
         diamondAddress
       );
+
+      // Get current pool count
+      const poolCountBefore = await getterFacet.getPoolCount();
 
       // ---------
       // Act: User2 fills create contingent pool offers
@@ -1464,16 +1503,47 @@ describe("EIP712", async function () {
         typedMessageHash2
       );
 
+      // Get current pool count and 
+      const poolCountAfter = await getterFacet.getPoolCount();
+      expect(poolCountAfter).to.eq(poolCountBefore.add(2));
+
       // Get first pool parameters of newly created pool
       const poolParams1 = await getterFacet.getPoolParameters(poolId1);
 
       // Get instances of short and long token
-      const shortTokenInstance1 = await erc20AttachFixture(
+      const shortTokenInstance1 = await positionTokenAttachFixture(
         poolParams1.shortToken
       );
-      const longTokenInstance1 = await erc20AttachFixture(
+      const longTokenInstance1 = await positionTokenAttachFixture(
         poolParams1.longToken
       );
+
+      // Manually calculate the expected poolId based on the first offer details
+      const currentNonce1 = await extractNumberFromString(await shortTokenInstance1.name());
+      const expectedPoolId1 = getPoolId(
+        offerCreateContingentPool1.referenceAsset,
+        Number(offerCreateContingentPool1.expiryTime),
+        String(offerCreateContingentPool1.floor),
+        String(offerCreateContingentPool1.inflection),
+        String(offerCreateContingentPool1.cap),
+        String(offerCreateContingentPool1.gradient),
+        String(poolFillAmount1),
+        offerCreateContingentPool1.collateralToken,
+        offerCreateContingentPool1.dataProvider,
+        offerCreateContingentPool1.capacity,
+        offerCreateContingentPool1.makerIsLong ? offerCreateContingentPool1.maker : offerCreateContingentPool1.taker,
+        offerCreateContingentPool1.makerIsLong ? offerCreateContingentPool1.taker : offerCreateContingentPool1.maker,
+        offerCreateContingentPool1.permissionedERC721Token,
+        String(takerFillAmount1), // collateralAmountMsgSender
+        String(makerFillAmount1), // collateralAmountMaker
+        offerCreateContingentPool1.maker, // maker,
+        offerCreateContingentPool1.taker, // msgSender
+        currentNonce1 // nonce
+      );
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance1.poolId()).to.eq(expectedPoolId1);
+      expect(await longTokenInstance1.poolId()).to.eq(expectedPoolId1);
 
       // Confirm pool params are set correctly
       expect(poolParams1.referenceAsset).to.eq(
@@ -1549,12 +1619,43 @@ describe("EIP712", async function () {
       const poolParams2 = await getterFacet.getPoolParameters(poolId2);
 
       // Get instances of short and long token
-      const shortTokenInstance2 = await erc20AttachFixture(
+      const shortTokenInstance2 = await positionTokenAttachFixture(
         poolParams2.shortToken
       );
-      const longTokenInstance2 = await erc20AttachFixture(
+      const longTokenInstance2 = await positionTokenAttachFixture(
         poolParams2.longToken
       );
+
+      // Manually calculate the expected poolId based on the second offer details
+      const currentNonce2 = await extractNumberFromString(await shortTokenInstance2.name());
+      const expectedPoolId2 = getPoolId(
+        offerCreateContingentPool2.referenceAsset,
+        Number(offerCreateContingentPool2.expiryTime),
+        String(offerCreateContingentPool2.floor),
+        String(offerCreateContingentPool2.inflection),
+        String(offerCreateContingentPool2.cap),
+        String(offerCreateContingentPool2.gradient),
+        String(poolFillAmount2),
+        offerCreateContingentPool2.collateralToken,
+        offerCreateContingentPool2.dataProvider,
+        offerCreateContingentPool2.capacity,
+        offerCreateContingentPool2.makerIsLong ? offerCreateContingentPool2.maker : offerCreateContingentPool2.taker,
+        offerCreateContingentPool2.makerIsLong ? offerCreateContingentPool2.taker : offerCreateContingentPool2.maker,
+        offerCreateContingentPool2.permissionedERC721Token,
+        String(takerFillAmount2), // collateralAmountMsgSender
+        String(makerFillAmount2), // collateralAmountMaker
+        offerCreateContingentPool2.maker, // maker,
+        offerCreateContingentPool2.taker, // msgSender
+        currentNonce2 // nonce
+      );
+
+      // Confirm that the position tokens store the correct poolId
+      expect(await shortTokenInstance2.poolId()).to.eq(expectedPoolId2);
+      expect(await longTokenInstance2.poolId()).to.eq(expectedPoolId2);
+
+      // Confirm that the poolIds of the two pools are different
+      expect(await shortTokenInstance1.poolId()).to.not.eq(await shortTokenInstance2.poolId());
+      expect(await longTokenInstance1.poolId()).to.not.eq(await longTokenInstance2.poolId());
 
       // Confirm pool params are set correctly
       expect(poolParams2.referenceAsset).to.eq(
@@ -2687,8 +2788,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
         offerAddLiquidity = await generateAddLiquidityOfferDetails(
@@ -3414,8 +3515,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
         offerAddLiquidity = await generateAddLiquidityOfferDetails(
@@ -3526,8 +3627,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
         offerAddLiquidity = await generateAddLiquidityOfferDetails(
@@ -3645,10 +3746,10 @@ describe("EIP712", async function () {
       let poolParams1 = await getterFacet.getPoolParameters(poolId1);
 
       // Get instances of short and long token
-      const shortTokenInstance1 = await erc20AttachFixture(
+      const shortTokenInstance1 = await positionTokenAttachFixture(
         poolParams1.shortToken
       );
-      const longTokenInstance1 = await erc20AttachFixture(
+      const longTokenInstance1 = await positionTokenAttachFixture(
         poolParams1.longToken
       );
 
@@ -3729,10 +3830,10 @@ describe("EIP712", async function () {
       let poolParams2 = await getterFacet.getPoolParameters(poolId2);
 
       // Get instances of short and long token
-      const shortTokenInstance2 = await erc20AttachFixture(
+      const shortTokenInstance2 = await positionTokenAttachFixture(
         poolParams2.shortToken
       );
-      const longTokenInstance2 = await erc20AttachFixture(
+      const longTokenInstance2 = await positionTokenAttachFixture(
         poolParams2.longToken
       );
 
@@ -4808,11 +4909,11 @@ describe("EIP712", async function () {
       // Arrange: Create an offer with a poolId that does not yet exist
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
-      poolId = await getterFacet.getLatestPoolId();
-      expect(poolId).to.be.gt(0);
+      const poolCount = await getterFacet.getPoolCount();
+      expect(poolCount).to.be.gt(0);
 
-      // Increase poolId
-      const nonExistentPoolId = poolId.add(1);
+      // Define zero bytes as the non-existent poolId
+      const nonExistentPoolId = ethers.constants.HashZero;
       const nonExistentPoolParams = await getterFacet.getPoolParameters(
         nonExistentPoolId
       );
@@ -5033,10 +5134,10 @@ describe("EIP712", async function () {
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(
+        shortTokenInstance = await positionTokenAttachFixture(
           poolParamsBefore.shortToken
         );
-        longTokenInstance = await erc20AttachFixture(
+        longTokenInstance = await positionTokenAttachFixture(
           poolParamsBefore.longToken
         );
 
@@ -5669,8 +5770,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate create remove liquidity offer as the one generated in the `beforeEach` block
         // expired due to the shift in time
@@ -6133,8 +6234,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerRemoveLiquidity
         offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
@@ -6276,8 +6377,8 @@ describe("EIP712", async function () {
         poolParams = await getterFacet.getPoolParameters(poolId);
 
         // Get instances of short and long token
-        shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-        longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+        shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+        longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerRemoveLiquidity
         offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
@@ -6427,10 +6528,10 @@ describe("EIP712", async function () {
       );
 
       // Get instances of short and long token
-      const shortTokenInstance1 = await erc20AttachFixture(
+      const shortTokenInstance1 = await positionTokenAttachFixture(
         poolParams1Before.shortToken
       );
-      const longTokenInstance1 = await erc20AttachFixture(
+      const longTokenInstance1 = await positionTokenAttachFixture(
         poolParams1Before.longToken
       );
 
@@ -6530,10 +6631,10 @@ describe("EIP712", async function () {
       );
 
       // Get instances of short and long token
-      const shortTokenInstance2 = await erc20AttachFixture(
+      const shortTokenInstance2 = await positionTokenAttachFixture(
         poolParams2Before.shortToken
       );
-      const longTokenInstance2 = await erc20AttachFixture(
+      const longTokenInstance2 = await positionTokenAttachFixture(
         poolParams2Before.longToken
       );
 
@@ -7160,8 +7261,8 @@ describe("EIP712", async function () {
       poolParams = await getterFacet.getPoolParameters(poolId);
 
       // Get instances of short and long token
-      shortTokenInstance = await erc20AttachFixture(poolParams.shortToken);
-      longTokenInstance = await erc20AttachFixture(poolParams.longToken);
+      shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+      longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
       // Generate offerRemoveLiquidity
       offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
@@ -7404,11 +7505,11 @@ describe("EIP712", async function () {
       // Arrange: Create an offer with a poolId that does not yet exist
       // ---------
       // Confirm that a poolId already exists (repeating from beforeEach block for test readability)
-      poolId = await getterFacet.getLatestPoolId();
-      expect(poolId).to.be.gt(0);
+      const poolCount = await getterFacet.getPoolCount();
+      expect(poolCount).to.be.gt(0);
 
-      // Increase poolId
-      const nonExistentPoolId = poolId.add(1);
+      // Define zero bytes as the non-existent poolId
+      const nonExistentPoolId = ethers.constants.HashZero;
       const nonExistentPoolParams = await getterFacet.getPoolParameters(
         nonExistentPoolId
       );

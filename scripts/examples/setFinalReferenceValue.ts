@@ -101,7 +101,7 @@ async function main() {
   const network = "goerli";
 
   // Input arguments for `setFinalReferenceValue` function
-  const poolId = 2; // id of an existing pool
+  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
   const finalReferenceValue = parseUnits("2444.8"); // 18 decimals
   const allowChallenge = false; // false: first value submitted will automatically be confirmed; true: challenge by position token holders is enabled
 

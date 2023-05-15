@@ -79,12 +79,15 @@ library LibDIVAStorage {
 
     struct FeeClaimStorage {
         mapping(address => mapping(address => uint256)) claimableFeeAmount; // collateralTokenAddress -> RecipientAddress -> amount
-        mapping(uint256 => uint256) poolIdToReservedClaim; // poolId -> reserve amount
+        mapping(bytes32 => uint256) poolIdToReservedClaim; // poolId -> reserve amount
     }
 
+    // IMPORTANT: The hash calculation in `LibDIVA._getPoolId()` assumes
+    // that the `nonce` variable is stored at slot 0 inside the `PoolStorage` struct
     struct PoolStorage {
-        uint256 poolId;
-        mapping(uint256 => Pool) pools;
+        uint256 nonce;
+        bytes32 poolId;
+        mapping(bytes32 => Pool) pools;
         address positionTokenFactory;
     }
 

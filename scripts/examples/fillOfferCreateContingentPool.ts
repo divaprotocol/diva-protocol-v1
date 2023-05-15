@@ -271,9 +271,7 @@ async function main() {
   const typedOfferHash = receipt.events.find(
     (x: any) => x.event === "OfferFilled"
   ).args.typedOfferHash;
-  const poolId = (
-    await diva.getPoolIdByTypedCreateOfferHash(typedOfferHash)
-  ).toString();
+  const poolId = await diva.getPoolIdByTypedCreateOfferHash(typedOfferHash);
 
   // Get maker's and taker's ERC20 token balance after the
   const collateralTokenBalanceMakerAfter = await collateralToken.balanceOf(
