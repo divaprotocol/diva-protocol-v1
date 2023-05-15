@@ -1676,7 +1676,7 @@ Refer to [`Pool`](#pool-struct) for the output data.
 
 ### getPoolParametersByAddress
 
-Same as [`getPoolParameters`](#getpoolparameters) but using the position token address as input instead of the `poolId`.
+Same as [`getPoolParameters`](#getpoolparameters), but the pool parameters are retrieved based on a provided position token address instead of a `poolId`. If the provided position token address does not match any pool, the function will return the default [`Pool`](#pool-struct) struct with zero values. This default struct can be identified by properties such as `collateralToken = 0x0000000000000000000000000000000000000000` or `dataProvider = 0x0000000000000000000000000000000000000000`, for example.
 
 ```js
 function getPoolParametersByAddress(

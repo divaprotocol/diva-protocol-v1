@@ -29,9 +29,20 @@ contract GetterFacet is IGetter {
         override
         returns (LibDIVAStorage.Pool memory)
     {
+        // Read the `poolId` from the `PositionToken` contract
         PositionToken positionToken = PositionToken(_positionToken);
         bytes32 _poolId = positionToken.poolId();
-        return LibDIVA._poolParameters(_poolId);
+                
+        // Load pool information
+        LibDIVAStorage.Pool storage _pool = LibDIVAStorage._poolStorage().pools[_poolId];
+
+        // Return pool information only if the provided position token address is valid.
+        // Otherwise, return the default struct.
+        if (_pool.shortToken == _positionToken || _pool.longToken == _positionToken) {
+            return _pool;
+        }        
+        LibDIVAStorage.Pool memory _zeroPool;
+        return _zeroPool;
     }
 
     function getGovernanceParameters()
