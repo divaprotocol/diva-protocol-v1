@@ -26,23 +26,9 @@ import {LibDiamondStorage} from "./libraries/LibDiamondStorage.sol";
 import {LibDIVAStorage} from "./libraries/LibDIVAStorage.sol";
 import {LibEIP712} from "./libraries/LibEIP712.sol";
 import {LibEIP712Storage} from "./libraries/LibEIP712Storage.sol";
-import {IClaim} from "./interfaces/IClaim.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
-import {IEIP712Add} from "./interfaces/IEIP712Add.sol";
-import {IEIP712Cancel} from "./interfaces/IEIP712Cancel.sol";
-import {IEIP712Create} from "./interfaces/IEIP712Create.sol";
-import {IEIP712Remove} from "./interfaces/IEIP712Remove.sol";
 import {IERC165} from "./interfaces/IERC165.sol";
-import {IGetter} from "./interfaces/IGetter.sol";
-import {IGovernance} from "./interfaces/IGovernance.sol";
-import {ILiquidity} from "./interfaces/ILiquidity.sol";
-import {IDIVAOwnershipShared} from "./interfaces/IDIVAOwnershipShared.sol";
-import {IPermissionedPositionToken} from "./interfaces/IPermissionedPositionToken.sol";
-import {IPool} from "./interfaces/IPool.sol";
-import {IPositionToken} from "./interfaces/IPositionToken.sol";
-import {IPositionTokenFactory} from "./interfaces/IPositionTokenFactory.sol";
-import {ISettlement} from "./interfaces/ISettlement.sol";
 
 
 // Thrown if no function exists for function called
@@ -138,23 +124,8 @@ contract Diamond {
         ds.ownershipContract = _ownershipContract;
 
         // Adding ERC165 data
-        ds.supportedInterfaces[type(IClaim).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
-        ds.supportedInterfaces[type(IEIP712Add).interfaceId] = true;
-        ds.supportedInterfaces[type(IEIP712Cancel).interfaceId] = true;
-        ds.supportedInterfaces[type(IEIP712Create).interfaceId] = true;
-        ds.supportedInterfaces[type(IEIP712Remove).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        ds.supportedInterfaces[type(IGetter).interfaceId] = true;
-        ds.supportedInterfaces[type(IGovernance).interfaceId] = true;
-        ds.supportedInterfaces[type(ILiquidity).interfaceId] = true;
-        ds.supportedInterfaces[type(IDIVAOwnershipShared).interfaceId] = true;
-        ds.supportedInterfaces[type(IPermissionedPositionToken).interfaceId] = true;
-        ds.supportedInterfaces[type(IPool).interfaceId] = true;
-        ds.supportedInterfaces[type(IPositionToken).interfaceId] = true;
-        ds.supportedInterfaces[type(IPositionTokenFactory).interfaceId] = true;
-        ds.supportedInterfaces[type(ISettlement).interfaceId] = true;
     }
 
     // Find facet for function that is called and execute the
