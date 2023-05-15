@@ -499,7 +499,7 @@ function addLiquidity(
 
 The function executes the following steps in the following order:
 
-1. Check that the pool is not expired yet and new collateral balance will not exceed the maximum pool capacity.
+1. Check that the pool exists, the pool is not expired yet and new collateral balance will not exceed the maximum pool capacity.
 2. Transfer the collateral token from the `msg.sender`, with prior approval from the user, using OpenZeppelin's `safeTransferFrom` method and update `collateralBalance` in [`Pool`](#pool-struct) to reflect the new size of the pool.
 3. Mint long and short position tokens to `_longRecipient` and `_shortRecipient` by calling the `mint` function inside the corresponding `PositionToken` contracts. Note that the mint operation can only be triggered by the DIVA smart contract, the owner of the `PositionToken` contracts.
 4. Emit a [`LiquidityAdded`](#liquidityadded) event on success.
@@ -1204,7 +1204,7 @@ The function executes the following steps in the following order:
 1. Validate that the `_takerFillAmount` respects the offer minimum `minimumTakerFillAmount` and maximum `takerCollateralAmount`. Note that the minimum is only relevant on first fill. Afterwards, takers can fill any amount as long as the maximum is respected.
 1. Update the `takerFilledAmount` for the respective offer hash.
 1. Based on the submitted `_takerFillAmount`, derive the `maker`'s contribution (`_makerFillAmount`) and the total to be deposited into the pool (`_poolFillAmount = _takerFillAmount + _makerFillAmount`).
-1. Check that the pool is not expired yet and new collateral balance will not exceed the maximum pool capacity.
+1. Check that the pool exists, the pool is not expired yet and new collateral balance will not exceed the maximum pool capacity.
 1. Transfer the corresponding collateral token amounts from `maker` and `taker` to DIVA Protocol using `safeTransferFrom` and update `collateralBalance` in [`Pool`](#pool-struct) to reflect the new size of the pool. Note that this requires prior approval from both `maker` and `taker` and sufficient collateral token balance to succeed. If `_makerFillAmount = 0`, then no transfer from `maker` is executed. 
 1. Mint long or short position tokens to `maker` and the opposite side to `taker` by calling the `mint` function inside the two `PositionToken` contracts. Note that the mint operation can only be triggered by the DIVA contract, the owner of the `PositionToken` contracts.
 1. Emit [`LiquidityAdded`](#liquidityadded) and [`OfferFilled`](#offerfilled) events on success.
@@ -2331,7 +2331,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `InsufficientShortOrLongBalance()`         | `removeLiquidity`                                                                               | Thrown if a user's short or long position token balance is smaller than the indicated amount                                                                        |
 | `ZeroProtocolFee()`                        | `removeLiquidity`                                                                               | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
 | `ZeroSettlementFee()`                      | `removeLiquidity`                                                                              | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
-| `InvalidPoolId()`            | `setFinalReferenceValue` / `addTip`                                                                      | Thrown if an invalid `poolId` was provided                                                                            |
+| `InvalidPoolId()`            | `setFinalReferenceValue` / `addTip` / `addLiquidity`                                                                 | Thrown if an invalid `poolId` was provided                                                                            |
 | `AlreadySubmittedOrConfirmed()`            | `setFinalReferenceValue`                                                                      | Thrown if data provider attempts to submit a value when status is submitted or confirmed                                                                            |
 | `PoolNotExpired()`                         | `setFinalReferenceValue`                                                                       | Thrown if data provider attempts to submit a value for a pool that didn't expire yet                                                                                |
 | `NotDataProvider()`                        | `setFinalReferenceValue`                                                                    | Thrown if `msg.sender` is not the data provider for the given pool                                                                            |

@@ -10,6 +10,10 @@ import {IPositionTokenFactory} from "../interfaces/IPositionTokenFactory.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 import {LibDIVAStorage} from "./LibDIVAStorage.sol";
 
+// Thrown in `addLiquidity` and `fillOfferAddLiquidity` if an invalid
+// `poolId` was provided
+error InvalidPoolId();
+
 // Thrown in `removeLiquidity` or `redeemPositionToken` if collateral amount
 // to be returned to user during exceeds the pool's collateral balance
 error AmountExceedsPoolCollateralBalance();
@@ -797,6 +801,17 @@ library LibDIVA {
         // Initialize Pool struct
         LibDIVAStorage.Pool storage _pool = ps.pools[addLiquidityParams.poolId];
 
+        // Check if pool exists
+        if (!_isValidPoolId(_pool.collateralToken)) revert InvalidPoolId();
+
+        // Check that pool has not expired yet
+        if (block.timestamp >= _pool.expiryTime) revert PoolExpired();
+
+        // Check that new total pool collateral does not exceed the maximum
+        // capacity of the pool
+        if ((_pool.collateralBalance + addLiquidityParams.collateralAmountMsgSender + addLiquidityParams.collateralAmountMaker) > _pool.capacity)
+            revert PoolCapacityExceeded();
+
         // Connect to collateral token contract of the given pool Id
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
@@ -854,19 +869,6 @@ library LibDIVA {
             addLiquidityParams.shortRecipient,
             _collateralAmountIncr
         );
-    }
-
-    function _checkAddLiquidityAllowed(
-        LibDIVAStorage.Pool storage _pool,
-        uint256 _collateralAmountIncr
-    ) internal view {
-        // Check that pool has not expired yet
-        if (block.timestamp >= _pool.expiryTime) revert PoolExpired();
-
-        // Check that new total pool collateral does not exceed the maximum
-        // capacity of the pool
-        if ((_pool.collateralBalance + _collateralAmountIncr) > _pool.capacity)
-            revert PoolCapacityExceeded();
     }
 
     function _removeLiquidityLib(

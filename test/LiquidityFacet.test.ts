@@ -545,6 +545,26 @@ describe("LiquidityFacet", async function () {
       // Reverts
       // -------------------------------------------
 
+      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+        // ---------
+        // Arrange: Set a non-existent poolId and prepare parameters for call
+        // ---------
+        const nonExistentPoolId = ethers.constants.HashZero;
+        additionalCollateralAmount = parseUnits("10", decimals);
+
+        // ---------
+        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // ---------
+        await expect(
+          liquidityFacet.connect(user2).addLiquidity(
+            nonExistentPoolId,
+            additionalCollateralAmount,
+            user2.address, // longRecipient
+            user3.address // shortRecipient
+          )
+        ).to.be.revertedWith("InvalidPoolId()");
+      });
+
       it("Reverts if pool is already expired (block.timestamp > expiryTime)", async () => {
         // ---------
         // Arrange: Create a set of position tokens that shortly expire

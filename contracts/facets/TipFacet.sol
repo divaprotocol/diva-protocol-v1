@@ -68,6 +68,9 @@ contract TipFacet is ITip, ReentrancyGuard {
         if (_pool.statusFinalReferenceValue != LibDIVAStorage.Status.Open) {
             revert FinalValueAlreadySubmitted();
         }
+        
+        // Cache collateral token
+        IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
         // Cache collateral token
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);

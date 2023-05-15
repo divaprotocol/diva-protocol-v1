@@ -713,17 +713,6 @@ library LibEIP712 {
             _takerFillAmount
         );
 
-        // Get pool params using `poolId` specified in `_offerAddLiquidity`
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[_offerAddLiquidity.poolId];
-
-        // Check whether addition of liquidity is still possible. Reverts if pool expired
-        // or new collateral balance exceeds pool capacity
-        LibDIVA._checkAddLiquidityAllowed(
-            _pool,
-            _makerFillAmount + _takerFillAmount
-        );
-
         // Transfer approved collateral token from maker and taker and mint position tokens to them
         LibDIVA._addLiquidityLib(
             LibDIVA.AddLiquidityParams({

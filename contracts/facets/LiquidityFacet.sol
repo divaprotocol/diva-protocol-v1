@@ -13,13 +13,6 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         address _longRecipient,
         address _shortRecipient
     ) external override nonReentrant {
-        // Confirm that function inputs are valid and addition of liquidity is
-        // still possible.
-        _isValidAddLiquidityTx(
-            _poolId,
-            _collateralAmountIncr
-        );
-
         // Transfer approved collateral token from `msg.sender` and mint position tokens
         // to `_longRecipient` and `_shortRecipient`.
         LibDIVA._addLiquidityLib(
@@ -39,13 +32,6 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
     ) external override nonReentrant {
         uint256 len = _argsBatchAddLiquidity.length;
         for (uint256 i = 0; i < len; ) {
-            // Confirm that function inputs are valid and addition of liquidity is
-            // still possible.
-            _isValidAddLiquidityTx(
-                _argsBatchAddLiquidity[i].poolId,
-                _argsBatchAddLiquidity[i].collateralAmountIncr
-            );
-
             // Transfer approved collateral token from `msg.sender` and mint position tokens
             // to `_longRecipient` and `_shortRecipient`.
             LibDIVA._addLiquidityLib(
@@ -88,19 +74,6 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
                 ++i;
             }
         }
-    }
-
-    function _isValidAddLiquidityTx(
-        bytes32 _poolId,
-        uint256 _collateralAmountIncr
-    ) private view {
-        // Get pool params using `_poolId`
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
-
-        // Check whether addition of liquidity is still possible. Reverts if pool expired
-        // or new collateral balance exceeds pool capacity
-        LibDIVA._checkAddLiquidityAllowed(_pool, _collateralAmountIncr);
     }
 
     function _removeLiquidity(bytes32 _poolId, uint256 _amount) private {
