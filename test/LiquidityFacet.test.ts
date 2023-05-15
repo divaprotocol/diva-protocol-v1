@@ -123,7 +123,6 @@ describe("LiquidityFacet", async function () {
       user1StartCollateralTokenBalance = 100000;
       user2StartCollateralTokenBalance = 50000;
       additionalCollateralAmount = parseUnits("5000", decimals);
-      positionTokensToRedeem = parseUnits("66", decimals);
 
       // Mint ERC20 collateral token with `decimals` decimals and without fees and send it to user 1
       collateralTokenInstance = await erc20DeployFixture(
@@ -170,6 +169,8 @@ describe("LiquidityFacet", async function () {
         longRecipient: user1.address,
         shortRecipient: user1.address
       }
+
+      positionTokensToRedeem = createContingentPoolParams.collateralAmount.div(3);
     });
 
     describe("addLiquidity with zero permissionedERC721Token", async () => {
@@ -2190,7 +2191,7 @@ describe("LiquidityFacet", async function () {
           poolParamsBefore.longToken
         );
 
-        positionTokensToRedeem = parseUnits("66", decimals);
+        positionTokensToRedeem = createContingentPoolParams.collateralAmount.div(3);
       });
 
       // -------------------------------------------
@@ -2294,10 +2295,8 @@ describe("LiquidityFacet", async function () {
           )
         ).to.eq(0);
 
-        tx = await createContingentPool({
-          ...createContingentPoolParams,
-          collateralAmount: parseUnits("25001.358", decimals),
-        });
+        tx = await createContingentPool(createContingentPoolParams);
+
         // Status of second pool before removing liquidity (after the pool has been created)
         const poolId2 = await getPoolIdFromTx(tx);
         const poolParamsBefore2 = await getterFacet.getPoolParameters(poolId2);
@@ -2322,8 +2321,8 @@ describe("LiquidityFacet", async function () {
         ).to.eq(0);
 
         // Format `batchRemoveLiquidity` function input to BigNumber with the right number of decimals
-        const positionTokensToRedeem1 = parseUnits("66", decimals);
-        const positionTokensToRedeem2 = parseUnits("76", decimals);
+        const positionTokensToRedeem1 = createContingentPoolParams.collateralAmount.div(5);
+        const positionTokensToRedeem2 = createContingentPoolParams.collateralAmount.div(4);
 
         // ---------
         // Act: Remove liquidity
