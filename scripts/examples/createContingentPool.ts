@@ -56,10 +56,6 @@ const _checkConditions = (
     throw new Error("Gradient cannot be greater than 1e18");
   }
 
-  if (collateralAmount.lt(parseUnits("1", 6))) {
-    throw new Error("collateralAmount cannot be smaller than 1e6");
-  }
-
   if (capacity.lt(collateralAmount)) {
     throw new Error("Capacity cannot be smaller than collateral amount");
   }

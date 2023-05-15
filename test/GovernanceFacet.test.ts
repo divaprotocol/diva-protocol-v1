@@ -254,7 +254,7 @@ describe("GovernanceFacet", async function () {
       // Arrange: Create a contingent pool and remove liquidity, and afterwards set a new protocol fee
       // ---------
       // Set token amount to redeem
-      const positionTokensToRedeem = parseUnits("66", decimals);
+      const positionTokensToRedeem = createContingentPoolParams.collateralAmount.sub(1);
 
       // Create a contingent pool before fees are updated
       const tx1 = await createContingentPool(createContingentPoolParams);

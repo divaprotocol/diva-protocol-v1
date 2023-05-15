@@ -75,7 +75,7 @@ export const defaultPoolParameters = {
   inflection: parseUnits("1605.33"),
   cap: parseUnits("2001.17"),
   gradient: parseUnits("0.33", decimals),
-  collateralAmount: parseUnits("15001.358", decimals),
+  collateralAmount: parseUnits("0.1", decimals), // update minimumTakerFillAmount in remove liquidity offer part in `eip712.ts` if you change that value
   capacity: parseUnits("100000000", decimals),
   permissionedERC721Token: ethers.constants.AddressZero,
 };

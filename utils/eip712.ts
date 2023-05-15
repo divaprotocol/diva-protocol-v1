@@ -111,44 +111,65 @@ export const generateCreateContingentPoolOfferDetails = async ({
   };
 };
 
-export const generateAddLiquidityOfferDetails = async (
-  maker: string,
-  taker: string,
-  makerIsLong: boolean,
-  poolId: string,
-): Promise<OfferAddLiquidity> => {
+export const generateAddLiquidityOfferDetails = async ({
+    maker,
+    taker,
+    makerCollateralAmount = parseUnits("20", decimals).toString(),
+    takerCollateralAmount = parseUnits("80", decimals).toString(),
+    makerIsLong,
+    offerExpiryInSeconds = 1000,
+    poolId,
+    minimumTakerFillAmount = parseUnits("60", decimals).toString(),
+} : {
+    maker: string,
+    taker: string,
+    makerCollateralAmount?: string,
+    takerCollateralAmount?: string,
+    makerIsLong: boolean,
+    offerExpiryInSeconds?: number;
+    poolId: string,
+    minimumTakerFillAmount?: string
+}): Promise<OfferAddLiquidity> => {
   return {
     maker,
     taker,
-    makerCollateralAmount: parseUnits("20", decimals).toString(),
-    takerCollateralAmount: parseUnits("80", decimals).toString(),
+    makerCollateralAmount,
+    takerCollateralAmount,
     makerIsLong,
-    offerExpiry: await getExpiryTime(1000),
-    minimumTakerFillAmount: parseUnits(
-      "60",
-      decimals
-    ).toString(),
+    offerExpiry: await getExpiryTime(offerExpiryInSeconds),
     poolId,
+    minimumTakerFillAmount,
     salt: Date.now().toString(),
   };
 };
 
-export const generateRemoveLiquidityOfferDetails = async (
+export const generateRemoveLiquidityOfferDetails = async ({
+  maker,
+  taker,
+  positionTokenAmount = parseUnits("20", decimals).toString(),
+  makerCollateralAmount = parseUnits("10", decimals).toString(),
+  makerIsLong,
+  offerExpiryInSeconds = 1000,
+  poolId,
+  minimumTakerFillAmount = parseUnits("10", decimals).toString(),
+} : {
   maker: string,
   taker: string,
+  positionTokenAmount?: string,
+  makerCollateralAmount?: string,
   makerIsLong: boolean,
+  offerExpiryInSeconds?: number;
   poolId: string,
   minimumTakerFillAmount?: string,
-): Promise<OfferRemoveLiquidity> => {
-  const minTakerFillAmount = minimumTakerFillAmount ?? parseUnits("10", decimals).toString();
+}): Promise<OfferRemoveLiquidity> => {
   return {
     maker,
     taker,
-    positionTokenAmount: parseUnits("20", decimals).toString(),
-    makerCollateralAmount: parseUnits("10", decimals).toString(),
+    positionTokenAmount,
+    makerCollateralAmount,
     makerIsLong,
-    offerExpiry: await getExpiryTime(1000),
-    minimumTakerFillAmount: minTakerFillAmount,
+    offerExpiry: await getExpiryTime(offerExpiryInSeconds),
+    minimumTakerFillAmount,
     poolId,
     salt: Date.now().toString(),
   };

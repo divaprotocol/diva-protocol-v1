@@ -795,6 +795,8 @@ describe("SettlementFacet", async function () {
             .connect(contractOwner)
             .updateFallbackDataProvider(newFallbackDataProvider);
 
+          console.log("poolParamsBefore.collateralBalance", poolParamsBefore.collateralBalance)
+
           // ---------
           // Act: Submit final reference with previous fallback provider shortly after `updateFallbackDataProvider`
           // (we can be sure that the new fallback data provider has not been activated yet at this stage)

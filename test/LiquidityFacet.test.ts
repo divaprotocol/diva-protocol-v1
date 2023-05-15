@@ -612,17 +612,19 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create pool with capacity > 0 (chosen to be equal to collateral amount in the pool)
         // ---------
-        maxPoolCapacity = parseUnits("15001.358", decimals);
+        maxPoolCapacity = createContingentPoolParams.collateralAmount
+          .add(parseUnits("1", decimals));
         const tx = await createContingentPool({
           ...createContingentPoolParams,
           capacity: maxPoolCapacity,
         });
         poolId = await getPoolIdFromTx(tx);
+        poolParams = await getterFacet.getPoolParameters(poolId);
 
         // ---------
         // Act & Assert: Check that adding liquidity fails if the pool capacity is exceeded
         // ---------
-        additionalCollateralAmount = parseUnits("1", decimals);
+        additionalCollateralAmount = parseUnits("2", decimals);
         await expect(
           liquidityFacet.connect(user2).addLiquidity(
             poolId,
