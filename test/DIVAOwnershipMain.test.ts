@@ -13,6 +13,8 @@ import {
 
 import { deployMain } from "../scripts/deployMain";
 import { ONE_DAY } from "../constants";
+import { getLastTimestamp } from "../utils";
+import { setNextBlockTimestamp } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 describe("DIVAOwnershipMain", async function () {
     let contractOwner: SignerWithAddress,
@@ -688,7 +690,9 @@ describe("DIVAOwnershipMain", async function () {
             await ownershipContract.connect(user2).stake(user2.address, 1);
 
             // Skip minimum staking period
-            const minStakePeriodEnd = (await ownershipContract.getTimestampLastStake(user2.address))
+            const minStakePeriodEnd = (
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, user2.address)
+            )
                 .add(minStakingPeriod).toNumber();
             await mineUpTo(minStakePeriodEnd);
             
@@ -728,7 +732,8 @@ describe("DIVAOwnershipMain", async function () {
             expect(candidateStake).to.be.gt(0)
 
             // Fast forward in time to respect the 7 day minimum staking period
-            const timestampLastStake = await ownershipContract.getTimestampLastStake(user2.address);
+            const timestampLastStake =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, candidate.address); // @todo check whether user2.address as candidate is correct here
             nextBlockTimestamp = timestampLastStake.add(minStakingPeriod + 1).toNumber();
             await time.setNextBlockTimestamp(nextBlockTimestamp);
             
@@ -758,6 +763,137 @@ describe("DIVAOwnershipMain", async function () {
             const divaTokenBalanceOwnershipContractAfter = await divaToken.balanceOf(ownershipContractAddress);
             expect(divaTokenBalanceStakerAfter).to.eq(divaTokenBalanceUser2Before.add(1))
             expect(divaTokenBalanceOwnershipContractAfter).to.eq(divaTokenBalanceOwnershipContractBefore.sub(1))                    
+        })
+
+        it("Should allow to unstake the first stake after 7 days if staked for two different candidates", async () => {
+            // -------------------------------------------
+            // Arrange 1: Stake for two different candidates with user2 and obtain all relevant stakes
+            // and balances before unstaking
+            // -------------------------------------------
+            // Specify two different candidates
+            const firstCandidate = candidate;
+            const secondCandidate = user3;
+            expect(firstCandidate.address).to.not.eq(secondCandidate.address);
+
+            // Stake for first candidate with user2 and get the timestamp
+            await ownershipContract.connect(user2).stake(firstCandidate.address, 1);
+            const timestampLastStakedForFirstCandidate =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, firstCandidate.address);
+
+            // Stake for second candidate with user2 three days later and get the timestamp
+            nextBlockTimestamp = await getLastTimestamp() + 86400*3;
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+            await ownershipContract.connect(user2).stake(secondCandidate.address, 1);
+            const timestampLastStakedForSecondCandidate =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, secondCandidate.address);
+
+            // Confirm that the last staked timestamp for the first candidate was unaffected by the stake
+            // operation for the second candidate
+            expect(
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, firstCandidate.address)
+            ).to.eq(timestampLastStakedForFirstCandidate);
+
+            // Get user2's current stake for first candidate
+            const user2ToFirstCandidateStake = await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                firstCandidate.address
+            )
+            expect(user2ToFirstCandidateStake).to.be.gt(0)
+
+            // Get user2's current stake for second candidate
+            const user2ToSecondCandidateStake = await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                secondCandidate.address
+            )
+            expect(user2ToSecondCandidateStake).to.be.gt(0)
+
+            // Get first candidate's current aggregate stake
+            const firstCandidateStake = await ownershipContract["getStakedAmount(address)"](
+                firstCandidate.address
+            )
+            expect(firstCandidateStake).to.be.gt(0)
+
+            // Get second candidate's current aggregate stake
+            const secondCandidateStake = await ownershipContract["getStakedAmount(address)"](
+                secondCandidate.address
+            )
+            expect(secondCandidateStake).to.be.gt(0)
+           
+            // Get DIVA token balances before unstaking
+            const divaTokenBalanceUser2Before = await divaToken.balanceOf(user2.address);
+            const divaTokenBalanceOwnershipContractBefore = await divaToken.balanceOf(ownershipContractAddress);
+
+            // Fast forward in time to respect the 7 day minimum staking period after the first candidate stake
+            nextBlockTimestamp = timestampLastStakedForFirstCandidate.add(minStakingPeriod + 1).toNumber();
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+            
+            // -------------------------------------------
+            // Act 1: Unstake first candidate stake
+            // -------------------------------------------
+            await ownershipContract.connect(user2).unstake(firstCandidate.address, "1");
+
+            // -------------------------------------------
+            // Assert 1: Check that relevant state variables and balances have been updated correctly
+            // -------------------------------------------
+            // Storage variables are as expected
+            expect(await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                firstCandidate.address
+            )).to.eq(user2ToFirstCandidateStake.sub(1));
+            expect(await ownershipContract["getStakedAmount(address)"](
+                firstCandidate.address
+            )).to.eq(firstCandidateStake.sub(1));
+
+            // DIVA Token balances are as expected
+            const divaTokenBalanceStakerAfterFirstUnstake = await divaToken.balanceOf(user2.address);
+            const divaTokenBalanceOwnershipContractAfterFirstUnstake = await divaToken.balanceOf(ownershipContractAddress);
+            expect(divaTokenBalanceStakerAfterFirstUnstake).to.eq(divaTokenBalanceUser2Before.add(1))
+            expect(divaTokenBalanceOwnershipContractAfterFirstUnstake).to.eq(divaTokenBalanceOwnershipContractBefore.sub(1));
+
+            // Define next block timestamp so we know the `MinStakingPeriodNotExpired` in the following revert
+            nextBlockTimestamp = (await getLastTimestamp()) + 1;
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+            expect(nextBlockTimestamp).to.be.lt(timestampLastStakedForSecondCandidate.add(minStakingPeriod));
+
+            // -------------------------------------------
+            // Act & Assert 2: Confirm that unstake operation for second candidate will fail because
+            // the 7 days minimum waiting period haven't passed since second stake
+            // -------------------------------------------
+            await expect(
+                ownershipContract.connect(user2).unstake(
+                    secondCandidate.address,
+                    "1"
+                )).to.be.revertedWith(`MinStakingPeriodNotExpired(${nextBlockTimestamp}, ${timestampLastStakedForSecondCandidate.add(minStakingPeriod)})`
+            );
+
+            // -------------------------------------------
+            // Arrange 3: Fast forward in time to respect the 7 day minimum staking period after the second candidate stake
+            // -------------------------------------------   
+            nextBlockTimestamp = timestampLastStakedForSecondCandidate.add(minStakingPeriod + 1).toNumber();
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+
+            // -------------------------------------------
+            // Act 3: Unstake for second candidate
+            // -------------------------------------------   
+            await ownershipContract.connect(user2).unstake(secondCandidate.address, "1");
+
+            // -------------------------------------------
+            // Assert 3: Check that relevant state variables and balances have been updated correctly
+            // -------------------------------------------
+            // Storage variables are as expected
+            expect(await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                secondCandidate.address
+            )).to.eq(user2ToSecondCandidateStake.sub(1));
+            expect(await ownershipContract["getStakedAmount(address)"](
+                secondCandidate.address
+            )).to.eq(secondCandidateStake.sub(1));
+
+            // DIVA Token balances are as expected
+            const divaTokenBalanceStakerAfterSecondUnstake = await divaToken.balanceOf(user2.address);
+            const divaTokenBalanceOwnershipContractAfterSecondUnstake = await divaToken.balanceOf(ownershipContractAddress);
+            expect(divaTokenBalanceStakerAfterSecondUnstake).to.eq(divaTokenBalanceStakerAfterFirstUnstake.add(1))
+            expect(divaTokenBalanceOwnershipContractAfterSecondUnstake).to.eq(divaTokenBalanceOwnershipContractAfterFirstUnstake.sub(1));
         })
         
         it("Should allow to unstake during showdown period", async () => {
@@ -828,6 +964,84 @@ describe("DIVAOwnershipMain", async function () {
             )).to.eq(user2Stake.sub(amountToUnstake));
         })
 
+        it("Should only allow to unstake the first stake 7 days after second stake if staked for the same candidates", async () => {
+            // -------------------------------------------
+            // Arrange 1: Stake for the same candidate twice with user2 and obtain all relevant stakes
+            // and balances before unstaking
+            // -------------------------------------------
+            // Stake for candidate with user2 and get the timestamp
+            await ownershipContract.connect(user2).stake(candidate.address, 1);
+            const timestampFirstStake =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, candidate.address);
+
+            // Stake for same candidate again with user2 three days later and get the timestamp
+            nextBlockTimestamp = await getLastTimestamp() + 86400*3;
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+            await ownershipContract.connect(user2).stake(candidate.address, 1);
+            const timestampSecondStake =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, candidate.address);
+
+            // Get user2's current stake for candidate
+            const user2ToCandidateStake = await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                candidate.address
+            )
+            expect(user2ToCandidateStake).to.be.gt(0)
+
+            // Get candidate's current aggregate stake
+            const candidateStake = await ownershipContract["getStakedAmount(address)"](
+                candidate.address
+            )
+            expect(candidateStake).to.be.gt(0)
+
+            // Get DIVA token balances before unstaking
+            const divaTokenBalanceUser2Before = await divaToken.balanceOf(user2.address);
+            const divaTokenBalanceOwnershipContractBefore = await divaToken.balanceOf(ownershipContractAddress);
+
+            // Fast forward in time 7 days after the first stake
+            nextBlockTimestamp = timestampFirstStake.add(minStakingPeriod + 1).toNumber();
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+                        
+            // -------------------------------------------
+            // Act & Assert 1: Confirm that unstake reverts because the timestamp was overwritten by the second stake
+            // -------------------------------------------
+            await expect(
+                ownershipContract.connect(user2).unstake(
+                    candidate.address,
+                    "1"
+                )).to.be.revertedWith(`MinStakingPeriodNotExpired(${nextBlockTimestamp}, ${timestampSecondStake.add(minStakingPeriod)})`
+            );
+
+            // -------------------------------------------
+            // Arrange 2: Fast forward in time 7 days after the second stake
+            // -------------------------------------------
+            nextBlockTimestamp = timestampSecondStake.add(minStakingPeriod + 1).toNumber();
+            await time.setNextBlockTimestamp(nextBlockTimestamp);
+
+            // -------------------------------------------
+            // Act 2: Unstake
+            // -------------------------------------------
+            await ownershipContract.connect(user2).unstake(candidate.address, "2");
+
+            // -------------------------------------------
+            // Assert 2: Check that relevant state variables and balances have been updated correctly
+            // -------------------------------------------
+            // Storage variables are as expected
+            expect(await ownershipContract["getStakedAmount(address,address)"](
+                user2.address,
+                candidate.address
+            )).to.eq(user2ToCandidateStake.sub(2));
+            expect(await ownershipContract["getStakedAmount(address)"](
+                candidate.address
+            )).to.eq(candidateStake.sub(2));
+
+            // DIVA Token balances are as expected
+            const divaTokenBalanceStakerAfter = await divaToken.balanceOf(user2.address);
+            const divaTokenBalanceOwnershipContractAfter = await divaToken.balanceOf(ownershipContractAddress);
+            expect(divaTokenBalanceStakerAfter).to.eq(divaTokenBalanceUser2Before.add(2))
+            expect(divaTokenBalanceOwnershipContractAfter).to.eq(divaTokenBalanceOwnershipContractBefore.sub(2));
+        })
+
         // -------------------------------------------
         // Events
         // -------------------------------------------
@@ -884,7 +1098,8 @@ describe("DIVAOwnershipMain", async function () {
                 ownershipContract.connect(user2).unstake(
                     user2.address,
                     "1"
-                )).to.be.revertedWith(`WithinSubmitOwnershipClaimPeriod(${nextBlockTimestamp}, ${showdownPeriodEnd.add(submitOwnershipClaimPeriod)})`);
+                )).to.be.revertedWith(`WithinSubmitOwnershipClaimPeriod(${nextBlockTimestamp}, ${showdownPeriodEnd.add(submitOwnershipClaimPeriod)})`
+            );
         })
 
         it("Reverts if 7 day minimum staking period has not passed", async () => {
@@ -895,7 +1110,8 @@ describe("DIVAOwnershipMain", async function () {
             await ownershipContract.connect(user2).stake(user2.address, "1");
             
             // Set timestamp 7 days after last stake timestamp
-            const timestampLastStake = await ownershipContract.getTimestampLastStake(user2.address);
+            const timestampLastStake =
+                await ownershipContract.getTimestampLastStakedForCandidate(user2.address, user2.address);
 
             // Fast forward in time but stay within the minimum staking period
             nextBlockTimestamp = timestampLastStake.add(minStakingPeriod - 1).toNumber();
@@ -908,7 +1124,8 @@ describe("DIVAOwnershipMain", async function () {
                 ownershipContract.connect(user2).unstake(
                     user2.address,
                     "1"
-                )).to.be.revertedWith(`MinStakingPeriodNotExpired(${nextBlockTimestamp}, ${timestampLastStake.add(minStakingPeriod)})`);
+                )).to.be.revertedWith(`MinStakingPeriodNotExpired(${nextBlockTimestamp}, ${timestampLastStake.add(minStakingPeriod)})`
+            );
         })
     })
 })

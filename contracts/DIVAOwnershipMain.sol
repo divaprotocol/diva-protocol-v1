@@ -47,7 +47,7 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
     // Staking related storage variables
     mapping(address => uint256) private _candidateToStakedAmount;
     mapping(address => mapping(address => uint256)) private _voterToCandidateToStakedAmount;
-    mapping(address => uint256) private _voterToTimestampLastStake; 
+    mapping(address => mapping(address => uint256)) private _voterToTimestampLastStakedForCandidate; 
 
     // Election cycle related end times. Initialized to zero ad contract deployment.
     uint256 private _showdownPeriodEnd;
@@ -90,9 +90,9 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
             _amount
         );
                 
-        // Store timestamp of `msg.sender` for the minimum staking period check in
+        // Store timestamp of staking operation for the minimum staking period check in
         // `unstake` function
-        _voterToTimestampLastStake[msg.sender] = block.timestamp;
+        _voterToTimestampLastStakedForCandidate[msg.sender][_candidate] = block.timestamp;
 
         // Increase `msg.sender`'s staked amount for candidate
         _voterToCandidateToStakedAmount[msg.sender][_candidate] += _amount;
@@ -154,7 +154,8 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
 
     function unstake(address _candidate, uint256 _amount) external override nonReentrant {
         // Check whether the 7 day minimum staking period has been respected
-        uint _minStakingPeriodEnd = _voterToTimestampLastStake[msg.sender] + _MIN_STAKING_PERIOD;
+        uint _minStakingPeriodEnd =
+            _voterToTimestampLastStakedForCandidate[msg.sender][_candidate] + _MIN_STAKING_PERIOD;
         if (block.timestamp < _minStakingPeriodEnd) {
             revert MinStakingPeriodNotExpired(block.timestamp, _minStakingPeriodEnd);
         }
@@ -197,8 +198,11 @@ contract DIVAOwnershipMain is IDIVAOwnershipMain, ReentrancyGuard {
         return _isWithinElectionCycle() ? _previousOwner : _owner;
     }
 
-    function getTimestampLastStake(address _user) external view override returns (uint256) {
-        return _voterToTimestampLastStake[_user];
+    function getTimestampLastStakedForCandidate(
+        address _user,
+        address _candidate
+    ) external view override returns (uint256) {
+        return _voterToTimestampLastStakedForCandidate[_user][_candidate];
     }
 
     function getShowdownPeriodEnd() external view override returns (uint256) {
