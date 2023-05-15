@@ -793,12 +793,14 @@ function challengeFinalReferenceValue(
 
 The function executes the following steps in the following order:
 
+1. Check whether the provided `_poolId` is valid.
 1. Check that `msg.sender` owns either short or long position tokens in the underlying pool.
 1. If status is "Submitted" and the call is still within the 3-day challenge period (i.e., `block.timestamp <= statusTimestamp + challengePeriod`), update `statusFinalReferenceValue` to "Challenged", `statusTimestamp` to `block.timestamp` and emit a [`StatusChanged`](#statuschanged) event. `finalReferenceValue` is **not** updated.
 1. If status is already "Challenged" and the call is still within the 5-day review period (i.e., `block.timestamp <= statusTimestamp + reviewPeriod`), emit a [`StatusChanged`](#statuschanged) event. It's important to highlight that neither `statusTimestamp` nor `finalReferenceValue` are updated in that case.
 
 The function reverts under the following conditions:
 
+- The provided `_poolId` is invalid.
 - Caller owns zero short and long tokens in the underlying pool.
 - If status is "Submitted" and the 3-day challenge period expired (i.e., `block.timestamp > statusTimestamp + challengePeriod` where `statusTimestamp` is the time of submission).
 - If status is "Challenged" and the 5-day review period expired (i.e., `block.timestamp > statusTimestamp + reviewPeriod` where `statusTimestamp` is the time of the first challenge).
@@ -2334,7 +2336,7 @@ The following errors may be emitted when interacting with DIVA Protocol specific
 | `InsufficientShortOrLongBalance()`         | `removeLiquidity`                                                                               | Thrown if a user's short or long position token balance is smaller than the indicated amount                                                                        |
 | `ZeroProtocolFee()`                        | `removeLiquidity`                                                                               | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
 | `ZeroSettlementFee()`                      | `removeLiquidity`                                                                              | Thrown if `_amount` provided by user results in a zero protocol fee amount; user should increase `_amount` |
-| `InvalidPoolId()`            | `setFinalReferenceValue` / `addTip` / `addLiquidity` / `removeLiquidity`                                                                 | Thrown if an invalid `poolId` was provided                                                                            |
+| `InvalidPoolId()`            | `setFinalReferenceValue` / `addTip` / `addLiquidity` / `removeLiquidity` / `challengeFinalReferenceValue`                                                                 | Thrown if an invalid `poolId` was provided                                                                            |
 | `AlreadySubmittedOrConfirmed()`            | `setFinalReferenceValue`                                                                      | Thrown if data provider attempts to submit a value when status is submitted or confirmed                                                                            |
 | `PoolNotExpired()`                         | `setFinalReferenceValue`                                                                       | Thrown if data provider attempts to submit a value for a pool that didn't expire yet                                                                                |
 | `NotDataProvider()`                        | `setFinalReferenceValue`                                                                    | Thrown if `msg.sender` is not the data provider for the given pool                                                                            |
