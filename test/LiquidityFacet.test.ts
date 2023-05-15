@@ -1979,6 +1979,22 @@ describe("LiquidityFacet", async function () {
       // Reverts
       // -------------------------------------------
 
+      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+        // ---------
+        // Arrange: Set a non-existent poolId and prepare parameters for call
+        // ---------
+        const nonExistentPoolId = ethers.constants.HashZero;
+
+        // ---------
+        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // ---------
+        await expect(
+          liquidityFacet
+            .connect(user1)
+            .removeLiquidity(nonExistentPoolId, poolParamsBefore.collateralBalance)
+        ).to.be.revertedWith("InvalidPoolId()");
+      });
+
       it("Reverts if final reference value is already confirmed", async () => {
         // ---------
         // Arrange: Create a set of position tokens that shortly expires and set final reference value

@@ -86,7 +86,8 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
                 amount: _amount,
                 longTokenHolder: msg.sender,
                 shortTokenHolder: msg.sender
-            })
+            }),
+            _pool
         );
 
         // Send collateral (net of fees) back to user.

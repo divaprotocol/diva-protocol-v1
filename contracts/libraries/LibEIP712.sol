@@ -839,7 +839,8 @@ library LibEIP712 {
                 shortTokenHolder: _offerRemoveLiquidity.makerIsLong
                     ? msg.sender
                     : _offerRemoveLiquidity.maker
-            })
+            }),
+            _pool
         );
 
         // It is important to calculate the taker amount first here to prevent a scenario where
