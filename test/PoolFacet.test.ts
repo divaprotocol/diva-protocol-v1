@@ -329,9 +329,6 @@ describe("PoolFacet", async function () {
     });
 
     it("Increases the short and long token supply", async () => {
-      // ---------
-      // Assert
-      // ---------
       expect(await shortTokenInstance.totalSupply()).to.eq(createContingentPoolParams.collateralAmount);
       expect(await longTokenInstance.totalSupply()).to.eq(createContingentPoolParams.collateralAmount);
     });
@@ -445,7 +442,7 @@ describe("PoolFacet", async function () {
         longTokenBalanceUser1
       );
     });
-
+      
     it("Deducts a fee on transfer for the Mock ERC20 token with fees", async () => {
       // This test is to ensure that the fee logic in the Mock ERC20 functions correctly
 
@@ -475,6 +472,53 @@ describe("PoolFacet", async function () {
       expect(collateralTokenWithFeesUser1After).to.eq(collateralTokenWithFeesUser1Before.sub(amountToTransfer));
       expect(collateralTokenWithFeesUser2After).to.eq(collateralTokenWithFeesUser2Before.add(amountToTransfer).sub(feeAmount));
     })
+
+    it("Shouldn't change anything if collateralAmount = 0", async () => {
+      // ---------
+      // Arrange: Set collateral amount to zero and retrieve DIVA contract's collateral token balance
+      // ---------
+      const zeroCollateralAmount = BigNumber.from(0);
+      const diamondCollateralTokenBalanceBefore = await collateralTokenInstance.balanceOf(diamondAddress);
+      const createContingentPoolParamsAdj: CreateContingentPoolParams = {
+        ...createContingentPoolParams,
+        collateralAmount: zeroCollateralAmount
+      }
+
+      // ---------
+      // Act: Create a contingent pool
+      // ---------
+      tx = await createContingentPool(createContingentPoolParamsAdj);
+
+      // ---------
+      // Assert: Check that relevant pool parameters are correctly set
+      // ---------
+      currentBlockTimestamp = await getLastTimestamp();
+      poolId = await getPoolIdFromTx(tx);
+      poolParams = await getterFacet.getPoolParameters(poolId);
+      shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+      longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
+
+      // Confirm that the collateral amount is zero
+      expect(poolParams.collateralBalance).to.eq(zeroCollateralAmount);
+
+      // Confirm that the total short and long token supply is zero
+      expect(await shortTokenInstance.totalSupply()).to.eq(zeroCollateralAmount);
+      expect(await longTokenInstance.totalSupply()).to.eq(zeroCollateralAmount);
+
+      // Confirm that the user's long and short token supply are zero
+      expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(
+        zeroCollateralAmount
+      );
+      expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
+        zeroCollateralAmount
+      );
+
+      // Confirm that DIVA contract's collateral token balance remained unchanged
+      expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+        diamondCollateralTokenBalanceBefore
+      );
+    });
+
 
     // -------------------------------------------
     // Events
