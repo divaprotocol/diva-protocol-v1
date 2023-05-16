@@ -86,8 +86,7 @@ library LibDIVAStorage {
     // that the `nonce` variable is stored at slot 0 inside the `PoolStorage` struct
     struct PoolStorage {
         uint256 nonce;
-        bytes32 poolId;
-        mapping(bytes32 => Pool) pools;
+        mapping(bytes32 => Pool) pools; // poolId => Pool struct
         address positionTokenFactory;
     }
 
