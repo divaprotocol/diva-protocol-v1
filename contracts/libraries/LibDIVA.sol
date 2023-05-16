@@ -794,7 +794,7 @@ library LibDIVA {
         LibDIVAStorage.Pool storage _pool = ps.pools[addLiquidityParams.poolId];
 
         // Check if pool exists
-        if (!_isValidPoolId(_pool.collateralToken)) revert InvalidPoolId();
+        if (!_isValidPoolId(_pool)) revert InvalidPoolId();
 
         // Check that pool has not expired yet
         if (block.timestamp >= _pool.expiryTime) revert PoolExpired();
@@ -876,7 +876,7 @@ library LibDIVA {
             revert ReturnCollateralPaused();
 
         // Check if pool exists
-        if (!_isValidPoolId(_pool.collateralToken)) revert InvalidPoolId();
+        if (!_isValidPoolId(_pool)) revert InvalidPoolId();
 
         // If status is Confirmed, users should use `redeemPositionToken` function
         // to withdraw collateral
@@ -976,8 +976,8 @@ library LibDIVA {
     // is excluded when creating a contingent pool as the zero address
     // doesn't implement the required functions (e.g., `transferFrom`)
     // required to create a contingent pool.
-    function _isValidPoolId(address _collateralToken) internal pure returns (bool) {
-        return _collateralToken != address(0);
+    function _isValidPoolId(LibDIVAStorage.Pool storage _pool) internal view returns (bool) {
+        return _pool.collateralToken != address(0);
     }
 
     function _getFeesHistory(
