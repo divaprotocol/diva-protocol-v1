@@ -57,12 +57,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/divaprotocol/diva-contracts.git"
+    "url": "git+https://github.com/divaprotocol/diva-protocol-v1.git"
   },
   "author": "DIVA Squad",
-  "license": "MIT",
+  "license": "agpl-3.0",
   "bugs": {
-    "url": "https://github.com/divaprotocol/diva-contracts/issues"
+    "url": "https://github.com/divaprotocol/diva-protocol-v1/issues"
   },
   "homepage": "https://www.divaprotocol.io/",
   "devDependencies": {
