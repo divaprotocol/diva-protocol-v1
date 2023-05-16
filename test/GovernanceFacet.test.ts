@@ -167,8 +167,7 @@ describe("GovernanceFacet", async function () {
       .connect(user1)
       .approve(diamondAddress, MAX_UINT);
 
-    // Specify the create contingent pool parameters that don't define a default value.
-    // Refer to `utils/libDiva.ts` for default values.
+    // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
     createContingentPoolParams = {
       ...defaultPoolParameters,
       collateralToken: collateralTokenInstance.address,

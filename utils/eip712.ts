@@ -63,7 +63,7 @@ export const generateCreateContingentPoolOfferDetails = async ({
   offerExpiryInSeconds = 100000,
   minimumTakerFillAmount = parseUnits("60", decimals).toString(),
   referenceAsset = "BTC/USD",
-  expireInSeconds = 7200,
+  poolExpiryInSeconds = 7200,
   floor = parseUnits("40000").toString(),
   inflection = parseUnits("60000").toString(),
   cap = parseUnits("80000").toString(),
@@ -80,7 +80,7 @@ export const generateCreateContingentPoolOfferDetails = async ({
   offerExpiryInSeconds?: number;
   minimumTakerFillAmount?: string;
   referenceAsset?: string;
-  expireInSeconds?: number;
+  poolExpiryInSeconds?: number;
   floor?: string;
   inflection?: string;
   cap?: string;
@@ -98,7 +98,7 @@ export const generateCreateContingentPoolOfferDetails = async ({
     offerExpiry: await getExpiryTime(offerExpiryInSeconds),
     minimumTakerFillAmount,
     referenceAsset,
-    expiryTime: await getExpiryTime(expireInSeconds),
+    expiryTime: await getExpiryTime(poolExpiryInSeconds),
     floor,
     inflection,
     cap,

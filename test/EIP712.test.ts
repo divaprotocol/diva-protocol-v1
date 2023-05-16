@@ -446,12 +446,8 @@ describe("EIP712", async function () {
         // ---------
         // Arrange: Simulate a partial fill of a create contingent pool offer
         // ---------
-
         // Set takerFillAmountFirstFill < takerCollateralAmount to simulate a partial fill of a create contingent pool offer
-        const takerFillAmountFirstFill = parseUnits(
-          "60",
-          decimals
-        ).toString();
+        const takerFillAmountFirstFill = offerCreateContingentPool.minimumTakerFillAmount;
         expect(BigNumber.from(takerFillAmountFirstFill)).to.be.lt(
           BigNumber.from(offerCreateContingentPool.takerCollateralAmount)
         );
@@ -1330,14 +1326,6 @@ describe("EIP712", async function () {
           makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          makerCollateralAmount: parseUnits(
-            "20",
-            decimals
-          ).toString(),
-          takerCollateralAmount: parseUnits(
-            "80",
-            decimals
-          ).toString(),
         });
 
       // Generate signature and typed message hash
@@ -1385,7 +1373,7 @@ describe("EIP712", async function () {
       expect(poolIdByHashBefore1).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
-      // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
+      // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side.
       const offerCreateContingentPool2 =
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
@@ -3031,10 +3019,7 @@ describe("EIP712", async function () {
         // ---------
 
         // Set takerFillAmountFirstFill < takerCollateralAmount to simulate a partial fill of an add liquidity offer
-        const takerFillAmountFirstFill = parseUnits(
-          "60",
-          decimals
-        ).toString();
+        const takerFillAmountFirstFill = offerAddLiquidity.minimumTakerFillAmount;
         expect(BigNumber.from(takerFillAmountFirstFill)).to.be.lt(
           BigNumber.from(offerAddLiquidity.takerCollateralAmount)
         );
@@ -5048,7 +5033,7 @@ describe("EIP712", async function () {
       );
 
       // Set takerFillAmount smaller than takerCollateralAmount to simulate a partial fill
-      takerFillAmount = parseUnits("60", decimals).toString();
+      takerFillAmount = offerAddLiquidity.minimumTakerFillAmount;
       expect(BigNumber.from(takerFillAmount)).to.be.lt(
         BigNumber.from(offerAddLiquidity.takerCollateralAmount)
       );
@@ -5200,8 +5185,8 @@ describe("EIP712", async function () {
         );
 
         // Generate offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
-      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
-      // underlying contingent pool
+        // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+        // underlying contingent pool
         offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
           maker: user1.address.toString(),
           taker: user2.address.toString(),
@@ -5366,11 +5351,9 @@ describe("EIP712", async function () {
         );
         // As the individual user balances may be off by 1, check that the combined balance is as expected
         expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
-          balanceOfCollateralTokenBeforeUser1.add(
-            balanceOfCollateralTokenBeforeUser2
-          ).add(
-            collateralToReturnNet
-          )
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that takerFilledAmount for the corresponding offer has increased
@@ -5635,11 +5618,9 @@ describe("EIP712", async function () {
         );
         // As the individual user balances may be off by 1, check that the combined balance is as expected
         expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
-          balanceOfCollateralTokenBeforeUser1.add(
-            balanceOfCollateralTokenBeforeUser2
-          ).add(
-            collateralToReturnNet
-          )
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6459,11 +6440,9 @@ describe("EIP712", async function () {
         );
         // As the individual user balances may be off by 1, check that the combined balance is as expected
         expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
-          balanceOfCollateralTokenBeforeUser1.add(
-            balanceOfCollateralTokenBeforeUser2
-          ).add(
-            collateralToReturnNet
-          )
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6619,11 +6598,9 @@ describe("EIP712", async function () {
         );
         // As the individual user balances may be off by 1, check that the combined balance is as expected
         expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
-          balanceOfCollateralTokenBeforeUser1.add(
-            balanceOfCollateralTokenBeforeUser2
-          ).add(
-            collateralToReturnNet
-          )
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6998,9 +6975,8 @@ describe("EIP712", async function () {
       );
       // As the individual user balances may be off by 2, check that the combined balance is as expected
       expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
-        balanceOfCollateralTokenBeforeUser1.add(
-          balanceOfCollateralTokenBeforeUser2
-        )
+        balanceOfCollateralTokenBeforeUser1
+          .add(balanceOfCollateralTokenBeforeUser2)
           .add(collateralToReturnNet1)
           .add(collateralToReturnNet2),
       );

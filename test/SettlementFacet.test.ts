@@ -188,8 +188,7 @@ describe("SettlementFacet", async function () {
           parseUnits(user1StartCollateralTokenBalance.toString(), decimals)
         );
 
-      // Specify the create contingent pool parameters that don't define a default value.
-      // Refer to `utils/libDiva.ts` for default values.
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
       createContingentPoolParams = {
         ...defaultPoolParameters,
         collateralToken: collateralTokenInstance.address,
@@ -208,7 +207,7 @@ describe("SettlementFacet", async function () {
         // ---------
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -794,8 +793,6 @@ describe("SettlementFacet", async function () {
           await governanceFacet
             .connect(contractOwner)
             .updateFallbackDataProvider(newFallbackDataProvider);
-
-          console.log("poolParamsBefore.collateralBalance", poolParamsBefore.collateralBalance)
 
           // ---------
           // Act: Submit final reference with previous fallback provider shortly after `updateFallbackDataProvider`
@@ -1419,7 +1416,7 @@ describe("SettlementFacet", async function () {
         await mineBlock();
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 1000,
+          poolExpiryInSeconds: 1000,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -1508,7 +1505,7 @@ describe("SettlementFacet", async function () {
               cap: parseUnits("1600"),
               gradient: parseUnits("0.5", decimals),
               collateralAmount: parseUnits("200", decimals),
-              expireInSeconds: 20,
+              poolExpiryInSeconds: 20,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -1611,7 +1608,7 @@ describe("SettlementFacet", async function () {
               cap: parseUnits("0"),
               gradient: parseUnits("0.5", decimals),
               collateralAmount: parseUnits("200", decimals),
-              expireInSeconds: 2,
+              poolExpiryInSeconds: 2,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -1685,7 +1682,7 @@ describe("SettlementFacet", async function () {
               cap: parseUnits("1800"),
               gradient: parseUnits("0.5", decimals),
               collateralAmount: parseUnits("200", decimals),
-              expireInSeconds: 2,
+              poolExpiryInSeconds: 2,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -1835,7 +1832,7 @@ describe("SettlementFacet", async function () {
               cap: parseUnits("1600"),
               gradient: parseUnits("0.5", decimals),
               collateralAmount: parseUnits("200", decimals),
-              expireInSeconds: 2,
+              poolExpiryInSeconds: 2,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -1981,7 +1978,7 @@ describe("SettlementFacet", async function () {
               cap: parseUnits("1", 59),
               gradient: parseUnits("0", decimals),
               collateralAmount: parseUnits("200", decimals),
-              expireInSeconds: 2,
+              poolExpiryInSeconds: 2,
             });
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -2102,7 +2099,7 @@ describe("SettlementFacet", async function () {
           // ---------
           const tx = await createContingentPool({
             ...createContingentPoolParams,
-            expireInSeconds: 7200,
+            poolExpiryInSeconds: 7200,
           });
           poolId = await getPoolIdFromTx(tx);
           poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -2164,7 +2161,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         let tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId1 = await getPoolIdFromTx(tx);
         poolParamsBefore1 = await getterFacet.getPoolParameters(poolId1);
@@ -2174,7 +2171,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId2 = await getPoolIdFromTx(tx);
         poolParamsBefore2 = await getterFacet.getPoolParameters(poolId2);
@@ -2255,7 +2252,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -2604,7 +2601,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -2630,7 +2627,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         currentBlockTimestamp = await getLastTimestamp();
@@ -2666,7 +2663,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         let tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId1 = await getPoolIdFromTx(tx);
         poolParamsBefore1 = await getterFacet.getPoolParameters(poolId1);
@@ -2676,7 +2673,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId2 = await getPoolIdFromTx(tx);
         poolParamsBefore2 = await getterFacet.getPoolParameters(poolId2);
@@ -2770,7 +2767,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -4309,7 +4306,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
           permissionedERC721Token: permissionedERC721Token,
         });
         poolId = await getPoolIdFromTx(tx);
@@ -4392,7 +4389,7 @@ describe("SettlementFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);

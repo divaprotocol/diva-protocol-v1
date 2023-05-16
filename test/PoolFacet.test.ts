@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
+import { BigNumber, BigNumberish, ContractReceipt, ContractTransaction } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -157,8 +157,7 @@ describe("PoolFacet", async function () {
         .connect(user1)
         .approve(diamondAddress, userStartCollateralTokenBalance);
 
-      // Specify the create contingent pool parameters that don't define a default value.
-      // Refer to `utils/libDiva.ts` for default values.
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
       // `expiryTime` was set manually so that we can use it for comparison later.
       createContingentPoolParams = {
         ...defaultPoolParameters,
@@ -217,7 +216,7 @@ describe("PoolFacet", async function () {
       // Manually calculate the expected poolId
       expectedPoolId = getPoolId(
         createContingentPoolParams.referenceAsset,
-        poolParams.expiryTime,
+        createContingentPoolParams.expiryTime as BigNumberish,
         createContingentPoolParams.floor,
         createContingentPoolParams.inflection,
         createContingentPoolParams.cap,
@@ -791,8 +790,7 @@ describe("PoolFacet", async function () {
       await permissionedERC721TokenInstance.connect(user1).mint();
       await permissionedERC721TokenInstance.connect(user2).mint();
 
-      // Specify the create contingent pool parameters that don't define a default value.
-      // Refer to `utils/libDiva.ts` for default values.
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
       createContingentPoolParams = {
         ...defaultPoolParameters,
         collateralToken: collateralTokenInstance.address,
@@ -863,7 +861,7 @@ describe("PoolFacet", async function () {
       // Manually calculate the expected poolId
       expectedPoolId = getPoolId(
         createContingentPoolParams.referenceAsset,
-        poolParams.expiryTime,
+        createContingentPoolParams.expiryTime as BigNumberish,
         createContingentPoolParams.floor,
         createContingentPoolParams.inflection,
         createContingentPoolParams.cap,
@@ -1021,9 +1019,9 @@ describe("PoolFacet", async function () {
       // ---------
       // Arrange: Set invalid short recipient (accounts[0] who doesn't hold any permissioned ERC721 tokens)
       // ---------
-      const nonEligibleshortRecipient = accounts[0].address;
+      const nonEligibleShortRecipient = accounts[0].address;
       expect(
-        await permissionedERC721TokenInstance.balanceOf(nonEligibleshortRecipient)
+        await permissionedERC721TokenInstance.balanceOf(nonEligibleShortRecipient)
       ).to.eq(0);
 
       // ---------
@@ -1032,7 +1030,7 @@ describe("PoolFacet", async function () {
       await expect(
         createContingentPool({
           ...createContingentPoolParams,
-          shortRecipient: nonEligibleshortRecipient
+          shortRecipient: nonEligibleShortRecipient
         })
       ).to.be.revertedWith("PositionToken: invalid recipient");
     });
@@ -1173,7 +1171,7 @@ describe("PoolFacet", async function () {
       createContingentPoolParams2 = {
         ...defaultPoolParameters,
         referenceAsset: "ETH/USD",
-        expiryTime: await getExpiryTime(7300), // additional property
+        expiryTime: await getExpiryTime(7300),
         floor: parseUnits("1298.53"),
         inflection: parseUnits("1705.33"),
         cap: parseUnits("2101.17"),

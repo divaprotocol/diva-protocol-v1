@@ -158,8 +158,7 @@ describe("LiquidityFacet", async function () {
           parseUnits(user2StartCollateralTokenBalance.toString(), decimals)
         );
       
-      // Specify the create contingent pool parameters that don't define a default value.
-      // Refer to `utils/libDiva.ts` for default values.
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
       createContingentPoolParams = {
         ...defaultPoolParameters,
         collateralToken: collateralTokenInstance.address,
@@ -551,7 +550,7 @@ describe("LiquidityFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -584,7 +583,7 @@ describe("LiquidityFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -796,7 +795,7 @@ describe("LiquidityFacet", async function () {
 
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          permissionedERC721Token
+          permissionedERC721Token: permissionedERC721Token
         });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
@@ -1989,7 +1988,7 @@ describe("LiquidityFacet", async function () {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
           ...createContingentPoolParams,
-          expireInSeconds: 2,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);

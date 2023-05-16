@@ -153,8 +153,7 @@ describe("TipFacet", async function () {
     describe("addTip", async () => {
         
         beforeEach(async function () {
-            // Specify the create contingent pool parameters that don't define a default value.
-            // Refer to `utils/libDiva.ts` for default values.
+            // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
             createContingentPoolParams = {
               ...defaultPoolParameters,
               collateralToken: collateralTokenInstance.address,

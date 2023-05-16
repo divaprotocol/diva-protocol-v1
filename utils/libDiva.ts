@@ -70,18 +70,18 @@ export const decimals = 6;
 // on the test case. The `CreateContingentPoolParams` type is specific for this test function.
 export const defaultPoolParameters = {
   referenceAsset: "BTC/USD",
-  expireInSeconds: 7200,
+  poolExpiryInSeconds: 7200,
   floor: parseUnits("1198.53"),
   inflection: parseUnits("1605.33"),
   cap: parseUnits("2001.17"),
   gradient: parseUnits("0.33", decimals),
-  collateralAmount: parseUnits("15001.358", decimals), // update minimumTakerFillAmount in remove liquidity offer part in `eip712.ts` if you change that value
+  collateralAmount: parseUnits("15001.358", decimals),
   capacity: parseUnits("100000000", decimals),
   permissionedERC721Token: ethers.constants.AddressZero,
 };
 
 export type CreateContingentPoolParams = {
-  expiryTime?: PromiseOrValue<BigNumberish>; // if expiryTime is defined, it will overwrite the expiryTime set based on `expireInSeconds`
+  expiryTime?: PromiseOrValue<BigNumberish>; // if expiryTime is defined, it will overwrite the expiryTime set based on `poolExpiryInSeconds`
   collateralToken: string;
   dataProvider: string;
   longRecipient: string;
@@ -96,13 +96,13 @@ export async function createContingentPool(params: CreateContingentPoolParams): 
     ...params,
   };
 
-  // If expiryTime attribute is set, use that. If not, derive it based on `expireInSeconds`
+  // If expiryTime attribute is set, use that. If not, derive it based on `poolExpiryInSeconds`
   let expiryTime: PromiseOrValue<BigNumberish>;
 
   if (mergedParams.expiryTime) {
     expiryTime = mergedParams.expiryTime;
   } else {
-    expiryTime = await getExpiryTime(mergedParams.expireInSeconds);
+    expiryTime = await getExpiryTime(mergedParams.poolExpiryInSeconds);
   }
 
   return await mergedParams.poolFacet.connect(mergedParams.poolCreater).createContingentPool({
