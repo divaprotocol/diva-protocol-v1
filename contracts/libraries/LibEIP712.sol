@@ -1053,7 +1053,7 @@ library LibEIP712 {
         LibDIVAStorage.Pool storage _pool = ps.pools[_offerAddLiquidity.poolId];
 
         // Set `actualTakerFillableAmount` depending on whether pool exists or not 
-        if (LibDIVA._poolExists(_pool)) {
+        if (LibDIVA._poolExists(_pool.statusTimestamp)) {
             // Calc actual taker fillable amount
             actualTakerFillableAmount = _getActualTakerFillableAmount(
                 _offerAddLiquidity.maker,
