@@ -283,7 +283,7 @@ describe("SettlementFacet", async function () {
       // Reverts
       // -------------------------------------------
 
-      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+      it("Reverts with `NonExistentPool` if pool doesn't exist", async () => {
         // ---------
         // Arrange: Set a non-existent poolId and prepare parameters for call
         // ---------
@@ -292,13 +292,13 @@ describe("SettlementFacet", async function () {
         allowChallenge = false;
 
         // ---------
-        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // Act & Assert: Confirm that the call reverts with `NonExistentPool`
         // ---------
         await expect(
           settlementFacet
             .connect(oracle)
             .setFinalReferenceValue(nonExistentPoolId, finalReferenceValue, allowChallenge)
-        ).to.be.revertedWith("InvalidPoolId()");
+        ).to.be.revertedWith("NonExistentPool()");
       });
 
       describe("Tests requiring final value submission within the submission period without the possibility to challenge", async () => {
@@ -2501,7 +2501,7 @@ describe("SettlementFacet", async function () {
       // Reverts
       // -------------------------------------------
 
-      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+      it("Reverts with `NonExistentPool` if pool doesn't exist", async () => {
         // ---------
         // Arrange: Set a non-existent poolId and prepare parameters for call
         // ---------
@@ -2509,13 +2509,13 @@ describe("SettlementFacet", async function () {
         proposedFinalReferenceValue = parseUnits("1800.03");
 
         // ---------
-        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // Act & Assert: Confirm that the call reverts with `NonExistentPool`
         // ---------
         await expect(
           settlementFacet
             .connect(user1)
             .challengeFinalReferenceValue(nonExistentPoolId, proposedFinalReferenceValue)
-        ).to.be.revertedWith("InvalidPoolId()");
+        ).to.be.revertedWith("NonExistentPool()");
       });
 
       it("Reverts if user doesn`t hold any position tokens", async () => {

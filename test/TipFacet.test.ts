@@ -418,7 +418,7 @@ describe("TipFacet", async function () {
         // Reverts
         // -------------------------------------------
 
-        it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+        it("Reverts with `NonExistentPool` if pool doesn't exist", async () => {
           // ---------
           // Arrange: Set a non-existent poolId and prepare parameters for call
           // ---------
@@ -427,13 +427,13 @@ describe("TipFacet", async function () {
           tipper = user2;
 
           // ---------
-          // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+          // Act & Assert: Confirm that the call reverts with `NonExistentPool`
           // ---------
           await expect(
               tipFacet
                   .connect(tipper)
                   .addTip(nonExistentPoolId, tipAmount)
-          ).to.be.revertedWith("InvalidPoolId()");
+          ).to.be.revertedWith("NonExistentPool()");
       })
         
         it("Reverts if statusFinalReferenceValue = Submitted", async () => {

@@ -374,8 +374,8 @@
     "type": "function"
   },
   { "inputs": [], "name": "FeeTokensNotSupported", "type": "error" },
-  { "inputs": [], "name": "InvalidPoolId", "type": "error" },
   { "inputs": [], "name": "InvalidSignature", "type": "error" },
+  { "inputs": [], "name": "NonExistentPool", "type": "error" },
   {
     "inputs": [],
     "name": "OfferInvalidCancelledFilledOrExpired",
