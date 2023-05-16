@@ -972,7 +972,8 @@ library LibDIVA {
     }
 
     // Returns whether pool exists or not. Uses `collateralToken != address(0)` check
-    // to determine the existence of a pool.
+    // to determine the existence of a pool as it's the cheapest among the available
+    // options.
     function _poolExists(LibDIVAStorage.Pool storage _pool) internal view returns (bool) {
         return _pool.collateralToken != address(0);
     }

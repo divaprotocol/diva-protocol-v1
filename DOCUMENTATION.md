@@ -568,7 +568,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
-- The pool implied by `_poolId` does not exist.
+- The `_poolId` does not map to an existing pool.
 - Function is [paused](#pausability).
 - `statusFinalReferenceValue` is already "Confirmed".
 - `msg.sender` doesn't own the provided amount of long and short position tokens. In particular, if a user passes in an amount that exceeds the total position token supply, it will fail as the user cannot own more tokens than the total supply.
@@ -735,7 +735,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
-- The pool implied by `_poolId` does not exist.
+- The `_poolId` does not map to an existing pool.
 - The status of the final value is already "Submitted" or "Confirmed".
 - If the status is "Open", it reverts if:
   - Pool has not yet expired (i.e., `block.timestamp < expiryTime`).
@@ -798,7 +798,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 
-- The pool implied by `_poolId` does not exist.
+- The `_poolId` does not map to an existing pool.
 - Caller owns zero short and long tokens in the underlying pool.
 - If status is "Submitted" and the 3-day challenge period expired (i.e., `block.timestamp > statusTimestamp + challengePeriod` where `statusTimestamp` is the time of submission).
 - If status is "Challenged" and the 5-day review period expired (i.e., `block.timestamp > statusTimestamp + reviewPeriod` where `statusTimestamp` is the time of the first challenge).
@@ -989,7 +989,7 @@ The function executes the following steps in the following order:
 1. Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts if:
-- the pool implied by `_poolId` does not exist.
+- the `_poolId` does not map to an existing pool.
 - a value has already been submitted by the data provider, i.e. `statusFinalReferenceValue != Open`, or
 - the collateral token charges a fee on transfers.
 
