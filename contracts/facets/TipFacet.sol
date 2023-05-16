@@ -60,7 +60,7 @@ contract TipFacet is ITip, ReentrancyGuard {
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
         // Check if pool exists
-        if (!LibDIVA._poolExists(_pool.statusTimestamp)) revert NonExistentPool();
+        if (!LibDIVA._poolExists(_pool)) revert NonExistentPool();
 
         // Confirm that no value has been submitted yet
         if (_pool.statusFinalReferenceValue != LibDIVAStorage.Status.Open)

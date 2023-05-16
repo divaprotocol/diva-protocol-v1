@@ -356,7 +356,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
         // Check if pool exists
-        if (!LibDIVA._poolExists(_pool.statusTimestamp)) revert NonExistentPool();
+        if (!LibDIVA._poolExists(_pool)) revert NonExistentPool();
 
         // Get settlement periods applicable for the pool
         LibDIVAStorage.SettlementPeriods memory _settlementPeriods = _gs
@@ -420,7 +420,7 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         LibDIVAStorage.Pool storage _pool = _ps.pools[_poolId];
 
         // Check if pool exists
-        if (!LibDIVA._poolExists(_pool.statusTimestamp)) revert NonExistentPool();
+        if (!LibDIVA._poolExists(_pool)) revert NonExistentPool();
 
         // Get settlement periods
         LibDIVAStorage.SettlementPeriods memory _settlementPeriods = _gs
