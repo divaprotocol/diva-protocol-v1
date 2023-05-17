@@ -101,9 +101,13 @@ contract ClaimFacet is IClaim, ReentrancyGuard {
         unchecked {
             // Underflow not possible: 0 <= _amount <= claimableFeeAmount
             _fs.claimableFeeAmount[_collateralToken][msg.sender] -= _amount;
-        }
-        // Could potentially overflow. Hence, kept outside of the unchecked block.
-        _fs.claimableFeeAmount[_collateralToken][_recipient] += _amount;
+            // Overflow not possible as the overall claimableFeeAmount in a given
+            // collateral token cannot exceed the total supply of it. In an extreme
+            // case where claimableFeeAmount for one user is equal to the total
+            // supply of the collateral token, then claimableFeeAmount for any other
+            // user will be 0 and hence above if block will not pass.
+            _fs.claimableFeeAmount[_collateralToken][_recipient] += _amount;
+        }        
 
         // Log event
         emit FeeClaimTransferred(
