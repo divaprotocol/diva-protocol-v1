@@ -54,7 +54,7 @@ interface IPool {
      * - collateralToken: Address of the ERC20 collateral token.
      * - dataProvider: Ethereum account (EOA or smart contract) that is supposed to
          report the final reference asset value following pool expiration.
-     * - capacity: TMaximum collateral amount that a contingent pool can accept.
+     * - capacity: Maximum collateral amount that a contingent pool can accept.
          Choose a large number (e.g., `2**256 - 1`) for unlimited size. Input expects
          an integer with collateral token decimals.
      * - longRecipient: Address that shall receive the long position token.
