@@ -31,7 +31,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         ArgsBatchAddLiquidity[] calldata _argsBatchAddLiquidity
     ) external override nonReentrant {
         uint256 len = _argsBatchAddLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             // Transfer approved collateral token from `msg.sender` and mint position tokens
             // to `_longRecipient` and `_shortRecipient`.
             LibDIVA._addLiquidityLib(
@@ -45,7 +45,6 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
                     shortRecipient: _argsBatchAddLiquidity[i].shortRecipient
                 })
             );
-
             unchecked {
                 ++i;
             }
@@ -64,12 +63,11 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
         ArgsBatchRemoveLiquidity[] calldata _argsBatchRemoveLiquidity
     ) external override nonReentrant {
         uint256 len = _argsBatchRemoveLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _removeLiquidity(
                 _argsBatchRemoveLiquidity[i].poolId,
                 _argsBatchRemoveLiquidity[i].amount
             );
-
             unchecked {
                 ++i;
             }
@@ -77,8 +75,7 @@ contract LiquidityFacet is ILiquidity, ReentrancyGuard {
     }
 
     function _removeLiquidity(bytes32 _poolId, uint256 _amount) private {
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
+        LibDIVAStorage.Pool storage _pool = LibDIVAStorage._poolStorage().pools[_poolId];
 
         uint256 collateralAmountRemovedNet = LibDIVA._removeLiquidityLib(
             LibDIVA.RemoveLiquidityParams({

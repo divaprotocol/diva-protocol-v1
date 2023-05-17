@@ -23,7 +23,7 @@ contract EIP712RemoveFacet is IEIP712Remove, ReentrancyGuard {
             calldata _argsBatchOfferRemoveLiquidity
     ) external override nonReentrant {
         uint256 len = _argsBatchOfferRemoveLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _fillOfferRemoveLiquidity(
                 _argsBatchOfferRemoveLiquidity[i].offerRemoveLiquidity,
                 _argsBatchOfferRemoveLiquidity[i].signature,

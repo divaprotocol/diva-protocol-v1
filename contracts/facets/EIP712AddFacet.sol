@@ -22,7 +22,7 @@ contract EIP712AddFacet is IEIP712Add, ReentrancyGuard {
         ArgsBatchFillOfferAddLiquidity[] calldata _argsBatchOfferAddLiquidity
     ) external override nonReentrant {
         uint256 len = _argsBatchOfferAddLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _fillOfferAddLiquidity(
                 _argsBatchOfferAddLiquidity[i].offerAddLiquidity,
                 _argsBatchOfferAddLiquidity[i].signature,

@@ -375,12 +375,11 @@ library LibDIVA {
      * @param _recipient Reserve recipient.
      */
     function _allocateReservedClaim(bytes32 _poolId, address _recipient) internal {
-        // Get references to relevant storage slots
+        // Get reference to relevant storage slot
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
 
         // Initialize Pool struct
-        LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
+        LibDIVAStorage.Pool storage _pool = LibDIVAStorage._poolStorage().pools[_poolId];
 
         // Get reserve for pool
         uint256 _reserve = fs.poolIdToReservedClaim[_poolId];
@@ -787,11 +786,9 @@ library LibDIVA {
     function _addLiquidityLib(AddLiquidityParams memory addLiquidityParams)
         internal
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-
         // Initialize Pool struct
-        LibDIVAStorage.Pool storage _pool = ps.pools[addLiquidityParams.poolId];
+        LibDIVAStorage.Pool storage _pool =
+            LibDIVAStorage._poolStorage().pools[addLiquidityParams.poolId];
 
         // Check if pool exists
         if (!_poolExists(_pool)) revert NonExistentPool();

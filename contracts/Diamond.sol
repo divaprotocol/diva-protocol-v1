@@ -131,9 +131,8 @@ contract Diamond {
     // Find facet for function that is called and execute the
     // function if a facet is found and return any value.
     fallback() external payable {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage._diamondStorage();
-
-        address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;
+        address facet = LibDiamondStorage._diamondStorage()
+            .selectorToFacetAndPosition[msg.sig].facetAddress;
         if (facet == address(0)) revert FunctionNotFound(msg.sig);
 
         assembly {

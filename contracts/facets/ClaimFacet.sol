@@ -15,12 +15,7 @@ contract ClaimFacet is IClaim, ReentrancyGuard {
         override
         nonReentrant
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Claim fee
-        _claimFee(_collateralToken, _recipient, fs);
+        _claimFee(_collateralToken, _recipient, LibDIVAStorage._feeClaimStorage());
     }
 
     function batchClaimFee(ArgsBatchClaimFee[] calldata _argsBatchClaimFee)
@@ -28,17 +23,12 @@ contract ClaimFacet is IClaim, ReentrancyGuard {
         override
         nonReentrant
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Claim fees
         uint256 len = _argsBatchClaimFee.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _claimFee(
                 _argsBatchClaimFee[i].collateralToken,
                 _argsBatchClaimFee[i].recipient,
-                fs
+                LibDIVAStorage._feeClaimStorage()
             );
             unchecked {
                 ++i;
@@ -51,29 +41,24 @@ contract ClaimFacet is IClaim, ReentrancyGuard {
         address _collateralToken,
         uint256 _amount
     ) external override nonReentrant {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Transfer fee claim
-        _transferFeeClaim(_recipient, _collateralToken, _amount, fs);
+        _transferFeeClaim(
+            _recipient,
+            _collateralToken,
+            _amount,
+            LibDIVAStorage._feeClaimStorage()
+        );
     }
 
     function batchTransferFeeClaim(
         ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
     ) external override nonReentrant {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Transfer fee claims
         uint256 len = _argsBatchTransferFeeClaim.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _transferFeeClaim(
                 _argsBatchTransferFeeClaim[i].recipient,
                 _argsBatchTransferFeeClaim[i].collateralToken,
                 _argsBatchTransferFeeClaim[i].amount,
-                fs
+                LibDIVAStorage._feeClaimStorage()
             );
             unchecked {
                 ++i;
@@ -112,8 +97,12 @@ contract ClaimFacet is IClaim, ReentrancyGuard {
         if (_fs.claimableFeeAmount[_collateralToken][msg.sender] < _amount)
             revert AmountExceedsClaimableFee();
 
-        // Update fee claim balances of `msg.sender` and `_recipient`
-        _fs.claimableFeeAmount[_collateralToken][msg.sender] -= _amount;
+        // Update fee claim balances of `msg.sender` and `_recipient`.
+        unchecked {
+            // Underflow not possible: 0 <= _amount <= claimableFeeAmount
+            _fs.claimableFeeAmount[_collateralToken][msg.sender] -= _amount;
+        }
+        // Could potentially overflow. Hence, kept outside of the unchecked block.
         _fs.claimableFeeAmount[_collateralToken][_recipient] += _amount;
 
         // Log event

@@ -74,12 +74,9 @@ contract GetterFacet is IGetter {
         override
         returns (LibDIVAStorage.Fees memory)
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         // Get the fees applicable for the provided `_indexFees`
-        LibDIVAStorage.Fees memory _fees = gs.fees[_indexFees];
+        LibDIVAStorage.Fees memory _fees =
+            LibDIVAStorage._governanceStorage().fees[_indexFees];
 
         return _fees;
     }
@@ -90,14 +87,10 @@ contract GetterFacet is IGetter {
         override
         returns (LibDIVAStorage.SettlementPeriods memory)
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         // Get the settlement periods applicable
         // for the provided `_indexSettlementPeriods`
-        LibDIVAStorage.SettlementPeriods memory _settlementPeriods = gs
-            .settlementPeriods[_indexSettlementPeriods];
+        LibDIVAStorage.SettlementPeriods memory _settlementPeriods =
+            LibDIVAStorage._governanceStorage().settlementPeriods[_indexSettlementPeriods];
 
         return _settlementPeriods;
     }
@@ -108,11 +101,10 @@ contract GetterFacet is IGetter {
         override
         returns (LibDIVAStorage.Fees[] memory)
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
-        return LibDIVA._getFeesHistory(_nbrLastUpdates, gs);
+        return LibDIVA._getFeesHistory(
+            _nbrLastUpdates,
+            LibDIVAStorage._governanceStorage()
+        );
     }
 
     function getSettlementPeriodsHistory(uint256 _nbrLastUpdates)
@@ -121,19 +113,14 @@ contract GetterFacet is IGetter {
         override
         returns (LibDIVAStorage.SettlementPeriods[] memory)
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
-        return LibDIVA._getSettlementPeriodsHistory(_nbrLastUpdates, gs);
+        return LibDIVA._getSettlementPeriodsHistory(
+            _nbrLastUpdates,
+            LibDIVAStorage._governanceStorage()
+        );
     }
 
     function getFeesHistoryLength() external view override returns (uint256) {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
-        return gs.fees.length;
+        return LibDIVAStorage._governanceStorage().fees.length;
     }
 
     function getSettlementPeriodsHistoryLength()
@@ -142,11 +129,7 @@ contract GetterFacet is IGetter {
         override
         returns (uint256)
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
-        return gs.settlementPeriods.length;
+        return LibDIVAStorage._governanceStorage().settlementPeriods.length;
     }
 
     function getFallbackDataProviderInfo()
@@ -159,16 +142,12 @@ contract GetterFacet is IGetter {
             uint256 startTimeFallbackDataProvider
         )
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         // Return values
         (
             previousFallbackDataProvider,
             fallbackDataProvider,
             startTimeFallbackDataProvider
-        ) = LibDIVA._getFallbackDataProviderInfo(gs);
+        ) = LibDIVA._getFallbackDataProviderInfo(LibDIVAStorage._governanceStorage());
     }
 
     function getTreasuryInfo()
@@ -181,13 +160,9 @@ contract GetterFacet is IGetter {
             uint256 startTimeTreasury
         )
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         // Return values
         (previousTreasury, treasury, startTimeTreasury) = LibDIVA
-            ._getTreasuryInfo(gs);
+            ._getTreasuryInfo(LibDIVAStorage._governanceStorage());
     }
 
     function getClaim(address _collateralToken, address _recipient)

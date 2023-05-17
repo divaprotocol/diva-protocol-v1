@@ -107,8 +107,7 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
             if (_deposit.lastClaimedAt < _deposit.endTime) {
                 _claimableAmount += _claimableAmountForDeposit(_deposit);
                 _deposit.lastClaimedAt = block.timestamp;
-            }
-
+            }            
             unchecked {
                 ++_i;
             }
@@ -118,7 +117,7 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
 
         if (_token == address(0)) {
             (bool success, ) = msg.sender.call{value: _claimableAmount}("");
-            require(success, "Failed to send native asset");
+            if (!success) revert FailedToSendNativeAsset();
         } else {
             IERC20(_token).safeTransfer(msg.sender, _claimableAmount);
         }
@@ -139,7 +138,7 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
                 address(this).balance -
                 _tokenToUnclaimedDepositAmount[_token];
             (bool success, ) = msg.sender.call{value: _claimableAmount}("");
-            require(success, "Failed to send native asset");
+            if (!success) revert FailedToSendNativeAsset();
         } else {
             IERC20 _depositTokenInstance = IERC20(_token);
             _claimableAmount =
@@ -194,7 +193,6 @@ contract DIVADevelopmentFund is IDIVADevelopmentFund, ReentrancyGuard {
                         i
                     ];
                 }
-
                 unchecked {
                     ++i;
                 }

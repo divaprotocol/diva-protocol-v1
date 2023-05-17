@@ -17,6 +17,10 @@ interface IDIVADevelopmentFund {
     // Thrown in ERC20 `deposit` function if the token implements a fee on transfers
     error FeeTokensNotSupported();
 
+    // Thrown in `withdraw` and `withdrawDirectDeposit` if the transfer of the
+    // native asset failed
+    error FailedToSendNativeAsset();
+
     // Thrown in `withdraw` if token addresses for indices passed are
     // different
     error DifferentTokens();
