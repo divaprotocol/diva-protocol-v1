@@ -583,9 +583,6 @@ library LibDIVA {
         (uint48 _indexFees, ) = _getCurrentFees(gs);
         (uint48 _indexSettlementPeriods, ) = _getCurrentSettlementPeriods(gs);
 
-        // Store `poolId`
-        ps.poolId = _poolId;
-
         // Store `Pool` struct in `pools` mapping for the newly generated `poolId`
         ps.pools[_poolId] = LibDIVAStorage.Pool(
             _createPoolParams.poolParams.floor,
