@@ -5,8 +5,8 @@ import {LibDIVAStorage} from "../libraries/LibDIVAStorage.sol";
 
 interface ISettlement {
     // Thrown in `setFinalReferenceValue` and `challengeFinalReferenceValue`
-    // if an invalid `poolId` was provided
-    error InvalidPoolId();
+    // if pool doesn't exist
+    error NonExistentPool();
     
     // Thrown in `setFinalReferenceValue` if data provider attempts
     // to submit a value when status is submitted or confirmed

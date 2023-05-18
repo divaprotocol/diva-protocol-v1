@@ -522,7 +522,7 @@ describe("LiquidityFacet", async function () {
       // Reverts
       // -------------------------------------------
 
-      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+      it("Reverts with `NonExistentPool` if pool doesn't exist", async () => {
         // ---------
         // Arrange: Set a non-existent poolId and prepare parameters for call
         // ---------
@@ -530,7 +530,7 @@ describe("LiquidityFacet", async function () {
         additionalCollateralAmount = parseUnits("10", decimals);
 
         // ---------
-        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // Act & Assert: Confirm that the call reverts with `NonExistentPool`
         // ---------
         await expect(
           liquidityFacet.connect(user2).addLiquidity(
@@ -539,7 +539,7 @@ describe("LiquidityFacet", async function () {
             user2.address, // longRecipient
             user3.address // shortRecipient
           )
-        ).to.be.revertedWith("InvalidPoolId()");
+        ).to.be.revertedWith("NonExistentPool()");
       });
 
       it("Reverts if pool is already expired (block.timestamp > expiryTime)", async () => {
@@ -1964,20 +1964,20 @@ describe("LiquidityFacet", async function () {
       // Reverts
       // -------------------------------------------
 
-      it("Reverts with `InvalidPoolId` if an invalid poolId was provided", async () => {
+      it("Reverts with `NonExistentPool` if pool doesn't exist", async () => {
         // ---------
         // Arrange: Set a non-existent poolId and prepare parameters for call
         // ---------
         const nonExistentPoolId = ethers.constants.HashZero;
 
         // ---------
-        // Act & Assert: Confirm that the call reverts with `InvalidPoolId`
+        // Act & Assert: Confirm that the call reverts with `NonExistentPool`
         // ---------
         await expect(
           liquidityFacet
             .connect(user1)
             .removeLiquidity(nonExistentPoolId, poolParamsBefore.collateralBalance)
-        ).to.be.revertedWith("InvalidPoolId()");
+        ).to.be.revertedWith("NonExistentPool()");
       });
 
       it("Reverts if final reference value is already confirmed", async () => {
