@@ -11,18 +11,18 @@ import {
   PoolFacet,
   SettlementFacet,
 } from "../typechain-types";
+import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
 import { deployMain } from "../scripts/deployMain";
-import { getLastTimestamp, setNextTimestamp } from "../utils";
+import {
+  setNextTimestamp,
+  createContingentPool,
+  decimals,
+  defaultPoolParameters,
+  CreateContingentPoolParams
+} from "../utils";
 
 import { erc20DeployFixture } from "./fixtures";
-
-// -------
-// Input: Collateral token decimals (>= 6 && <= 18)
-// -------
-const decimals = 6;
-
-const MAX_UINT = ethers.constants.MaxUint256;
 
 describe("ClaimFacet", async function () {
   let contractOwner: SignerWithAddress,
@@ -36,6 +36,9 @@ describe("ClaimFacet", async function () {
     getterFacet: GetterFacet,
     settlementFacet: SettlementFacet,
     claimFacet: ClaimFacet;
+  
+  let poolParams: LibDIVAStorage.PoolStructOutput;
+  let poolParams2: LibDIVAStorage.PoolStructOutput;
 
   let collateralTokenInstance: MockERC20;
 
@@ -59,25 +62,14 @@ describe("ClaimFacet", async function () {
     let user1StartCollateralTokenBalance: number;
     let feeClaimTreasury: BigNumber;
     let poolId: string;
-    let referenceAsset: string,
-      expiryTime,
-      floor: BigNumber,
-      inflection: BigNumber,
-      cap: BigNumber,
-      gradient: BigNumber,
-      collateralAmount: BigNumber,
-      collateralToken: string,
-      dataProvider: string,
-      capacity: BigNumber,
-      longRecipient: string,
-      shortRecipient: string,
-      permissionedERC721Token: string;
+    let poolId2: string;
     let nextBlockTimestamp: number;
     let feeClaimDataProvider: BigNumber;
     let feeClaimDataProviderBefore: BigNumber;
 
     let finalReferenceValue: BigNumber;
     let allowChallenge: boolean;
+    let createContingentPoolParams: CreateContingentPoolParams;
 
     beforeEach(async () => {
       // ---------
@@ -103,42 +95,27 @@ describe("ClaimFacet", async function () {
           parseUnits(user1StartCollateralTokenBalance.toString(), decimals)
         );
 
-      nextBlockTimestamp = (await getLastTimestamp()) + 1;
-      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+      createContingentPoolParams = {
+        ...defaultPoolParameters,
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user1.address,
+      }
 
-      // Create a set of position tokens with a very short time to expiration
-      referenceAsset = "BTC/USD";
-      expiryTime = nextBlockTimestamp + 1;
-      floor = parseUnits("1198.53");
-      inflection = parseUnits("1605.33");
-      cap = parseUnits("2001.17");
-      gradient = parseUnits("0.33", decimals);
-      collateralAmount = parseUnits("15001.358", decimals);
-      collateralToken = collateralTokenInstance.address;
-      dataProvider = oracle.address;
-      capacity = MAX_UINT; // Uncapped
-      longRecipient = user1.address;
-      shortRecipient = user1.address;
-      permissionedERC721Token = ethers.constants.AddressZero;
-
-      const tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      // Create a contingent pool
+      const tx = await createContingentPool(createContingentPoolParams);
       const receipt = await tx.wait();
       poolId = receipt.events?.find((x: any) => x.event === "PoolIssued")?.args
         ?.poolId;
+
+      // Fast forward in time post pool expiration
+      poolParams = await getterFacet.getPoolParameters(poolId);
+      nextBlockTimestamp = Number(poolParams.expiryTime) + 10
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
 
       // Confirm final reference value
       finalReferenceValue = parseUnits("1700.89");
@@ -158,26 +135,26 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's and treasury's fee claim is positive
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, treasury.address)
+          await getterFacet.getClaim(poolParams.collateralToken, treasury.address)
         ).to.be.gt(0);
 
         // ---------
         // Act: Claim fees
         // ---------
-        await claimFacet.claimFee(collateralToken, oracle.address);
-        await claimFacet.claimFee(collateralToken, treasury.address);
+        await claimFacet.claimFee(poolParams.collateralToken, oracle.address);
+        await claimFacet.claimFee(poolParams.collateralToken, treasury.address);
 
         // ---------
         // Assert: Fee claim goes down to zero
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken, treasury.address)
+          await getterFacet.getClaim(poolParams.collateralToken, treasury.address)
         ).to.eq(0);
       });
 
@@ -186,11 +163,11 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's and treasury's fee claims are positive and collateral token balances are zero
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         feeClaimTreasury = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           treasury.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
@@ -205,8 +182,8 @@ describe("ClaimFacet", async function () {
         // ---------
         // Act: Claim fees
         // ---------
-        await claimFacet.claimFee(collateralToken, oracle.address);
-        await claimFacet.claimFee(collateralToken, treasury.address);
+        await claimFacet.claimFee(poolParams.collateralToken, oracle.address);
+        await claimFacet.claimFee(poolParams.collateralToken, treasury.address);
 
         // ---------
         // Assert: Check that data provider's and treasury's collateral token balance increased
@@ -228,7 +205,7 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's fee claim is positive
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
@@ -236,7 +213,7 @@ describe("ClaimFacet", async function () {
         // ---------
         // Act: Claim fees
         // ---------
-        const tx = await claimFacet.claimFee(collateralToken, oracle.address);
+        const tx = await claimFacet.claimFee(poolParams.collateralToken, oracle.address);
         const receipt = await tx.wait();
 
         // ---------
@@ -246,7 +223,7 @@ describe("ClaimFacet", async function () {
           (item) => item.event === "FeeClaimed"
         );
         expect(feeClaimedEvent?.args?.recipient).to.eq(oracle.address);
-        expect(feeClaimedEvent?.args?.collateralToken).to.eq(collateralToken);
+        expect(feeClaimedEvent?.args?.collateralToken).to.eq(poolParams.collateralToken);
         expect(feeClaimedEvent?.args?.amount).to.eq(feeClaimDataProvider);
       });
     });
@@ -261,10 +238,10 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's and treasury's fee claim is positive
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, treasury.address)
+          await getterFacet.getClaim(poolParams.collateralToken, treasury.address)
         ).to.be.gt(0);
 
         // ---------
@@ -272,11 +249,11 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet.batchClaimFee([
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: oracle.address,
           },
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: treasury.address,
           },
         ]);
@@ -285,10 +262,10 @@ describe("ClaimFacet", async function () {
         // Assert: Fee claim goes down to zero
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken, treasury.address)
+          await getterFacet.getClaim(poolParams.collateralToken, treasury.address)
         ).to.eq(0);
       });
 
@@ -297,11 +274,11 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's and treasury's fee claims are positive and collateral token balances are zero
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         feeClaimTreasury = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           treasury.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
@@ -318,11 +295,11 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet.batchClaimFee([
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: oracle.address,
           },
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: treasury.address,
           },
         ]);
@@ -347,12 +324,12 @@ describe("ClaimFacet", async function () {
         // Arrange: Confirm that data provider's and treasury's fee claims are positive
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
         feeClaimTreasury = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           treasury.address
         );
         expect(feeClaimTreasury).to.be.gt(0);
@@ -362,11 +339,11 @@ describe("ClaimFacet", async function () {
         // ---------
         const tx = await claimFacet.batchClaimFee([
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: oracle.address,
           },
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: treasury.address,
           },
         ]);
@@ -380,13 +357,13 @@ describe("ClaimFacet", async function () {
 
         expect(feeClaimedEvents[0].args?.recipient).to.eq(oracle.address);
         expect(feeClaimedEvents[0].args?.collateralToken).to.eq(
-          collateralToken
+          poolParams.collateralToken
         );
         expect(feeClaimedEvents[0].args?.amount).to.eq(feeClaimDataProvider);
 
         expect(feeClaimedEvents[1].args?.recipient).to.eq(treasury.address);
         expect(feeClaimedEvents[1].args?.collateralToken).to.eq(
-          collateralToken
+          poolParams.collateralToken
         );
         expect(feeClaimedEvents[1].args?.amount).to.eq(feeClaimTreasury);
       });
@@ -401,12 +378,12 @@ describe("ClaimFacet", async function () {
         // Arrange: Check that data provider's fee claim is positive and user2's balance is zero
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
 
         // ---------
@@ -416,7 +393,7 @@ describe("ClaimFacet", async function () {
           .connect(oracle)
           .transferFeeClaim(
             user2.address,
-            collateralToken,
+            poolParams.collateralToken,
             feeClaimDataProvider
           );
 
@@ -424,10 +401,10 @@ describe("ClaimFacet", async function () {
         // Assert: Check that user2's fee claim balance is positive and data provider's balance is zero
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider);
       });
 
@@ -436,18 +413,18 @@ describe("ClaimFacet", async function () {
         // Arrange: Transfer fee claim and confirm that user2's collateral token balance is zero before the claim
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         await claimFacet
           .connect(oracle)
           .transferFeeClaim(
             user2.address,
-            collateralToken,
+            poolParams.collateralToken,
             feeClaimDataProvider
           );
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider);
         expect(await collateralTokenInstance.balanceOf(user2.address)).to.eq(0);
 
@@ -456,7 +433,7 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet
           .connect(user2)
-          .claimFee(collateralToken, user2.address);
+          .claimFee(poolParams.collateralToken, user2.address);
 
         // ---------
         // Assert: Check that user2's collateral token balance increased and fee claim reduced to zero
@@ -465,7 +442,7 @@ describe("ClaimFacet", async function () {
           feeClaimDataProvider
         );
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
       });
 
@@ -474,12 +451,12 @@ describe("ClaimFacet", async function () {
         // Arrange: Get fee claim amount before the transfer
         // ---------
         feeClaimDataProviderBefore = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProviderBefore).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
 
         // ---------
@@ -487,16 +464,16 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet
           .connect(oracle)
-          .transferFeeClaim(user2.address, collateralToken, 0);
+          .transferFeeClaim(user2.address, poolParams.collateralToken, 0);
 
         // ---------
         // Assert: Check that the data provider's and user2's fee claim remain unchanged
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(feeClaimDataProviderBefore);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
       });
 
@@ -509,7 +486,7 @@ describe("ClaimFacet", async function () {
         // Arrange: Get fee claim amount
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
 
@@ -521,7 +498,7 @@ describe("ClaimFacet", async function () {
             .connect(oracle)
             .transferFeeClaim(
               user2.address,
-              collateralToken,
+              poolParams.collateralToken,
               feeClaimDataProvider.add(1)
             )
         ).to.be.revertedWith("AmountExceedsClaimableFee()");
@@ -534,7 +511,7 @@ describe("ClaimFacet", async function () {
         await expect(
           claimFacet
             .connect(oracle)
-            .transferFeeClaim(ethers.constants.AddressZero, collateralToken, 1)
+            .transferFeeClaim(ethers.constants.AddressZero, poolParams.collateralToken, 1)
         ).to.be.revertedWith("RecipientIsZeroAddress()");
       });
 
@@ -547,14 +524,14 @@ describe("ClaimFacet", async function () {
         // Act: Transfer fee claim
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         const tx = await claimFacet
           .connect(oracle)
           .transferFeeClaim(
             user2.address,
-            collateralToken,
+            poolParams.collateralToken,
             feeClaimDataProvider
           );
         const receipt = await tx.wait();
@@ -568,7 +545,7 @@ describe("ClaimFacet", async function () {
         expect(feeClaimTransferredEvent?.args?.from).to.eq(oracle.address);
         expect(feeClaimTransferredEvent?.args?.to).to.eq(user2.address);
         expect(feeClaimTransferredEvent?.args?.collateralToken).to.eq(
-          collateralToken
+          poolParams.collateralToken
         );
         expect(feeClaimTransferredEvent?.args?.amount).to.eq(
           feeClaimDataProvider
@@ -605,36 +582,26 @@ describe("ClaimFacet", async function () {
             parseUnits(user1StartCollateralTokenBalance.toString(), decimals)
           );
 
-        nextBlockTimestamp = (await getLastTimestamp()) + 1;
-        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-
-        // Create a set of position tokens with a very short time to expiration
-        expiryTime = nextBlockTimestamp + 1;
+        // Get collateralToken2 address
         collateralToken2 = collateralTokenInstance2.address;
 
-        const tx = await poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime, // 15 May 2025
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken: collateralToken2, // another collateral token
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        const tx = await createContingentPool({
+          ...createContingentPoolParams,
+          collateralToken: collateralToken2
         });
         const receipt = await tx.wait();
-        poolId = receipt.events?.find((x: any) => x.event === "PoolIssued")
+        poolId2 = receipt.events?.find((x: any) => x.event === "PoolIssued")
           ?.args?.poolId;
+
+        // Fast forward in time post pool expiration
+        poolParams2 = await getterFacet.getPoolParameters(poolId2);
+        nextBlockTimestamp = Number(poolParams2.expiryTime) + 1
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
 
         // Confirm final reference value
         await settlementFacet
           .connect(oracle)
-          .setFinalReferenceValue(poolId, finalReferenceValue, allowChallenge);
+          .setFinalReferenceValue(poolId2, finalReferenceValue, allowChallenge);
       });
 
       // -------------------------------------------
@@ -645,21 +612,21 @@ describe("ClaimFacet", async function () {
         // Arrange: Check that data provider's fee claims are positive and user2's balances are zero
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProvider).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
 
         feeClaimDataProvider2 = await getterFacet.getClaim(
-          collateralToken2,
+          poolParams2.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProvider2).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(0);
 
         // ---------
@@ -667,12 +634,12 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet.connect(oracle).batchTransferFeeClaim([
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: user2.address,
             amount: feeClaimDataProvider,
           },
           {
-            collateralToken: collateralToken2,
+            collateralToken: poolParams2.collateralToken,
             recipient: user2.address,
             amount: feeClaimDataProvider2,
           },
@@ -682,16 +649,16 @@ describe("ClaimFacet", async function () {
         // Assert: Check that user2's fee claim balances are positive and data provider's balances are zero
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider);
         expect(
-          await getterFacet.getClaim(collateralToken2, oracle.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, oracle.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider2);
       });
 
@@ -700,31 +667,31 @@ describe("ClaimFacet", async function () {
         // Arrange: Transfer fee claim and confirm that user2's collateral token balances are zero before the claim
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         feeClaimDataProvider2 = await getterFacet.getClaim(
-          collateralToken2,
+          poolParams2.collateralToken,
           oracle.address
         );
         await claimFacet.connect(oracle).batchTransferFeeClaim([
           {
             recipient: user2.address,
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             amount: feeClaimDataProvider,
           },
           {
             recipient: user2.address,
-            collateralToken: collateralToken2,
+            collateralToken: poolParams2.collateralToken,
             amount: feeClaimDataProvider2,
           },
         ]);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider);
         expect(await collateralTokenInstance.balanceOf(user2.address)).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(feeClaimDataProvider2);
         expect(await collateralTokenInstance2.balanceOf(user2.address)).to.eq(
           0
@@ -735,11 +702,11 @@ describe("ClaimFacet", async function () {
         // ---------
         await claimFacet.batchClaimFee([
           {
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             recipient: user2.address,
           },
           {
-            collateralToken: collateralToken2,
+            collateralToken: poolParams2.collateralToken,
             recipient: user2.address,
           },
         ]);
@@ -751,13 +718,13 @@ describe("ClaimFacet", async function () {
           feeClaimDataProvider
         );
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
         expect(await collateralTokenInstance2.balanceOf(user2.address)).to.eq(
           feeClaimDataProvider2
         );
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(0);
       });
 
@@ -766,20 +733,20 @@ describe("ClaimFacet", async function () {
         // Arrange: Get fee claim amounts before the transfer
         // ---------
         feeClaimDataProviderBefore = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProviderBefore).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
         feeClaimDataProviderBefore2 = await getterFacet.getClaim(
-          collateralToken2,
+          poolParams2.collateralToken,
           oracle.address
         );
         expect(feeClaimDataProviderBefore2).to.be.gt(0);
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(0);
 
         // ---------
@@ -788,12 +755,12 @@ describe("ClaimFacet", async function () {
         await claimFacet.connect(oracle).batchTransferFeeClaim([
           {
             recipient: user2.address,
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             amount: 0,
           },
           {
             recipient: user2.address,
-            collateralToken: collateralToken2,
+            collateralToken: poolParams2.collateralToken,
             amount: 0,
           },
         ]);
@@ -802,16 +769,16 @@ describe("ClaimFacet", async function () {
         // Assert: Check that the data provider's and user2's fee claims remain unchanged
         // ---------
         expect(
-          await getterFacet.getClaim(collateralToken, oracle.address)
+          await getterFacet.getClaim(poolParams.collateralToken, oracle.address)
         ).to.eq(feeClaimDataProviderBefore);
         expect(
-          await getterFacet.getClaim(collateralToken, user2.address)
+          await getterFacet.getClaim(poolParams.collateralToken, user2.address)
         ).to.eq(0);
         expect(
-          await getterFacet.getClaim(collateralToken2, oracle.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, oracle.address)
         ).to.eq(feeClaimDataProviderBefore2);
         expect(
-          await getterFacet.getClaim(collateralToken2, user2.address)
+          await getterFacet.getClaim(poolParams2.collateralToken, user2.address)
         ).to.eq(0);
       });
 
@@ -824,7 +791,7 @@ describe("ClaimFacet", async function () {
         // Arrange: Get fee claim amount
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
 
@@ -835,12 +802,12 @@ describe("ClaimFacet", async function () {
           claimFacet.connect(oracle).batchTransferFeeClaim([
             {
               recipient: user2.address,
-              collateralToken: collateralToken,
+              collateralToken: poolParams.collateralToken,
               amount: feeClaimDataProvider.add(1),
             },
             {
               recipient: user2.address,
-              collateralToken: collateralToken2,
+              collateralToken: poolParams2.collateralToken,
               amount: 0,
             },
           ])
@@ -855,12 +822,12 @@ describe("ClaimFacet", async function () {
           claimFacet.connect(oracle).batchTransferFeeClaim([
             {
               recipient: user2.address,
-              collateralToken: collateralToken,
+              collateralToken: poolParams.collateralToken,
               amount: 1,
             },
             {
               recipient: ethers.constants.AddressZero,
-              collateralToken: collateralToken2,
+              collateralToken: poolParams2.collateralToken,
               amount: 0,
             },
           ])
@@ -876,22 +843,22 @@ describe("ClaimFacet", async function () {
         // Act: Transfer fee claims
         // ---------
         feeClaimDataProvider = await getterFacet.getClaim(
-          collateralToken,
+          poolParams.collateralToken,
           oracle.address
         );
         feeClaimDataProvider2 = await getterFacet.getClaim(
-          collateralToken2,
+          poolParams2.collateralToken,
           oracle.address
         );
         const tx = await claimFacet.connect(oracle).batchTransferFeeClaim([
           {
             recipient: user2.address,
-            collateralToken: collateralToken,
+            collateralToken: poolParams.collateralToken,
             amount: feeClaimDataProvider,
           },
           {
             recipient: user2.address,
-            collateralToken: collateralToken2,
+            collateralToken: poolParams2.collateralToken,
             amount: feeClaimDataProvider2,
           },
         ]);
@@ -908,7 +875,7 @@ describe("ClaimFacet", async function () {
         expect(feeClaimTransferredEvents[0].args?.from).to.eq(oracle.address);
         expect(feeClaimTransferredEvents[0].args?.to).to.eq(user2.address);
         expect(feeClaimTransferredEvents[0].args?.collateralToken).to.eq(
-          collateralToken
+          poolParams.collateralToken
         );
         expect(feeClaimTransferredEvents[0].args?.amount).to.eq(
           feeClaimDataProvider
@@ -917,7 +884,7 @@ describe("ClaimFacet", async function () {
         expect(feeClaimTransferredEvents[1].args?.from).to.eq(oracle.address);
         expect(feeClaimTransferredEvents[1].args?.to).to.eq(user2.address);
         expect(feeClaimTransferredEvents[1].args?.collateralToken).to.eq(
-          collateralToken2
+          poolParams2.collateralToken
         );
         expect(feeClaimTransferredEvents[1].args?.amount).to.eq(
           feeClaimDataProvider2

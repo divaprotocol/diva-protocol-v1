@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
+import { BigNumber, BigNumberish, ContractReceipt, ContractTransaction } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -13,6 +13,7 @@ import {
   PositionToken,
 } from "../typechain-types";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
+import { LibDIVA } from "../typechain-types/contracts/facets/PoolFacet";
 
 import {
   getExpiryTime,
@@ -20,6 +21,10 @@ import {
   getPoolIdFromTx,
   getPoolId,
   extractNumberFromString,
+  createContingentPool,
+  decimals,
+  defaultPoolParameters,
+  CreateContingentPoolParams,
 } from "../utils";
 import { ONE_DAY, GovParams } from "../constants";
 import { deployMain } from "../scripts/deployMain";
@@ -31,11 +36,6 @@ import {
   permissionedPositionTokenAttachFixture,
   fakePositionTokenDeployFixture,
 } from "./fixtures";
-
-// -------
-// Input: Collateral token decimals (>= 6 && <= 18)
-// -------
-const decimals = 6;
 
 describe("PoolFacet", async function () {
   let contractOwner: SignerWithAddress,
@@ -50,20 +50,6 @@ describe("PoolFacet", async function () {
 
   let diamondDeployment: [string, number];
   let blockTimestampDiamondDeployment: number;
-
-  let referenceAsset: string,
-    expiryTime: string,
-    floor: BigNumber,
-    inflection: BigNumber,
-    cap: BigNumber,
-    gradient: BigNumber,
-    collateralAmount: BigNumber,
-    collateralToken: string,
-    dataProvider: string,
-    capacity: BigNumber,
-    longRecipient: string,
-    shortRecipient: string,
-    permissionedERC721Token: string;
 
   let protocolFee = "2500000000000000"; // initial protocol value
   let settlementFee = "500000000000000"; // initial protocol value
@@ -85,7 +71,8 @@ describe("PoolFacet", async function () {
   let tx: ContractTransaction;
   let receipt: ContractReceipt;
 
-  const MAX_UINT = ethers.constants.MaxUint256;
+  let createContingentPoolParams: CreateContingentPoolParams;
+  let createContingentPoolParams2: CreateContingentPoolParams;
 
   before(async function () {
     [contractOwner, treasury, oracle, user1, user2, ...accounts] =
@@ -169,21 +156,19 @@ describe("PoolFacet", async function () {
       await collateralTokenWithFeesInstance
         .connect(user1)
         .approve(diamondAddress, userStartCollateralTokenBalance);
-      
-      // Specify default pool parameters
-      referenceAsset = "BTC/USD";
-      expiryTime = await getExpiryTime(7200); // Expiry in 2h
-      floor = parseUnits("1198.53");
-      inflection = parseUnits("1605.33");
-      cap = parseUnits("2001.17");
-      gradient = parseUnits("0.33", decimals);
-      collateralAmount = parseUnits("15001.358", decimals);
-      collateralToken = collateralTokenInstance.address;
-      dataProvider = oracle.address;
-      capacity = MAX_UINT; // Uncapped
-      longRecipient = user1.address;
-      shortRecipient = user2.address;
-      permissionedERC721Token = ethers.constants.AddressZero;
+
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+      // `expiryTime` was set manually so that we can use it for comparison later.
+      createContingentPoolParams = {
+        ...defaultPoolParameters,
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user2.address,
+        expiryTime: await getExpiryTime(7200)
+      }
 
       if (
         this.currentTest?.title !==
@@ -192,21 +177,7 @@ describe("PoolFacet", async function () {
         // ---------
         // Act: Create a contingent pool with default parameters
         // ---------
-        tx = await poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        });
+        tx = await createContingentPool(createContingentPoolParams);
 
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -229,21 +200,7 @@ describe("PoolFacet", async function () {
       // ---------
       const poolCountBefore = await getterFacet.getPoolCount();
       govParams = await getterFacet.getGovernanceParameters();
-      tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      tx = await createContingentPool(createContingentPoolParams);
 
       // ---------
       // Assert: Check that pool parameters are correctly set
@@ -258,20 +215,20 @@ describe("PoolFacet", async function () {
 
       // Manually calculate the expected poolId
       expectedPoolId = getPoolId(
-        referenceAsset,
-        Number(poolParams.expiryTime),
-        String(floor),
-        String(inflection),
-        String(cap),
-        String(gradient),
-        String(collateralAmount),
-        collateralToken,
-        dataProvider,
-        String(capacity),
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-        String(collateralAmount), // collateralAmountMsgSender
+        createContingentPoolParams.referenceAsset,
+        createContingentPoolParams.expiryTime as BigNumberish,
+        createContingentPoolParams.floor,
+        createContingentPoolParams.inflection,
+        createContingentPoolParams.cap,
+        createContingentPoolParams.gradient,
+        createContingentPoolParams.collateralAmount,
+        createContingentPoolParams.collateralToken,
+        createContingentPoolParams.dataProvider,
+        createContingentPoolParams.capacity,
+        createContingentPoolParams.longRecipient,
+        createContingentPoolParams.shortRecipient,
+        createContingentPoolParams.permissionedERC721Token,
+        createContingentPoolParams.collateralAmount, // collateralAmountMsgSender
         "0", // collateralAmountMaker
         ethers.constants.AddressZero, // maker,
         user1.address, // msgSender
@@ -280,14 +237,14 @@ describe("PoolFacet", async function () {
       
       expect(poolId).to.eq(expectedPoolId);
       expect(poolCountAfter).to.eq(poolCountBefore.add(1));
-      expect(poolParams.referenceAsset).to.eq(referenceAsset);
-      expect(poolParams.expiryTime).to.eq(expiryTime);
-      expect(poolParams.floor).to.eq(floor);
-      expect(poolParams.inflection).to.eq(inflection);
-      expect(poolParams.cap).to.eq(cap);
-      expect(poolParams.collateralToken).to.eq(collateralToken);
-      expect(poolParams.gradient).to.eq(gradient);
-      expect(poolParams.collateralBalance).to.eq(collateralAmount);
+      expect(poolParams.referenceAsset).to.eq(createContingentPoolParams.referenceAsset);
+      expect(poolParams.expiryTime).to.eq(createContingentPoolParams.expiryTime);
+      expect(poolParams.floor).to.eq(createContingentPoolParams.floor);
+      expect(poolParams.inflection).to.eq(createContingentPoolParams.inflection);
+      expect(poolParams.cap).to.eq(createContingentPoolParams.cap);
+      expect(poolParams.collateralToken).to.eq(createContingentPoolParams.collateralToken);
+      expect(poolParams.gradient).to.eq(createContingentPoolParams.gradient);
+      expect(poolParams.collateralBalance).to.eq(createContingentPoolParams.collateralAmount);
       expect(poolParams.shortToken).is.properAddress;
       expect(poolParams.longToken).is.properAddress;
       expect(poolParams.finalReferenceValue).to.eq(0);
@@ -295,8 +252,8 @@ describe("PoolFacet", async function () {
       expect(poolParams.payoutLong).to.eq(0);
       expect(poolParams.payoutShort).to.eq(0);
       expect(poolParams.statusTimestamp).to.eq(currentBlockTimestamp);
-      expect(poolParams.dataProvider).to.eq(oracle.address);
-      expect(poolParams.capacity).to.eq(capacity);
+      expect(poolParams.dataProvider).to.eq(createContingentPoolParams.dataProvider);
+      expect(poolParams.capacity).to.eq(createContingentPoolParams.capacity);
 
       // Confirm that the position tokens store the correct poolId
       expect(await shortTokenInstance.poolId()).to.eq(expectedPoolId);
@@ -329,21 +286,7 @@ describe("PoolFacet", async function () {
       // ---------
       // Act: Create a contingent pool with default parameters
       // ---------
-      tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      tx = await createContingentPool(createContingentPoolParams);
 
       // ---------
       // Assert: Check that it returns the same pool parameters when called via `getPoolParametersByAddress`
@@ -386,11 +329,8 @@ describe("PoolFacet", async function () {
     });
 
     it("Increases the short and long token supply", async () => {
-      // ---------
-      // Assert
-      // ---------
-      expect(await shortTokenInstance.totalSupply()).to.eq(collateralAmount);
-      expect(await longTokenInstance.totalSupply()).to.eq(collateralAmount);
+      expect(await shortTokenInstance.totalSupply()).to.eq(createContingentPoolParams.collateralAmount);
+      expect(await longTokenInstance.totalSupply()).to.eq(createContingentPoolParams.collateralAmount);
     });
 
     it("Assigns the diamond contract as the owner of the position tokens", async () => {
@@ -411,22 +351,22 @@ describe("PoolFacet", async function () {
 
     it("Sends position tokens to user1 (pool creator) and user2", async () => {
       expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(
-        collateralAmount
+        createContingentPoolParams.collateralAmount
       );
       expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
-        collateralAmount
+        createContingentPoolParams.collateralAmount
       );
     });
 
     it("Reduces the user1`s (msg.sender) collateral token balance", async () => {
       expect(await collateralTokenInstance.balanceOf(user1.address)).to.eq(
-        userStartCollateralTokenBalance.sub(collateralAmount)
+        userStartCollateralTokenBalance.sub(createContingentPoolParams.collateralAmount)
       );
     });
 
     it("Increases the diamond`s collateral token balance", async () => {
       expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
-        collateralAmount
+        createContingentPoolParams.collateralAmount
       );
     });
 
@@ -448,21 +388,7 @@ describe("PoolFacet", async function () {
       // ---------
       // Act: Mint a second pair of position tokens
       // ---------
-      await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      await createContingentPool(createContingentPoolParams);
 
       // ---------
       // Assert: Check that the pool count increased
@@ -516,7 +442,7 @@ describe("PoolFacet", async function () {
         longTokenBalanceUser1
       );
     });
-
+      
     it("Deducts a fee on transfer for the Mock ERC20 token with fees", async () => {
       // This test is to ensure that the fee logic in the Mock ERC20 functions correctly
 
@@ -547,6 +473,53 @@ describe("PoolFacet", async function () {
       expect(collateralTokenWithFeesUser2After).to.eq(collateralTokenWithFeesUser2Before.add(amountToTransfer).sub(feeAmount));
     })
 
+    it("Shouldn't change anything if collateralAmount = 0", async () => {
+      // ---------
+      // Arrange: Set collateral amount to zero and retrieve DIVA contract's collateral token balance
+      // ---------
+      const zeroCollateralAmount = BigNumber.from(0);
+      const diamondCollateralTokenBalanceBefore = await collateralTokenInstance.balanceOf(diamondAddress);
+      const createContingentPoolParamsAdj: CreateContingentPoolParams = {
+        ...createContingentPoolParams,
+        collateralAmount: zeroCollateralAmount
+      }
+
+      // ---------
+      // Act: Create a contingent pool
+      // ---------
+      tx = await createContingentPool(createContingentPoolParamsAdj);
+
+      // ---------
+      // Assert: Check that relevant pool parameters are correctly set
+      // ---------
+      currentBlockTimestamp = await getLastTimestamp();
+      poolId = await getPoolIdFromTx(tx);
+      poolParams = await getterFacet.getPoolParameters(poolId);
+      shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
+      longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
+
+      // Confirm that the collateral amount is zero
+      expect(poolParams.collateralBalance).to.eq(zeroCollateralAmount);
+
+      // Confirm that the total short and long token supply is zero
+      expect(await shortTokenInstance.totalSupply()).to.eq(zeroCollateralAmount);
+      expect(await longTokenInstance.totalSupply()).to.eq(zeroCollateralAmount);
+
+      // Confirm that the user's long and short token supply are zero
+      expect(await shortTokenInstance.balanceOf(user2.address)).to.eq(
+        zeroCollateralAmount
+      );
+      expect(await longTokenInstance.balanceOf(user1.address)).to.eq(
+        zeroCollateralAmount
+      );
+
+      // Confirm that DIVA contract's collateral token balance remained unchanged
+      expect(await collateralTokenInstance.balanceOf(diamondAddress)).to.eq(
+        diamondCollateralTokenBalanceBefore
+      );
+    });
+
+
     // -------------------------------------------
     // Events
     // -------------------------------------------
@@ -557,11 +530,11 @@ describe("PoolFacet", async function () {
         (item: any) => item.event === "PoolIssued"
       );
       expect(poolIssuedEvent?.args?.poolId).to.eq(poolId);
-      expect(poolIssuedEvent?.args?.longRecipient).to.eq(user1.address);
-      expect(poolIssuedEvent?.args?.shortRecipient).to.eq(user2.address);
-      expect(poolIssuedEvent?.args?.collateralAmount).to.eq(collateralAmount);
+      expect(poolIssuedEvent?.args?.longRecipient).to.eq(createContingentPoolParams.longRecipient);
+      expect(poolIssuedEvent?.args?.shortRecipient).to.eq(createContingentPoolParams.shortRecipient);
+      expect(poolIssuedEvent?.args?.collateralAmount).to.eq(createContingentPoolParams.collateralAmount);
       expect(poolIssuedEvent?.args?.permissionedERC721Token).to.eq(
-        permissionedERC721Token
+        createContingentPoolParams.permissionedERC721Token
       );
     });
 
@@ -574,25 +547,14 @@ describe("PoolFacet", async function () {
       // Arrange: Set invalid expiryTime (equal to previous block's timestamp)
       // ---------
       const invalidExpiryTime = await getLastTimestamp();
-
+      
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime: invalidExpiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          expiryTime: invalidExpiryTime // invalid as in the past (equal to getLastTimestamp())
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -607,20 +569,9 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset: invalidReferenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          referenceAsset: invalidReferenceAsset
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -629,26 +580,15 @@ describe("PoolFacet", async function () {
       // ---------
       // Arrange: Set invalid floor
       // ---------
-      const invalidFloor = inflection.add(1);
+      const invalidFloor = createContingentPoolParams.inflection.add(1);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor: invalidFloor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          floor: invalidFloor
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -657,26 +597,15 @@ describe("PoolFacet", async function () {
       // ---------
       // Arrange: Set invalid floor
       // ---------
-      const invalidCap = inflection.sub(1);
+      const invalidCap = createContingentPoolParams.inflection.sub(1);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap: invalidCap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          cap: invalidCap
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -691,48 +620,9 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap: invalidCap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        })
-      ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
-    });
-
-    it("Reverts if total collateral amount is less than 10**6", async () => {
-      // ---------
-      // Arrange: Set collateralAmount < 10**6
-      // ---------
-      const invalidCollateralAmount = parseUnits("1", 6).sub(1);
-
-      // ---------
-      // Act & Assert: Check that contingent pool creation fails
-      // ---------
-      await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount: invalidCollateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          cap: invalidCap
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -747,20 +637,9 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider: invalidDataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          dataProvider: invalidDataProvider
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -775,20 +654,9 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient: invalidGradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          gradient: invalidGradient
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -797,26 +665,15 @@ describe("PoolFacet", async function () {
       // ---------
       // Arrange: Set invalid capacity
       // ---------
-      const invalidCapacity = collateralAmount.sub(1);
+      const invalidCapacity = createContingentPoolParams.collateralAmount.sub(1);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity: invalidCapacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          capacity: invalidCapacity
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -839,20 +696,10 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
+        createContingentPool({
+          ...createContingentPoolParams,
           collateralAmount: parseUnits("200", _decimals),
           collateralToken: collateralTokenInstance.address,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -875,20 +722,10 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
+        createContingentPool({
+          ...createContingentPoolParams,
           collateralAmount: parseUnits("200", _decimals),
           collateralToken: collateralTokenInstance.address,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
         })
       ).to.be.revertedWith("InvalidInputParamsCreateContingentPool()");
     });
@@ -898,26 +735,15 @@ describe("PoolFacet", async function () {
       // Arrange: Set longRecipient to zero address
       // ---------
       const zeroXLongRecipient = ethers.constants.AddressZero;
-      expect(shortRecipient).to.not.eq(ethers.constants.AddressZero);
+      expect(createContingentPoolParams.shortRecipient).to.not.eq(ethers.constants.AddressZero);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient: zeroXLongRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          longRecipient: zeroXLongRecipient
         })
       ).to.be.revertedWith("ERC20: mint to the zero address");
     });
@@ -927,26 +753,15 @@ describe("PoolFacet", async function () {
       // Arrange: Set shortRecipient to zero address
       // ---------
       const zeroXShortRecipient = ethers.constants.AddressZero;
-      expect(longRecipient).to.not.eq(ethers.constants.AddressZero);
+      expect(createContingentPoolParams.longRecipient).to.not.eq(ethers.constants.AddressZero);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient: zeroXShortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          shortRecipient: zeroXShortRecipient
         })
       ).to.be.revertedWith("ERC20: mint to the zero address");
     });
@@ -956,41 +771,16 @@ describe("PoolFacet", async function () {
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken: collateralTokenWithFeesInstance.address,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          collateralToken: collateralTokenWithFeesInstance.address
         })
       ).to.be.revertedWith("FeeTokensNotSupported()");
     });
 
-    it("`getPoolParametersByAddress` reverts with `InvalidPositionToken` if an invalid position token address is porivded", async () => {
+    it("`getPoolParametersByAddress` reverts with `InvalidPositionToken` if an invalid position token address is provided", async () => {
 
-      tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      tx = await createContingentPool(createContingentPoolParams);
 
       poolId = await getPoolIdFromTx(tx);
       expect(poolId).to.not.eq(ethers.constants.HashZero);
@@ -1037,27 +827,25 @@ describe("PoolFacet", async function () {
         .connect(user1)
         .approve(diamondAddress, userStartCollateralTokenBalance);
 
-      // Specify default pool parameters
-      referenceAsset = "BTC/USD";
-      expiryTime = await getExpiryTime(7200); // Expiry in 2h
-      floor = parseUnits("1198.53");
-      inflection = parseUnits("1605.33");
-      cap = parseUnits("2001.17");
-      gradient = parseUnits("0.33", decimals);
-      collateralAmount = parseUnits("15001.358", decimals);
-      collateralToken = collateralTokenInstance.address;
-      dataProvider = oracle.address;
-      capacity = MAX_UINT; // Uncapped
-      longRecipient = user1.address; // Set long token recipient to user1
-      shortRecipient = user2.address; // Set short token recipient to user1
-
       permissionedERC721TokenInstance = await erc721DeployFixture(
         "PermissionedERC721Token",
         "PNFT"
       );
       await permissionedERC721TokenInstance.connect(user1).mint();
       await permissionedERC721TokenInstance.connect(user2).mint();
-      permissionedERC721Token = permissionedERC721TokenInstance.address;
+
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+      createContingentPoolParams = {
+        ...defaultPoolParameters,
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user2.address,
+        expiryTime: await getExpiryTime(7200), // setting it manually here so that I can compare it later
+        permissionedERC721Token: permissionedERC721TokenInstance.address
+      }
 
       if (
         this.currentTest?.title !==
@@ -1070,21 +858,7 @@ describe("PoolFacet", async function () {
         // ---------
         // Act: Create a contingent pool with default parameters
         // ---------
-        tx = await poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        });
+        tx = await createContingentPool(createContingentPoolParams);
 
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -1106,31 +880,17 @@ describe("PoolFacet", async function () {
       // Arrange: Check that long recipient and short recipient own the permissioned ERC721 token
       // ---------
       expect(
-        await permissionedERC721TokenInstance.balanceOf(longRecipient)
+        await permissionedERC721TokenInstance.balanceOf(createContingentPoolParams.longRecipient)
       ).to.gt(0);
       expect(
-        await permissionedERC721TokenInstance.balanceOf(shortRecipient)
+        await permissionedERC721TokenInstance.balanceOf(createContingentPoolParams.shortRecipient)
       ).to.gt(0);
       govParams = await getterFacet.getGovernanceParameters();
 
       // ---------
       // Act: Should able to create contingent pool
       // ---------
-      tx = await poolFacet.connect(user1).createContingentPool({
-        referenceAsset,
-        expiryTime,
-        floor,
-        inflection,
-        cap,
-        gradient,
-        collateralAmount,
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
+      tx = await createContingentPool(createContingentPoolParams);
 
       // ---------
       // Assert: Check that pool parameters are correctly set
@@ -1144,20 +904,20 @@ describe("PoolFacet", async function () {
 
       // Manually calculate the expected poolId
       expectedPoolId = getPoolId(
-        referenceAsset,
-        Number(poolParams.expiryTime),
-        String(floor),
-        String(inflection),
-        String(cap),
-        String(gradient),
-        String(collateralAmount),
-        collateralToken,
-        dataProvider,
-        String(capacity),
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-        String(collateralAmount), // collateralAmountMsgSender
+        createContingentPoolParams.referenceAsset,
+        createContingentPoolParams.expiryTime as BigNumberish,
+        createContingentPoolParams.floor,
+        createContingentPoolParams.inflection,
+        createContingentPoolParams.cap,
+        createContingentPoolParams.gradient,
+        createContingentPoolParams.collateralAmount,
+        createContingentPoolParams.collateralToken,
+        createContingentPoolParams.dataProvider,
+        createContingentPoolParams.capacity,
+        createContingentPoolParams.longRecipient,
+        createContingentPoolParams.shortRecipient,
+        createContingentPoolParams.permissionedERC721Token,
+        createContingentPoolParams.collateralAmount, // collateralAmountMsgSender
         "0", // collateralAmountMaker
         ethers.constants.AddressZero, // maker,
         user1.address, // msgSender
@@ -1165,14 +925,14 @@ describe("PoolFacet", async function () {
       )
 
       expect(poolId).to.eq(expectedPoolId);
-      expect(poolParams.referenceAsset).to.eq(referenceAsset);
-      expect(poolParams.expiryTime).to.eq(expiryTime);
-      expect(poolParams.floor).to.eq(floor);
-      expect(poolParams.inflection).to.eq(inflection);
-      expect(poolParams.cap).to.eq(cap);
-      expect(poolParams.collateralToken).to.eq(collateralToken);
-      expect(poolParams.gradient).to.eq(gradient);
-      expect(poolParams.collateralBalance).to.eq(collateralAmount);
+      expect(poolParams.referenceAsset).to.eq(createContingentPoolParams.referenceAsset);
+      expect(poolParams.expiryTime).to.eq(createContingentPoolParams.expiryTime);
+      expect(poolParams.floor).to.eq(createContingentPoolParams.floor);
+      expect(poolParams.inflection).to.eq(createContingentPoolParams.inflection);
+      expect(poolParams.cap).to.eq(createContingentPoolParams.cap);
+      expect(poolParams.collateralToken).to.eq(createContingentPoolParams.collateralToken);
+      expect(poolParams.gradient).to.eq(createContingentPoolParams.gradient);
+      expect(poolParams.collateralBalance).to.eq(createContingentPoolParams.collateralAmount);
       expect(poolParams.shortToken).is.properAddress;
       expect(poolParams.longToken).is.properAddress;
       expect(poolParams.finalReferenceValue).to.eq(0);
@@ -1180,8 +940,8 @@ describe("PoolFacet", async function () {
       expect(poolParams.payoutLong).to.eq(0);
       expect(poolParams.payoutShort).to.eq(0);
       expect(poolParams.statusTimestamp).to.eq(currentBlockTimestamp);
-      expect(poolParams.dataProvider).to.eq(oracle.address);
-      expect(poolParams.capacity).to.eq(capacity);
+      expect(poolParams.dataProvider).to.eq(createContingentPoolParams.dataProvider);
+      expect(poolParams.capacity).to.eq(createContingentPoolParams.capacity);
 
       // Confirm that the position tokens store the correct poolId
       expect(await shortTokenInstance.poolId()).to.eq(expectedPoolId);
@@ -1217,10 +977,10 @@ describe("PoolFacet", async function () {
         poolParams.longToken
       );
       expect(await shortTokenInstance.permissionedERC721Token()).to.eq(
-        permissionedERC721Token
+        createContingentPoolParams.permissionedERC721Token
       );
       expect(await longTokenInstance.permissionedERC721Token()).to.eq(
-        permissionedERC721Token
+        createContingentPoolParams.permissionedERC721Token
       );
     });
 
@@ -1229,10 +989,10 @@ describe("PoolFacet", async function () {
       // Arrange: Check that user1 and user2 are permissioned user and get user balances of short and long tokens
       // ---------
       expect(
-        await permissionedERC721TokenInstance.balanceOf(longRecipient)
+        await permissionedERC721TokenInstance.balanceOf(createContingentPoolParams.longRecipient)
       ).to.gt(0);
       expect(
-        await permissionedERC721TokenInstance.balanceOf(shortRecipient)
+        await permissionedERC721TokenInstance.balanceOf(createContingentPoolParams.shortRecipient)
       ).to.gt(0);
 
       const shortTokenBalanceUser1 = await shortTokenInstance.balanceOf(
@@ -1287,11 +1047,11 @@ describe("PoolFacet", async function () {
         (item: any) => item.event === "PoolIssued"
       );
       expect(poolIssuedEvent?.args?.poolId).to.eq(poolId);
-      expect(poolIssuedEvent?.args?.longRecipient).to.eq(user1.address);
-      expect(poolIssuedEvent?.args?.shortRecipient).to.eq(user2.address);
-      expect(poolIssuedEvent?.args?.collateralAmount).to.eq(collateralAmount);
+      expect(poolIssuedEvent?.args?.longRecipient).to.eq(createContingentPoolParams.longRecipient);
+      expect(poolIssuedEvent?.args?.shortRecipient).to.eq(createContingentPoolParams.shortRecipient);
+      expect(poolIssuedEvent?.args?.collateralAmount).to.eq(createContingentPoolParams.collateralAmount);
       expect(poolIssuedEvent?.args?.permissionedERC721Token).to.eq(
-        permissionedERC721Token
+        createContingentPoolParams.permissionedERC721Token
       );
     });
 
@@ -1303,60 +1063,38 @@ describe("PoolFacet", async function () {
       // ---------
       // Arrange: Set invalid short recipient (accounts[0] who doesn't hold any permissioned ERC721 tokens)
       // ---------
-      shortRecipient = accounts[0].address;
+      const nonEligibleShortRecipient = accounts[0].address;
       expect(
-        await permissionedERC721TokenInstance.balanceOf(shortRecipient)
+        await permissionedERC721TokenInstance.balanceOf(nonEligibleShortRecipient)
       ).to.eq(0);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          shortRecipient: nonEligibleShortRecipient
         })
       ).to.be.revertedWith("PositionToken: invalid recipient");
     });
 
     it("Reverts if pool is created with non-permissioned long recipient", async () => {
       // ---------
-      // Arrange: Set invalid long recipient (accounts[0] who doesn't hold any permissioned ERC721 tokens)
+      // Arrange: Set non-eligible long recipient (accounts[0] who doesn't hold any permissioned ERC721 tokens)
       // ---------
-      longRecipient = accounts[0].address;
+      const nonEligibleLongRecipient = accounts[0].address;
       expect(
-        await permissionedERC721TokenInstance.balanceOf(longRecipient)
+        await permissionedERC721TokenInstance.balanceOf(nonEligibleLongRecipient)
       ).to.eq(0);
 
       // ---------
       // Act & Assert: Check that contingent pool creation fails
       // ---------
       await expect(
-        poolFacet.connect(user1).createContingentPool({
-          referenceAsset,
-          expiryTime,
-          floor,
-          inflection,
-          cap,
-          gradient,
-          collateralAmount,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
+        createContingentPool({
+          ...createContingentPoolParams,
+          longRecipient: nonEligibleLongRecipient
         })
       ).to.be.revertedWith("PositionToken: invalid recipient");
     });
@@ -1461,63 +1199,43 @@ describe("PoolFacet", async function () {
         .connect(user1)
         .approve(diamondAddress, userStartCollateralTokenBalance);
 
-      // Specify default pools parameters
-      const referenceAsset1 = "BTC/USD";
-      const expiryTime1 = await getExpiryTime(7200);
-      const floor1 = parseUnits("1198.53");
-      const inflection1 = parseUnits("1605.33");
-      const cap1 = parseUnits("2001.17");
-      const gradient1 = parseUnits("0.33", decimals);
-      const collateralAmount1 = parseUnits("15001.358", decimals);
+      // Specify the create contingent pool parameters for pool 1
+      createContingentPoolParams = {
+        ...defaultPoolParameters,
+        expiryTime: await getExpiryTime(7200), // setting it manually here so that I can compare it later
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user2.address,
+      }
 
-      const referenceAsset2 = "ETH/USD";
-      const expiryTime2 = await getExpiryTime(7300);
-      const floor2 = parseUnits("1298.53");
-      const inflection2 = parseUnits("1705.33");
-      const cap2 = parseUnits("2101.17");
-      const gradient2 = parseUnits("0.43", decimals);
-      const collateralAmount2 = parseUnits("16001.358", decimals);
-
-      collateralToken = collateralTokenInstance.address;
-      dataProvider = oracle.address;
-      capacity = MAX_UINT; // Uncapped
-      longRecipient = user1.address;
-      shortRecipient = user2.address;
+      // Specify the create contingent pool parameters for pool 2
+      createContingentPoolParams2 = {
+        ...defaultPoolParameters,
+        referenceAsset: "ETH/USD",
+        expiryTime: await getExpiryTime(7300),
+        floor: parseUnits("1298.53"),
+        inflection: parseUnits("1705.33"),
+        cap: parseUnits("2101.17"),
+        gradient: parseUnits("0.43", decimals),
+        collateralAmount: parseUnits("16001.358", decimals),
+        permissionedERC721Token: ethers.constants.AddressZero,
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user2.address        
+      }
 
       // ---------
-      // Act: Create  contingent pools with parameters
+      // Act: Create contingent pools with parameters
       // ---------
       tx = await poolFacet.connect(user1).batchCreateContingentPool([
-        {
-          referenceAsset: referenceAsset1,
-          expiryTime: expiryTime1,
-          floor: floor1,
-          inflection: inflection1,
-          cap: cap1,
-          gradient: gradient1,
-          collateralAmount: collateralAmount1,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token: ethers.constants.AddressZero,
-        },
-        {
-          referenceAsset: referenceAsset2,
-          expiryTime: expiryTime2,
-          floor: floor2,
-          inflection: inflection2,
-          cap: cap2,
-          gradient: gradient2,
-          collateralAmount: collateralAmount2,
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token: ethers.constants.AddressZero,
-        },
+        createContingentPoolParams as LibDIVA.PoolParamsStruct,
+        createContingentPoolParams2 as LibDIVA.PoolParamsStruct,
       ]);
       receipt = await tx.wait();
 
@@ -1532,14 +1250,14 @@ describe("PoolFacet", async function () {
       currentBlockTimestamp = await getLastTimestamp();
 
       const poolParams1 = await getterFacet.getPoolParameters(poolId1);
-      expect(poolParams1.referenceAsset).to.eq(referenceAsset1);
-      expect(poolParams1.expiryTime).to.eq(expiryTime1);
-      expect(poolParams1.floor).to.eq(floor1);
-      expect(poolParams1.inflection).to.eq(inflection1);
-      expect(poolParams1.cap).to.eq(cap1);
-      expect(poolParams1.collateralToken).to.eq(collateralToken);
-      expect(poolParams1.gradient).to.eq(gradient1);
-      expect(poolParams1.collateralBalance).to.eq(collateralAmount1);
+      expect(poolParams1.referenceAsset).to.eq(createContingentPoolParams.referenceAsset);
+      expect(poolParams1.expiryTime).to.eq(createContingentPoolParams.expiryTime);
+      expect(poolParams1.floor).to.eq(createContingentPoolParams.floor);
+      expect(poolParams1.inflection).to.eq(createContingentPoolParams.inflection);
+      expect(poolParams1.cap).to.eq(createContingentPoolParams.cap);
+      expect(poolParams1.collateralToken).to.eq(createContingentPoolParams.collateralToken);
+      expect(poolParams1.gradient).to.eq(createContingentPoolParams.gradient);
+      expect(poolParams1.collateralBalance).to.eq(createContingentPoolParams.collateralAmount);
       expect(poolParams1.shortToken).is.properAddress;
       expect(poolParams1.longToken).is.properAddress;
       expect(poolParams1.finalReferenceValue).to.eq(0);
@@ -1547,18 +1265,18 @@ describe("PoolFacet", async function () {
       expect(poolParams1.payoutLong).to.eq(0);
       expect(poolParams1.payoutShort).to.eq(0);
       expect(poolParams1.statusTimestamp).to.eq(currentBlockTimestamp);
-      expect(poolParams1.dataProvider).to.eq(oracle.address);
-      expect(poolParams1.capacity).to.eq(capacity);
+      expect(poolParams1.dataProvider).to.eq(createContingentPoolParams.dataProvider);
+      expect(poolParams1.capacity).to.eq(createContingentPoolParams.capacity);
 
       const poolParams2 = await getterFacet.getPoolParameters(poolId2);
-      expect(poolParams2.referenceAsset).to.eq(referenceAsset2);
-      expect(poolParams2.expiryTime).to.eq(expiryTime2);
-      expect(poolParams2.floor).to.eq(floor2);
-      expect(poolParams2.inflection).to.eq(inflection2);
-      expect(poolParams2.cap).to.eq(cap2);
-      expect(poolParams2.collateralToken).to.eq(collateralToken);
-      expect(poolParams2.gradient).to.eq(gradient2);
-      expect(poolParams2.collateralBalance).to.eq(collateralAmount2);
+      expect(poolParams2.referenceAsset).to.eq(createContingentPoolParams2.referenceAsset);
+      expect(poolParams2.expiryTime).to.eq(createContingentPoolParams2.expiryTime);
+      expect(poolParams2.floor).to.eq(createContingentPoolParams2.floor);
+      expect(poolParams2.inflection).to.eq(createContingentPoolParams2.inflection);
+      expect(poolParams2.cap).to.eq(createContingentPoolParams2.cap);
+      expect(poolParams2.collateralToken).to.eq(createContingentPoolParams2.collateralToken);
+      expect(poolParams2.gradient).to.eq(createContingentPoolParams2.gradient);
+      expect(poolParams2.collateralBalance).to.eq(createContingentPoolParams2.collateralAmount);
       expect(poolParams2.shortToken).is.properAddress;
       expect(poolParams2.longToken).is.properAddress;
       expect(poolParams2.finalReferenceValue).to.eq(0);
@@ -1566,8 +1284,8 @@ describe("PoolFacet", async function () {
       expect(poolParams2.payoutLong).to.eq(0);
       expect(poolParams2.payoutShort).to.eq(0);
       expect(poolParams2.statusTimestamp).to.eq(currentBlockTimestamp);
-      expect(poolParams2.dataProvider).to.eq(oracle.address);
-      expect(poolParams2.capacity).to.eq(capacity);
+      expect(poolParams2.dataProvider).to.eq(createContingentPoolParams2.dataProvider);
+      expect(poolParams2.capacity).to.eq(createContingentPoolParams2.capacity);
     });
   });
 

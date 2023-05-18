@@ -52,6 +52,10 @@ import {
   generateAddLiquidityOfferDetails,
   mineBlock,
   setNextTimestamp,
+  createContingentPool,
+  decimals,
+  defaultPoolParameters,
+  CreateContingentPoolParams,
 } from "../utils";
 import { deployMain } from "../scripts/deployMain";
 
@@ -61,8 +65,6 @@ import {
 } from "./fixtures";
 
 use(solidity);
-
-const collateralTokenDecimals = 18;
 
 describe("EIP712", async function () {
   let user1: SignerWithAddress,
@@ -113,7 +115,6 @@ describe("EIP712", async function () {
   let currentNonce: string;
   let expectedPoolId: string;
 
-  let createPoolParams: PoolParams;
   let offerCreateContingentPool: OfferCreateContingentPool;
   let offerAddLiquidity: OfferAddLiquidity;
   let offerRemoveLiquidity: OfferRemoveLiquidity;
@@ -121,6 +122,8 @@ describe("EIP712", async function () {
   let govParams: GovParams;
   let poolFees: LibDIVAStorage.FeesStructOutput;
   let poolSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput;
+
+  let createContingentPoolParams: CreateContingentPoolParams;
 
   before(async () => {
     // Get signers
@@ -168,41 +171,35 @@ describe("EIP712", async function () {
     collateralToken = await erc20DeployFixture(
       "Test Token",
       "TTT",
-      parseUnits("100000", collateralTokenDecimals),
+      parseUnits("100000", decimals),
       user1.address,
-      collateralTokenDecimals,
+      decimals,
       "0"
     );
 
     // Transfer collateral token from user1 to user2
     await collateralToken
       .connect(user1)
-      .transfer(user2.address, parseUnits("50000", collateralTokenDecimals));
+      .transfer(user2.address, parseUnits("50000", decimals));
 
     // Approve collateral token to DIVA contract (Diamond) for user1 and user2
     await collateralToken
       .connect(user1)
-      .approve(diamondAddress, parseUnits("50000", collateralTokenDecimals));
+      .approve(diamondAddress, parseUnits("50000", decimals));
     await collateralToken
       .connect(user2)
-      .approve(diamondAddress, parseUnits("50000", collateralTokenDecimals));
+      .approve(diamondAddress, parseUnits("50000", decimals));
 
-    // Define parameters for createContingentPool function (used in some of the tests directly)
-    createPoolParams = {
-      referenceAsset: "BTC/USD",
-      expiryTime: await getExpiryTime(7200),
-      floor: parseUnits("40000").toString(),
-      inflection: parseUnits("60000").toString(),
-      cap: parseUnits("80000").toString(),
-      gradient: parseUnits("0.7", collateralTokenDecimals).toString(),
-      collateralAmount: parseUnits("100", collateralTokenDecimals).toString(),
+    createContingentPoolParams = {
+      ...defaultPoolParameters,
       collateralToken: collateralToken.address,
       dataProvider: oracle.address,
-      capacity: ethers.constants.MaxUint256.toString(),
+      poolCreater: user1,
+      poolFacet: poolFacet,
       longRecipient: user1.address,
       shortRecipient: user2.address,
-      permissionedERC721Token: ethers.constants.AddressZero,
-    };
+    }
+
   });
 
   describe("fillOfferCreateContingentPool", async function () {
@@ -213,10 +210,9 @@ describe("EIP712", async function () {
           await generateCreateContingentPoolOfferDetails({
             maker: user1.address.toString(), // maker
             taker: user2.address.toString(), // taker
-            makerIsLong: true, // makerIsLong
+            makerIsLong: true,
             dataProvider: oracle.address,
             collateralToken: collateralToken.address.toString(),
-            collateralTokenDecimals,
           });
 
         // Generate signature and typed message hash
@@ -450,12 +446,8 @@ describe("EIP712", async function () {
         // ---------
         // Arrange: Simulate a partial fill of a create contingent pool offer
         // ---------
-
         // Set takerFillAmountFirstFill < takerCollateralAmount to simulate a partial fill of a create contingent pool offer
-        const takerFillAmountFirstFill = parseUnits(
-          "60",
-          collateralTokenDecimals
-        ).toString();
+        const takerFillAmountFirstFill = offerCreateContingentPool.minimumTakerFillAmount;
         expect(BigNumber.from(takerFillAmountFirstFill)).to.be.lt(
           BigNumber.from(offerCreateContingentPool.takerCollateralAmount)
         );
@@ -1085,10 +1077,9 @@ describe("EIP712", async function () {
           await generateCreateContingentPoolOfferDetails({
             maker: user1.address.toString(), // maker
             taker: user2.address.toString(), // taker
-            makerIsLong: false, // makerIsLong
+            makerIsLong: false,
             dataProvider: oracle.address,
             collateralToken: collateralToken.address.toString(),
-            collateralTokenDecimals,
           });
 
         // Generate signature and typed message hash
@@ -1207,10 +1198,9 @@ describe("EIP712", async function () {
           await generateCreateContingentPoolOfferDetails({
             maker: user1.address.toString(), // maker
             taker: ethers.constants.AddressZero, // taker = zero address
-            makerIsLong: true, // makerIsLong
+            makerIsLong: true,
             dataProvider: oracle.address,
             collateralToken: collateralToken.address.toString(),
-            collateralTokenDecimals,
           });
 
         // Generate signature and typed message hash
@@ -1333,18 +1323,9 @@ describe("EIP712", async function () {
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
-          makerCollateralAmount: parseUnits(
-            "20",
-            collateralTokenDecimals
-          ).toString(),
-          takerCollateralAmount: parseUnits(
-            "80",
-            collateralTokenDecimals
-          ).toString(),
         });
 
       // Generate signature and typed message hash
@@ -1392,22 +1373,21 @@ describe("EIP712", async function () {
       expect(poolIdByHashBefore1).to.eq(ethers.constants.HashZero);
       // ------------------------------------------------
 
-      // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side
+      // Generate second create contingent pool offer with user1 (maker) taking the long side and user2 (taker) the short side.
       const offerCreateContingentPool2 =
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
           makerCollateralAmount: parseUnits(
             "30",
-            collateralTokenDecimals
+            decimals
           ).toString(),
           takerCollateralAmount: parseUnits(
             "70",
-            collateralTokenDecimals
+            decimals
           ).toString(),
         });
 
@@ -1755,10 +1735,9 @@ describe("EIP712", async function () {
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
         });
 
       // Generate signature and typed message hash
@@ -2022,10 +2001,9 @@ describe("EIP712", async function () {
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
         });
       // Generate signature and typed message hash for first offerCreateContingentPool
       const [signature1, typedMessageHash1] =
@@ -2042,10 +2020,9 @@ describe("EIP712", async function () {
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
         });
       // Generate signature and typed message hash for second offerCreateContingentPool
       const [signature2, typedMessageHash2] =
@@ -2103,10 +2080,9 @@ describe("EIP712", async function () {
         await generateCreateContingentPoolOfferDetails({
           maker: user1.address.toString(), // maker
           taker: user2.address.toString(), // taker
-          makerIsLong: true, // makerIsLong
+          makerIsLong: true,
           dataProvider: oracle.address,
           collateralToken: collateralToken.address.toString(),
-          collateralTokenDecimals,
         });
 
       // Set pool capacity to max amount to not run into any capacity constraints during the tests
@@ -2874,9 +2850,7 @@ describe("EIP712", async function () {
     describe("fillOfferAddLiquidity with non-zero taker address and makerIsLong as true", async function () {
       beforeEach(async () => {
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -2891,13 +2865,12 @@ describe("EIP712", async function () {
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
-        offerAddLiquidity = await generateAddLiquidityOfferDetails(
-          user1.address.toString(),
-          user2.address.toString(),
-          true,
-          poolId,
-          collateralTokenDecimals
-        );
+        offerAddLiquidity = await generateAddLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: user2.address.toString(),
+          makerIsLong: true,
+          poolId: poolId
+        });
 
         // Generate signature and typed message hash
         [signature, typedMessageHash] =
@@ -3046,10 +3019,7 @@ describe("EIP712", async function () {
         // ---------
 
         // Set takerFillAmountFirstFill < takerCollateralAmount to simulate a partial fill of an add liquidity offer
-        const takerFillAmountFirstFill = parseUnits(
-          "60",
-          collateralTokenDecimals
-        ).toString();
+        const takerFillAmountFirstFill = offerAddLiquidity.minimumTakerFillAmount;
         expect(BigNumber.from(takerFillAmountFirstFill)).to.be.lt(
           BigNumber.from(offerAddLiquidity.takerCollateralAmount)
         );
@@ -3601,9 +3571,7 @@ describe("EIP712", async function () {
     describe("fillOfferAddLiquidity with non-zero taker address and makerIsLong as false", async function () {
       beforeEach(async () => {
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -3618,13 +3586,12 @@ describe("EIP712", async function () {
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
-        offerAddLiquidity = await generateAddLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          user2.address.toString(), // taker
-          false, // makerIsLong
-          poolId,
-          collateralTokenDecimals
-        );
+        offerAddLiquidity = await generateAddLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: user2.address.toString(),
+          makerIsLong: false,
+          poolId: poolId
+        });
 
         // Generate signature
         [signature] = await generateSignatureAndTypedMessageHash(
@@ -3713,9 +3680,7 @@ describe("EIP712", async function () {
     describe("fillOfferAddLiquidity with zero taker address", async function () {
       beforeEach(async () => {
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -3730,13 +3695,12 @@ describe("EIP712", async function () {
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
         // Generate offerAddLiquidity
-        offerAddLiquidity = await generateAddLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          ethers.constants.AddressZero, // taker = zero address
-          true, // makerIsLong
-          poolId,
-          collateralTokenDecimals
-        );
+        offerAddLiquidity = await generateAddLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: ethers.constants.AddressZero,
+          makerIsLong: true,
+          poolId: poolId
+        });
 
         // Generate signature
         [signature] = await generateSignatureAndTypedMessageHash(
@@ -3831,9 +3795,7 @@ describe("EIP712", async function () {
       // ---------
 
       // Create first contingent pool on DIVA Protocol
-      const tx1 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx1 = await createContingentPool(createContingentPoolParams);
       const receipt1 = await tx1.wait();
 
       // Get poolId of the newly created pool from event
@@ -3853,13 +3815,12 @@ describe("EIP712", async function () {
       );
 
       // Generate first offerAddLiquidity
-      const offerAddLiquidity1 = await generateAddLiquidityOfferDetails(
-        user1.address.toString(),
-        user2.address.toString(),
-        true,
-        poolId1,
-        collateralTokenDecimals
-      );
+      const offerAddLiquidity1 = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId1
+      });
 
       // Generate signature and typed message hash
       const [signature1, typedMessageHash1] =
@@ -3915,9 +3876,7 @@ describe("EIP712", async function () {
       // ------------------------------------------------
 
       // Create second contingent pool on DIVA Protocol
-      const tx2 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx2 = await createContingentPool(createContingentPoolParams);
       const receipt2 = await tx2.wait();
 
       // Get poolId of the newly created pool from event
@@ -3937,13 +3896,12 @@ describe("EIP712", async function () {
       );
 
       // Generate second offerAddLiquidity
-      const offerAddLiquidity2 = await generateAddLiquidityOfferDetails(
-        user1.address.toString(),
-        user2.address.toString(),
-        true,
-        poolId2,
-        collateralTokenDecimals
-      );
+      const offerAddLiquidity2 = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId2
+      });
 
       // Generate signature and typed message hash
       const [signature2, typedMessageHash2] =
@@ -4147,9 +4105,7 @@ describe("EIP712", async function () {
   describe("cancelOfferAddLiquidity", async function () {
     beforeEach(async () => {
       // Create a contingent pool on DIVA protocol
-      const tx = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx = await createContingentPool(createContingentPoolParams);
       const receipt = await tx.wait();
 
       // Get poolId of the newly created pool from event
@@ -4157,13 +4113,12 @@ describe("EIP712", async function () {
         ?.poolId;
 
       // Generate offerAddLiquidity
-      offerAddLiquidity = await generateAddLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId,
-        collateralTokenDecimals
-      );
+      offerAddLiquidity = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId
+      });
 
       // Generate signature and typed message hash
       [signature, typedMessageHash] =
@@ -4413,9 +4368,7 @@ describe("EIP712", async function () {
       // ---------
 
       // Create first contingent pool on DIVA protocol
-      const tx1 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx1 = await createContingentPool(createContingentPoolParams);
       const receipt1 = await tx1.wait();
 
       // Get poolId of the newly created pool from event
@@ -4424,13 +4377,12 @@ describe("EIP712", async function () {
       )?.args?.poolId;
 
       // Generate offerAddLiquidity
-      const offerAddLiquidity1 = await generateAddLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId1,
-        collateralTokenDecimals
-      );
+      const offerAddLiquidity1 = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId1
+      });
 
       // Generate signature and typed message hash
       const [signature1, typedMessageHash1] =
@@ -4444,9 +4396,7 @@ describe("EIP712", async function () {
       // --------------------------------------------------
 
       // Create second contingent pool on DIVA protocol
-      const tx2 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx2 = await createContingentPool(createContingentPoolParams);
       const receipt2 = await tx2.wait();
 
       // Get poolId of the newly created pool from event
@@ -4455,13 +4405,12 @@ describe("EIP712", async function () {
       )?.args?.poolId;
 
       // Generate offerAddLiquidity
-      const offerAddLiquidity2 = await generateAddLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId2,
-        collateralTokenDecimals
-      );
+      const offerAddLiquidity2 = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId2
+      });
 
       // Generate signature and typed message hash
       const [signature2, typedMessageHash2] =
@@ -4515,9 +4464,7 @@ describe("EIP712", async function () {
       // Set pool capacity to max amount to not run into any capacity constraints during the tests
 
       // Create a contingent pool on DIVA protocol
-      const tx = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx = await createContingentPool(createContingentPoolParams);
       const receipt = await tx.wait();
 
       // Get poolId of the newly created pool from event
@@ -4525,13 +4472,12 @@ describe("EIP712", async function () {
         ?.poolId;
 
       // Generate offerAddLiquidity
-      offerAddLiquidity = await generateAddLiquidityOfferDetails(
-        user1.address.toString(),
-        user2.address.toString(),
-        true,
-        poolId,
-        collateralTokenDecimals
-      );
+      offerAddLiquidity = await generateAddLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        makerIsLong: true,
+        poolId: poolId
+      });
 
       // Generate signature and typed message hash
       [signature, typedMessageHash] =
@@ -5087,7 +5033,7 @@ describe("EIP712", async function () {
       );
 
       // Set takerFillAmount smaller than takerCollateralAmount to simulate a partial fill
-      takerFillAmount = parseUnits("60", collateralTokenDecimals).toString();
+      takerFillAmount = offerAddLiquidity.minimumTakerFillAmount;
       expect(BigNumber.from(takerFillAmount)).to.be.lt(
         BigNumber.from(offerAddLiquidity.takerCollateralAmount)
       );
@@ -5220,9 +5166,7 @@ describe("EIP712", async function () {
     describe("fillOfferRemoveLiquidity with non-zero taker address and makerIsLong as true", async function () {
       beforeEach(async () => {
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -5240,14 +5184,18 @@ describe("EIP712", async function () {
           poolParamsBefore.longToken
         );
 
-        // Generate offerRemoveLiquidity
-        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          user2.address.toString(), // taker
-          true, // maker is long
-          poolId,
-          collateralTokenDecimals
-        );
+        // Generate offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+        // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+        // underlying contingent pool
+        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: user2.address.toString(),
+          positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+          makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+          makerIsLong: true,
+          poolId: poolId,
+          minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+        });
 
         // Generate signature and typed message hash
         [signature, typedMessageHash] =
@@ -5276,13 +5224,13 @@ describe("EIP712", async function () {
         protocolFee = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(protocolFee).to.not.eq(0);
         settlementFee = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(settlementFee).to.not.eq(0);
 
@@ -5383,15 +5331,29 @@ describe("EIP712", async function () {
         expect(await getterFacet.getReservedClaim(poolId)).to.eq(settlementFee);
 
         // Confirm that the collateral token balance for both users has increased
-        expect(await collateralToken.balanceOf(user1.address)).to.eq(
+        const balanceOfCollateralTokenAfterUser1 = await collateralToken.balanceOf(
+          user1.address
+        );
+        const balanceOfCollateralTokenAfterUser2 = await collateralToken.balanceOf(
+          user2.address
+        );
+        expect(balanceOfCollateralTokenAfterUser1).to.closeTo(
           balanceOfCollateralTokenBeforeUser1.add(
             collateralAmountRemovedNetMaker
-          )
+          ),
+          1
         );
-        expect(await collateralToken.balanceOf(user2.address)).to.eq(
+        expect(balanceOfCollateralTokenAfterUser2).to.closeTo(
           balanceOfCollateralTokenBeforeUser2.add(
             collateralAmountRemovedNetTaker
-          )
+          ),
+          1
+        );
+        // As the individual user balances may be off by 1, check that the combined balance is as expected
+        expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that takerFilledAmount for the corresponding offer has increased
@@ -5446,12 +5408,12 @@ describe("EIP712", async function () {
         const protocolFeeRemainingCollateral = calcFee(
           feesParams.protocolFee,
           poolParamsAfter.collateralBalance,
-          collateralTokenDecimals
+          decimals
         );
         const settlementFeeRemainingCollateral = calcFee(
           feesParams.settlementFee,
           poolParamsAfter.collateralBalance,
-          collateralTokenDecimals
+          decimals
         );
 
         // ---------
@@ -5481,10 +5443,8 @@ describe("EIP712", async function () {
         // Arrange: Simulate a partial fill of a remove liquidity offer
         // ---------
         // Set positionTokenAmountFirstFill < positionTokenAmount to simulate a partial fill of a remove liquidity offer
-        const positionTokenAmountFirstFill = parseUnits(
-          "15",
-          collateralTokenDecimals
-        ).toString();
+        const positionTokenAmountFirstFill =
+          BigNumber.from(offerRemoveLiquidity.positionTokenAmount).mul(9).div(10); // *0.9
         expect(BigNumber.from(positionTokenAmountFirstFill)).to.be.lt(
           BigNumber.from(offerRemoveLiquidity.positionTokenAmount)
         );
@@ -5493,13 +5453,13 @@ describe("EIP712", async function () {
         const protocolFee1 = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenAmountFirstFill),
-          collateralTokenDecimals
+          decimals
         );
         expect(protocolFee1).to.not.eq(0);
         const settlementFee1 = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenAmountFirstFill),
-          collateralTokenDecimals
+          decimals
         );
         expect(settlementFee1).to.not.eq(0);
 
@@ -5565,13 +5525,13 @@ describe("EIP712", async function () {
         const protocolFee2 = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenAmountSecondFill),
-          collateralTokenDecimals
+          decimals
         );
         expect(protocolFee2).to.not.eq(0);
         const settlementFee2 = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenAmountSecondFill),
-          collateralTokenDecimals
+          decimals
         );
         expect(settlementFee2).to.not.eq(0);
 
@@ -5638,15 +5598,29 @@ describe("EIP712", async function () {
         );
 
         // Confirm that the collateral token balance for both users has increased
-        expect(await collateralToken.balanceOf(user1.address)).to.eq(
+        const balanceOfCollateralTokenAfterUser1 = await collateralToken.balanceOf(
+          user1.address
+        );
+        const balanceOfCollateralTokenAfterUser2 = await collateralToken.balanceOf(
+          user2.address
+        );
+        expect(balanceOfCollateralTokenAfterUser1).to.closeTo(
           balanceOfCollateralTokenBeforeUser1.add(
             collateralAmountRemovedNetMaker
-          )
+          ),
+          1
         );
-        expect(await collateralToken.balanceOf(user2.address)).to.eq(
+        expect(balanceOfCollateralTokenAfterUser2).to.closeTo(
           balanceOfCollateralTokenBeforeUser2.add(
             collateralAmountRemovedNetTaker
-          )
+          ),
+          1
+        );
+        // As the individual user balances may be off by 1, check that the combined balance is as expected
+        expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -5713,12 +5687,12 @@ describe("EIP712", async function () {
         const protocolFeeRemainingCollateral = calcFee(
           feesParams.protocolFee,
           poolParamsAfter.collateralBalance,
-          collateralTokenDecimals
+          decimals
         );
         const settlementFeeRemainingCollateral = calcFee(
           feesParams.settlementFee,
           poolParamsAfter.collateralBalance,
-          collateralTokenDecimals
+          decimals
         );
         expect(await getterFacet.getReservedClaim(poolId)).to.eq(0);
         expect(await getterFacet.getClaim(collateralToken.address, treasury.address))
@@ -5804,8 +5778,13 @@ describe("EIP712", async function () {
         // would be zero in which case the protocol will revert. That's why using
         // `positionTokenAmountSecondFill = BigNumber.from(1)` will not work here (as opposed to
         // equivalent `fillOfferAddLiquidity` test)
+        const relevantStateParamsBefore =
+          await getterFacet.getOfferRelevantStateRemoveLiquidity(
+            offerRemoveLiquidity,
+            signature
+          );
         const positionTokenAmountSecondFill = BigNumber.from(
-          offerRemoveLiquidity.minimumTakerFillAmount
+          relevantStateParamsBefore.actualTakerFillableAmount
         ).sub(1);
         expect(positionTokenAmountSecondFill).to.be.lt(
           BigNumber.from(offerRemoveLiquidity.positionTokenAmount).sub(
@@ -5855,10 +5834,8 @@ describe("EIP712", async function () {
         await mineBlock();
 
         // Create a new pool with the new fee settings
-        createPoolParams.expiryTime = await getExpiryTime(7200); // Overwrite `expiryTime` as `getExpiryTime` doesn't capture the last block timestamp from this test
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        createContingentPoolParams.expiryTime = await getExpiryTime(7200); // Overwrite `expiryTime` as `getExpiryTime` doesn't capture the last block timestamp from this test
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -5874,14 +5851,15 @@ describe("EIP712", async function () {
 
         // Generate create remove liquidity offer as the one generated in the `beforeEach` block
         // expired due to the shift in time
-        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          user2.address.toString(), // taker
-          true, // maker is long
-          poolId,
-          collateralTokenDecimals,
-          "0", // minTakerFillAmount
-        );
+        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: user2.address.toString(),
+          positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+          makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+          makerIsLong: true,
+          poolId: poolId,
+          minimumTakerFillAmount: "0"
+        });
 
         // Generate signature and typed message hash
         [signature, typedMessageHash] =
@@ -6315,14 +6293,12 @@ describe("EIP712", async function () {
 
     describe("fillOfferRemoveLiquidity with non-zero taker address and makerIsLong as false", async function () {
       beforeEach(async () => {
-        // Reset long, short token recipient in createPoolParams
-        createPoolParams.longRecipient = user2.address;
-        createPoolParams.shortRecipient = user1.address;
+        // Reset long, short token recipient in createContingentPoolParams
+        createContingentPoolParams.longRecipient = user2.address;
+        createContingentPoolParams.shortRecipient = user1.address;
 
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -6336,14 +6312,18 @@ describe("EIP712", async function () {
         shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
-        // Generate offerRemoveLiquidity
-        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          user2.address.toString(), // taker
-          false, // makerIsLong
-          poolId,
-          collateralTokenDecimals
-        );
+        // Generate offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+        // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+        // underlying contingent pool
+        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: user2.address.toString(),
+          positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+          makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+          makerIsLong: false,
+          poolId: poolId,
+          minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+        });
 
         // Generate signature
         [signature] = await generateSignatureAndTypedMessageHash(
@@ -6369,13 +6349,13 @@ describe("EIP712", async function () {
         protocolFee = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(protocolFee).to.not.eq(0);
         settlementFee = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(settlementFee).to.not.eq(0);
 
@@ -6440,15 +6420,29 @@ describe("EIP712", async function () {
         );
 
         // Confirm that the collateral token balance for both users has increased
-        expect(await collateralToken.balanceOf(user1.address)).to.eq(
+        const balanceOfCollateralTokenAfterUser1 = await collateralToken.balanceOf(
+          user1.address
+        );
+        const balanceOfCollateralTokenAfterUser2 = await collateralToken.balanceOf(
+          user2.address
+        );
+        expect(balanceOfCollateralTokenAfterUser1).to.closeTo(
           balanceOfCollateralTokenBeforeUser1.add(
             collateralAmountRemovedNetMaker
-          )
+          ),
+          1
         );
-        expect(await collateralToken.balanceOf(user2.address)).to.eq(
+        expect(balanceOfCollateralTokenAfterUser2).to.closeTo(
           balanceOfCollateralTokenBeforeUser2.add(
             collateralAmountRemovedNetTaker
-          )
+          ),
+          1
+        );
+        // As the individual user balances may be off by 1, check that the combined balance is as expected
+        expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6463,9 +6457,7 @@ describe("EIP712", async function () {
     describe("fillOfferRemoveLiquidity with zero taker address", async function () {
       beforeEach(async () => {
         // Create a contingent pool on DIVA Protocol
-        const tx = await poolFacet
-          .connect(user1)
-          .createContingentPool(createPoolParams);
+        const tx = await createContingentPool(createContingentPoolParams);
         const receipt = await tx.wait();
 
         // Get poolId of the newly created pool from event
@@ -6479,14 +6471,18 @@ describe("EIP712", async function () {
         shortTokenInstance = await positionTokenAttachFixture(poolParams.shortToken);
         longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
-        // Generate offerRemoveLiquidity
-        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-          user1.address.toString(), // maker
-          ethers.constants.AddressZero, // taker = zero address
-          true, // makerIsLong
-          poolId,
-          collateralTokenDecimals
-        );
+        // Generate offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+        // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+        // underlying contingent pool
+        offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+          maker: user1.address.toString(),
+          taker: ethers.constants.AddressZero,
+          positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+          makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+          makerIsLong: true,
+          poolId: poolId,
+          minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+        });
 
         // Generate signature
         [signature] = await generateSignatureAndTypedMessageHash(
@@ -6512,13 +6508,13 @@ describe("EIP712", async function () {
         protocolFee = calcFee(
           feesParams.protocolFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(protocolFee).to.not.eq(0);
         settlementFee = calcFee(
           feesParams.settlementFee,
           BigNumber.from(positionTokenFillAmount),
-          collateralTokenDecimals
+          decimals
         );
         expect(settlementFee).to.not.eq(0);
 
@@ -6582,15 +6578,29 @@ describe("EIP712", async function () {
         );
 
         // Confirm that the collateral token balance for both users has increased
-        expect(await collateralToken.balanceOf(user1.address)).to.eq(
+        const balanceOfCollateralTokenAfterUser1 = await collateralToken.balanceOf(
+          user1.address
+        );
+        const balanceOfCollateralTokenAfterUser2 = await collateralToken.balanceOf(
+          user2.address
+        );
+        expect(balanceOfCollateralTokenAfterUser1).to.closeTo(
           balanceOfCollateralTokenBeforeUser1.add(
             collateralAmountRemovedNetMaker
-          )
+          ),
+          1
         );
-        expect(await collateralToken.balanceOf(user2.address)).to.eq(
+        expect(balanceOfCollateralTokenAfterUser2).to.closeTo(
           balanceOfCollateralTokenBeforeUser2.add(
             collateralAmountRemovedNetTaker
-          )
+          ),
+          1
+        );
+        // As the individual user balances may be off by 1, check that the combined balance is as expected
+        expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
+          balanceOfCollateralTokenBeforeUser1
+            .add(balanceOfCollateralTokenBeforeUser2)
+            .add(collateralToReturnNet)
         );
 
         // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6610,9 +6620,7 @@ describe("EIP712", async function () {
       // ---------
 
       // Create first contingent pool on DIVA Protocol
-      const tx1 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx1 = await createContingentPool(createContingentPoolParams);
       const receipt1 = await tx1.wait();
 
       // Get poolId of the newly created pool from event
@@ -6637,14 +6645,18 @@ describe("EIP712", async function () {
       const supplyShort1Before = await shortTokenInstance1.totalSupply();
       const supplyLong1Before = await longTokenInstance1.totalSupply();
 
-      // Generate first offerRemoveLiquidity
-      const offerRemoveLiquidity1 = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(),
-        user2.address.toString(),
-        true,
-        poolId1,
-        collateralTokenDecimals
-      );
+      // Generate first offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+      // underlying contingent pool.
+      const offerRemoveLiquidity1 = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId1,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       const [signature1, typedMessageHash1] =
@@ -6664,13 +6676,13 @@ describe("EIP712", async function () {
       const protocolFee1 = calcFee(
         feesParams1.protocolFee,
         BigNumber.from(positionTokenFillAmount1),
-        collateralTokenDecimals
+        decimals
       );
       expect(protocolFee1).to.not.eq(0);
       const settlementFee1 = calcFee(
         feesParams1.settlementFee,
         BigNumber.from(positionTokenFillAmount1),
-        collateralTokenDecimals
+        decimals
       );
       expect(settlementFee1).to.not.eq(0);
 
@@ -6713,9 +6725,7 @@ describe("EIP712", async function () {
       // ------------------------------------------------
 
       // Create second contingent pool on DIVA Protocol
-      const tx2 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx2 = await createContingentPool(createContingentPoolParams);
       const receipt2 = await tx2.wait();
 
       // Get poolId of the newly created pool from event
@@ -6740,14 +6750,18 @@ describe("EIP712", async function () {
       const supplyShort2Before = await shortTokenInstance2.totalSupply();
       const supplyLong2Before = await longTokenInstance2.totalSupply();
 
-      // Generate second offerRemoveLiquidity
-      const offerRemoveLiquidity2 = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(),
-        user2.address.toString(),
-        true,
-        poolId2,
-        collateralTokenDecimals
-      );
+      // Generate second offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+      // underlying contingent pool.
+      const offerRemoveLiquidity2 = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId2,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       const [signature2, typedMessageHash2] =
@@ -6767,13 +6781,13 @@ describe("EIP712", async function () {
       const protocolFee2 = calcFee(
         feesParams2.protocolFee,
         BigNumber.from(positionTokenFillAmount2),
-        collateralTokenDecimals
+        decimals
       );
       expect(protocolFee2).to.not.eq(0);
       const settlementFee2 = calcFee(
         feesParams2.settlementFee,
         BigNumber.from(positionTokenFillAmount2),
-        collateralTokenDecimals
+        decimals
       );
       expect(settlementFee2).to.not.eq(0);
 
@@ -6941,15 +6955,30 @@ describe("EIP712", async function () {
       // ------------------------------------------------
 
       // Confirm that the collateral token balance for both users has increased
-      expect(await collateralToken.balanceOf(user1.address)).to.eq(
+      const balanceOfCollateralTokenAfterUser1 = await collateralToken.balanceOf(
+        user1.address
+      );
+      const balanceOfCollateralTokenAfterUser2 = await collateralToken.balanceOf(
+        user2.address
+      );
+      expect(balanceOfCollateralTokenAfterUser1).to.closeTo(
         balanceOfCollateralTokenBeforeUser1
           .add(collateralAmountRemovedNetMaker1)
-          .add(collateralAmountRemovedNetMaker2)
+          .add(collateralAmountRemovedNetMaker2),
+        2
       );
-      expect(await collateralToken.balanceOf(user2.address)).to.eq(
+      expect(balanceOfCollateralTokenAfterUser2).to.closeTo(
         balanceOfCollateralTokenBeforeUser2
           .add(collateralAmountRemovedNetTaker1)
-          .add(collateralAmountRemovedNetTaker2)
+          .add(collateralAmountRemovedNetTaker2),
+        2
+      );
+      // As the individual user balances may be off by 2, check that the combined balance is as expected
+      expect(balanceOfCollateralTokenAfterUser1.add(balanceOfCollateralTokenAfterUser2)).to.eq(
+        balanceOfCollateralTokenBeforeUser1
+          .add(balanceOfCollateralTokenBeforeUser2)
+          .add(collateralToReturnNet1)
+          .add(collateralToReturnNet2),
       );
 
       // Confirm that DIVA Protocol's collateral token balance has reduced.
@@ -6966,23 +6995,25 @@ describe("EIP712", async function () {
   describe("cancelOfferRemoveLiquidity", async function () {
     beforeEach(async () => {
       // Create a contingent pool on DIVA protocol
-      const tx = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx = await createContingentPool(createContingentPoolParams);
       const receipt = await tx.wait();
 
       // Get poolId of the newly created pool from event
       poolId = receipt.events?.find((x: any) => x.event === "PoolIssued")?.args
         ?.poolId;
 
-      // Generate offerRemoveLiquidity
-      offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId,
-        collateralTokenDecimals
-      );
+      // Generate offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+      // underlying contingent pool.
+      offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       [signature, typedMessageHash] =
@@ -7242,9 +7273,7 @@ describe("EIP712", async function () {
       // ---------
 
       // Create first contingent pool on DIVA protocol
-      const tx1 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx1 = await createContingentPool(createContingentPoolParams);
       const receipt1 = await tx1.wait();
 
       // Get poolId of the newly created pool from event
@@ -7252,14 +7281,18 @@ describe("EIP712", async function () {
         (x: any) => x.event === "PoolIssued"
       )?.args?.poolId;
 
-      // Generate offerRemoveLiquidity
-      const offerRemoveLiquidity1 = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId1,
-        collateralTokenDecimals
-      );
+      // Generate first offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+      // underlying contingent pool.
+      const offerRemoveLiquidity1 = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId1,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       const [signature1, typedMessageHash1] =
@@ -7273,9 +7306,7 @@ describe("EIP712", async function () {
       // --------------------------------------------------
 
       // Create second contingent pool on DIVA protocol
-      const tx2 = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx2 = await createContingentPool(createContingentPoolParams);
       const receipt2 = await tx2.wait();
 
       // Get poolId of the newly created pool from event
@@ -7283,14 +7314,18 @@ describe("EIP712", async function () {
         (x: any) => x.event === "PoolIssued"
       )?.args?.poolId;
 
-      // Generate offerRemoveLiquidity
-      const offerRemoveLiquidity2 = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId2,
-        collateralTokenDecimals
-      );
+      // Generate second offerRemoveLiquidity. Set `positionTokenAmount`, `makerCollateralAmount`,
+      // and `minimumTakerFillAmount` relative to `collateralAmount` used when creating the
+      // underlying contingent pool.
+      const offerRemoveLiquidity2 = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId2,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       const [signature2, typedMessageHash2] =
@@ -7347,9 +7382,7 @@ describe("EIP712", async function () {
       // Set pool capacity to max amount to not run into any capacity constraints during the tests
 
       // Create a contingent pool on DIVA protocol
-      const tx = await poolFacet
-        .connect(user1)
-        .createContingentPool(createPoolParams);
+      const tx = await createContingentPool(createContingentPoolParams);
       const receipt = await tx.wait();
 
       // Get poolId of the newly created pool from event
@@ -7364,13 +7397,15 @@ describe("EIP712", async function () {
       longTokenInstance = await positionTokenAttachFixture(poolParams.longToken);
 
       // Generate offerRemoveLiquidity
-      offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails(
-        user1.address.toString(), // maker
-        user2.address.toString(), // taker
-        true, // makerIsLong
-        poolId,
-        collateralTokenDecimals
-      );
+      offerRemoveLiquidity = await generateRemoveLiquidityOfferDetails({
+        maker: user1.address.toString(),
+        taker: user2.address.toString(),
+        positionTokenAmount: createContingentPoolParams.collateralAmount.div(3).toString(),
+        makerCollateralAmount: createContingentPoolParams.collateralAmount.div(5).toString(),
+        makerIsLong: true,
+        poolId: poolId,
+        minimumTakerFillAmount: createContingentPoolParams.collateralAmount.div(4).toString()
+      });
 
       // Generate signature and typed message hash
       [signature, typedMessageHash] =

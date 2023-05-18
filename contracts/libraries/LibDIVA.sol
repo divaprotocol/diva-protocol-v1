@@ -450,13 +450,13 @@ library LibDIVA {
         uint256 _gradient,
         uint256 _finalReferenceValue,
         uint256 _collateralTokenDecimals,
-        uint96 _fee // max value: 5% <= 2^96
+        uint96 _fee // max value: 1.5% <= 2^96
     ) internal pure returns (uint96 payoffShortNet, uint96 payoffLongNet) {
         uint256 _SCALINGFACTOR = uint256(10**(18 - _collateralTokenDecimals));
         uint256 _UNIT = SafeDecimalMath.UNIT;
         uint256 _payoffLong;
         uint256 _payoffShort;
-        // Note: _gradient * _SCALINGFACTOR not stored in memory for calculations
+        // Note: _gradient * _SCALINGFACTOR not cached for calculations
         // as it would result in a stack-too-deep error
 
         if (_finalReferenceValue == _inflection) {
@@ -773,11 +773,6 @@ library LibDIVA {
             return false;
         }
 
-        // Collateral amount should not be smaller than 1e6
-        if (_poolParams.collateralAmount < 10**6) {
-            return false;
-        }
-
         // Collateral amount should not be greater than pool capacity
         if (_poolParams.collateralAmount > _poolParams.capacity) {
             return false;
@@ -815,6 +810,10 @@ library LibDIVA {
         // Connect to collateral token contract of the given pool Id
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
+        uint256 _collateralAmountIncr = addLiquidityParams
+            .collateralAmountMsgSender +
+            addLiquidityParams.collateralAmountMaker;
+
         // Transfer approved collateral tokens from `msg.sender` (taker in `fillOfferAddLiquidity`) to `this`.
         // Requires prior approval from `msg.sender` to execute this transaction. Note that
         // the transfer will revert for fee tokens.
@@ -839,14 +838,10 @@ library LibDIVA {
             uint256 _after = collateralToken.balanceOf(address(this));
 
             // Revert if a fee was applied during transfer. Throws if `_before > _after`.
-            if (_after - _before != addLiquidityParams.collateralAmountMsgSender + addLiquidityParams.collateralAmountMaker) {
+            if (_after - _before != _collateralAmountIncr) {
                 revert FeeTokensNotSupported();
             }
         }
-
-        uint256 _collateralAmountIncr = addLiquidityParams
-            .collateralAmountMsgSender +
-            addLiquidityParams.collateralAmountMaker;
 
         // Increase `collateralBalance`
         _pool.collateralBalance += _collateralAmountIncr;

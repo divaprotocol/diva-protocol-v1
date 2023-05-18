@@ -3,6 +3,7 @@ import { getMessage } from "eip-712";
 import { BigNumber } from "ethers";
 import { parseUnits, splitSignature } from "ethers/lib/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { decimals } from "../utils";
 
 import { getExpiryTime } from "./blocktime";
 
@@ -54,34 +55,32 @@ export const calcFillableRemainingAmount = (
 };
 
 export const generateCreateContingentPoolOfferDetails = async ({
-  collateralTokenDecimals = 18,
   maker,
   taker,
-  makerCollateralAmount = parseUnits("20", collateralTokenDecimals).toString(),
-  takerCollateralAmount = parseUnits("80", collateralTokenDecimals).toString(),
-  makerIsLong = true,
-  offerExpiryIn = 100000,
-  minimumTakerFillAmount = parseUnits("60", collateralTokenDecimals).toString(),
+  makerCollateralAmount = parseUnits("20", decimals).toString(),
+  takerCollateralAmount = parseUnits("80", decimals).toString(),
+  makerIsLong,
+  offerExpiryInSeconds = 100000,
+  minimumTakerFillAmount = parseUnits("60", decimals).toString(),
   referenceAsset = "BTC/USD",
-  poolExpiryIn = 7200,
+  poolExpiryInSeconds = 7200,
   floor = parseUnits("40000").toString(),
   inflection = parseUnits("60000").toString(),
   cap = parseUnits("80000").toString(),
-  gradient = parseUnits("0.7", collateralTokenDecimals).toString(),
+  gradient = parseUnits("0.7", decimals).toString(),
   collateralToken,
   dataProvider,
-  capacity = parseUnits("200", collateralTokenDecimals).toString(),
+  capacity = parseUnits("200", decimals).toString(),
 }: {
-  collateralTokenDecimals?: number;
   maker: string;
   taker: string;
   makerCollateralAmount?: string;
   takerCollateralAmount?: string;
-  makerIsLong?: boolean;
-  offerExpiryIn?: number;
+  makerIsLong: boolean;
+  offerExpiryInSeconds?: number;
   minimumTakerFillAmount?: string;
   referenceAsset?: string;
-  poolExpiryIn?: number;
+  poolExpiryInSeconds?: number;
   floor?: string;
   inflection?: string;
   cap?: string;
@@ -96,10 +95,10 @@ export const generateCreateContingentPoolOfferDetails = async ({
     makerCollateralAmount,
     takerCollateralAmount,
     makerIsLong,
-    offerExpiry: await getExpiryTime(offerExpiryIn),
+    offerExpiry: await getExpiryTime(offerExpiryInSeconds),
     minimumTakerFillAmount,
     referenceAsset,
-    expiryTime: await getExpiryTime(poolExpiryIn),
+    expiryTime: await getExpiryTime(poolExpiryInSeconds),
     floor,
     inflection,
     cap,
@@ -112,46 +111,65 @@ export const generateCreateContingentPoolOfferDetails = async ({
   };
 };
 
-export const generateAddLiquidityOfferDetails = async (
-  maker: string,
-  taker: string,
-  makerIsLong: boolean,
-  poolId: string,
-  collateralTokenDecimals: number
-): Promise<OfferAddLiquidity> => {
+export const generateAddLiquidityOfferDetails = async ({
+    maker,
+    taker,
+    makerCollateralAmount = parseUnits("20", decimals).toString(),
+    takerCollateralAmount = parseUnits("80", decimals).toString(),
+    makerIsLong,
+    offerExpiryInSeconds = 1000,
+    poolId,
+    minimumTakerFillAmount = parseUnits("60", decimals).toString(),
+} : {
+    maker: string,
+    taker: string,
+    makerCollateralAmount?: string,
+    takerCollateralAmount?: string,
+    makerIsLong: boolean,
+    offerExpiryInSeconds?: number;
+    poolId: string,
+    minimumTakerFillAmount?: string
+}): Promise<OfferAddLiquidity> => {
   return {
     maker,
     taker,
-    makerCollateralAmount: parseUnits("20", collateralTokenDecimals).toString(),
-    takerCollateralAmount: parseUnits("80", collateralTokenDecimals).toString(),
+    makerCollateralAmount,
+    takerCollateralAmount,
     makerIsLong,
-    offerExpiry: await getExpiryTime(1000),
-    minimumTakerFillAmount: parseUnits(
-      "60",
-      collateralTokenDecimals
-    ).toString(),
+    offerExpiry: await getExpiryTime(offerExpiryInSeconds),
     poolId,
+    minimumTakerFillAmount,
     salt: Date.now().toString(),
   };
 };
 
-export const generateRemoveLiquidityOfferDetails = async (
+export const generateRemoveLiquidityOfferDetails = async ({
+  maker,
+  taker,
+  positionTokenAmount = parseUnits("20", decimals).toString(),
+  makerCollateralAmount = parseUnits("10", decimals).toString(),
+  makerIsLong,
+  offerExpiryInSeconds = 1000,
+  poolId,
+  minimumTakerFillAmount = parseUnits("10", decimals).toString(),
+} : {
   maker: string,
   taker: string,
+  positionTokenAmount?: string,
+  makerCollateralAmount?: string,
   makerIsLong: boolean,
+  offerExpiryInSeconds?: number;
   poolId: string,
-  collateralTokenDecimals: number,
   minimumTakerFillAmount?: string,
-): Promise<OfferRemoveLiquidity> => {
-  const minTakerFillAmount = minimumTakerFillAmount ?? parseUnits("10", collateralTokenDecimals).toString();
+}): Promise<OfferRemoveLiquidity> => {
   return {
     maker,
     taker,
-    positionTokenAmount: parseUnits("20", collateralTokenDecimals).toString(),
-    makerCollateralAmount: parseUnits("10", collateralTokenDecimals).toString(),
+    positionTokenAmount,
+    makerCollateralAmount,
     makerIsLong,
-    offerExpiry: await getExpiryTime(1000),
-    minimumTakerFillAmount: minTakerFillAmount,
+    offerExpiry: await getExpiryTime(offerExpiryInSeconds),
+    minimumTakerFillAmount,
     poolId,
     salt: Date.now().toString(),
   };

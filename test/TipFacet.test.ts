@@ -17,20 +17,18 @@ import {
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
 import {
-    getExpiryTime,
     getPoolIdFromTx,
-    calcFee
+    calcFee,
+    createContingentPool,
+    decimals,
+    defaultPoolParameters,
+    CreateContingentPoolParams
 } from "../utils";
 import { ONE_DAY, GovParams, Status } from "../constants";
 import { deployMain } from "../scripts/deployMain";
 
 import { erc20DeployFixture } from "./fixtures";
 import { setNextBlockTimestamp, latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
-
-// -------
-// Input: Collateral token decimals (>= 6 && <= 18)
-// -------
-const decimals = 6;
 
 describe("TipFacet", async function () {
     let contractOwner: SignerWithAddress,
@@ -77,7 +75,7 @@ describe("TipFacet", async function () {
     let tx: ContractTransaction;
     let receipt: ContractReceipt;
 
-    const MAX_UINT = ethers.constants.MaxUint256;
+    let createContingentPoolParams: CreateContingentPoolParams;
 
     before(async function () {
         [contractOwner, treasury, fallbackDataProvider, tipper, oracle, user1, user2, ...accounts] =
@@ -151,46 +149,23 @@ describe("TipFacet", async function () {
             parseUnits(user2StartCollateralTokenBalance.toString(), decimals)
           );
       });
-  
-      // Function to create a contingent pool pre-populated with default values that can be overwritten depending on the test case
-      async function createContingentPool({
-        referenceAsset = "BTC/USD",
-        expireInSeconds = 7200,
-        floor = 1198.53,
-        inflection = 1605.33,
-        cap = 2001.17,
-        gradient = 0.33,
-        collateralAmount = 15001.358,
-        collateralToken = collateralTokenInstance.address,
-        dataProvider = oracle.address,
-        capacity = MAX_UINT,
-        longRecipient = user1.address,
-        shortRecipient = user1.address,
-        permissionedERC721Token = ethers.constants.AddressZero,
-        poolCreater = user1,
-      } = {}): Promise<ContractTransaction> {
-        return await poolFacet.connect(poolCreater).createContingentPool({
-          referenceAsset,
-          expiryTime: await getExpiryTime(expireInSeconds),
-          floor: parseUnits(floor.toString()),
-          inflection: parseUnits(inflection.toString()),
-          cap: parseUnits(cap.toString()),
-          gradient: parseUnits(gradient.toString(), decimals),
-          collateralAmount: parseUnits(collateralAmount.toString(), decimals),
-          collateralToken,
-          dataProvider,
-          capacity,
-          longRecipient,
-          shortRecipient,
-          permissionedERC721Token,
-        });
-      }
 
     describe("addTip", async () => {
         
         beforeEach(async function () {
+            // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+            createContingentPoolParams = {
+              ...defaultPoolParameters,
+              collateralToken: collateralTokenInstance.address,
+              dataProvider: oracle.address,
+              poolCreater: user1,
+              poolFacet: poolFacet,
+              longRecipient: user1.address,
+              shortRecipient: user1.address,
+            }
+
             // Create a contingent pool
-            const tx = await createContingentPool();
+            const tx = await createContingentPool(createContingentPoolParams);
             poolId = await getPoolIdFromTx(tx);
             poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         });
@@ -588,12 +563,26 @@ describe("TipFacet", async function () {
 
         beforeEach(async function () {
             // Create contingent pool 1
-            const tx1 = await createContingentPool();
+            const tx1 = await createContingentPool({
+              collateralToken: collateralTokenInstance.address,
+              dataProvider: oracle.address,
+              poolCreater: user1,
+              poolFacet: poolFacet,
+              longRecipient: user1.address,
+              shortRecipient: user1.address,
+            });
             poolId1 = await getPoolIdFromTx(tx1);
             pool1ParamsBefore = await getterFacet.getPoolParameters(poolId1);
 
             // Create contingent pool 2
-            const tx2 = await createContingentPool();
+            const tx2 = await createContingentPool({
+              collateralToken: collateralTokenInstance.address,
+              dataProvider: oracle.address,
+              poolCreater: user1,
+              poolFacet: poolFacet,
+              longRecipient: user1.address,
+              shortRecipient: user1.address,
+            });
             poolId2 = await getPoolIdFromTx(tx2);
             pool2ParamsBefore = await getterFacet.getPoolParameters(poolId2);
         });

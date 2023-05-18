@@ -3,7 +3,6 @@ import { ethers } from "hardhat";
 import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
   GetterFacet,
@@ -26,20 +25,18 @@ import {
 } from "../constants";
 import {
   mineBlock,
-  getExpiryTime,
   getLastTimestamp,
   setNextTimestamp,
   calcFee,
   getPoolIdFromTx,
+  createContingentPool,
+  decimals,
+  defaultPoolParameters,
+  CreateContingentPoolParams,
 } from "../utils";
 import { deployMain } from "../scripts/deployMain";
 
 import { erc20DeployFixture } from "./fixtures";
-
-// -------
-// Input: Collateral token decimals (>= 6 && <= 18)
-// -------
-const decimals = 6;
 
 const MAX_UINT = ethers.constants.MaxUint256;
 
@@ -89,6 +86,8 @@ describe("GovernanceFacet", async function () {
     treasuryInfo: any;
 
   let newTreasuryAddress: string;
+
+  let createContingentPoolParams: CreateContingentPoolParams;
 
   before(async function () {
     [contractOwner, treasury, oracle, user1, user2] = await ethers.getSigners(); // keep contractOwner and treasury at first two positions in line with deploy script
@@ -167,6 +166,17 @@ describe("GovernanceFacet", async function () {
     await collateralTokenInstance
       .connect(user1)
       .approve(diamondAddress, MAX_UINT);
+
+    // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+    createContingentPoolParams = {
+      ...defaultPoolParameters,
+      collateralToken: collateralTokenInstance.address,
+      dataProvider: oracle.address,
+      poolCreater: user1,
+      poolFacet: poolFacet,
+      longRecipient: user1.address,
+      shortRecipient: user1.address,
+    }
   });
 
   afterEach(async () => {
@@ -192,40 +202,6 @@ describe("GovernanceFacet", async function () {
     nextBlockTimestamp = (await getLastTimestamp()) + governanceDelay + 1;
     await mineBlock(nextBlockTimestamp);
   });
-
-  // Function to create a contingent pool pre-populated with default values that can be overwritten depending on the test case
-  const createContingentPool = async ({
-    referenceAsset = "BTC/USD",
-    expireInSeconds = 7200,
-    floor = 1198.53,
-    inflection = 1605.33,
-    cap = 2001.17,
-    gradient = 0.33,
-    collateralAmount = 15001.358,
-    collateralToken = collateralTokenInstance.address,
-    dataProvider = oracle.address,
-    capacity = MAX_UINT,
-    longRecipient = user1.address,
-    shortRecipient = user1.address, // set equal to longRecipient as non-equal case is covered in PoolFacet.test.js
-    permissionedERC721Token = ethers.constants.AddressZero,
-    poolCreater = user1,
-  } = {}): Promise<ContractTransaction> => {
-    return await poolFacet.connect(poolCreater).createContingentPool({
-      referenceAsset,
-      expiryTime: await getExpiryTime(expireInSeconds),
-      floor: parseUnits(floor.toString()),
-      inflection: parseUnits(inflection.toString()),
-      cap: parseUnits(cap.toString()),
-      gradient: parseUnits(gradient.toString(), decimals),
-      collateralAmount: parseUnits(collateralAmount.toString(), decimals),
-      collateralToken,
-      dataProvider,
-      capacity,
-      longRecipient,
-      shortRecipient,
-      permissionedERC721Token,
-    });
-  };
 
   describe("updateFees", async () => {
     // -------------------------------------------
@@ -277,10 +253,10 @@ describe("GovernanceFacet", async function () {
       // Arrange: Create a contingent pool and remove liquidity, and afterwards set a new protocol fee
       // ---------
       // Set token amount to redeem
-      const positionTokensToRedeem = parseUnits("66", decimals);
+      const positionTokensToRedeem = createContingentPoolParams.collateralAmount.sub(1);
 
       // Create a contingent pool before fees are updated
-      const tx1 = await createContingentPool();
+      const tx1 = await createContingentPool(createContingentPoolParams);
       lastBlockTimestamp = await getLastTimestamp();
       poolId1 = await getPoolIdFromTx(tx1);
 
@@ -318,7 +294,7 @@ describe("GovernanceFacet", async function () {
       await mineBlock(nextBlockTimestamp);
 
       // Create a new congingent pool under the new fee regime
-      const tx2 = await createContingentPool();
+      const tx2 = await createContingentPool(createContingentPoolParams);
       poolId2 = await getPoolIdFromTx(tx2);
 
       // Get pool params
@@ -632,7 +608,7 @@ describe("GovernanceFacet", async function () {
       govParamsAfter = await getterFacet.getGovernanceParameters();
 
       // Create a contingent pool
-      const tx = await createContingentPool();
+      const tx = await createContingentPool(createContingentPoolParams);
       poolId = await getPoolIdFromTx(tx);
 
       // Get pool params with pool id

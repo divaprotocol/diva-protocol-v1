@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -20,12 +20,15 @@ import {
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
 import {
-  getExpiryTime,
   getLastTimestamp,
   setNextTimestamp,
   calcFee,
   getPoolIdFromTx,
   mineBlock,
+  createContingentPool,
+  decimals,
+  defaultPoolParameters,
+  CreateContingentPoolParams,
 } from "../utils";
 import { GovParams, ONE_DAY } from "../constants";
 import { deployMain } from "../scripts/deployMain";
@@ -36,11 +39,6 @@ import {
   positionTokenAttachFixture,
   permissionedPositionTokenAttachFixture,
 } from "./fixtures";
-
-// -------
-// Input: Collateral token decimals (>= 6 && <= 18)
-// -------
-const decimals = 6;
 
 describe("LiquidityFacet", async function () {
   let contractOwner: SignerWithAddress,
@@ -62,7 +60,7 @@ describe("LiquidityFacet", async function () {
   let collateralTokenInstance: MockERC20;
   let governanceDelay: number = 60 * ONE_DAY;
 
-  const MAX_UINT = ethers.constants.MaxUint256;
+  let createContingentPoolParams: CreateContingentPoolParams;
 
   before(async function () {
     [contractOwner, treasury, oracle, user1, user2, user3] =
@@ -125,7 +123,6 @@ describe("LiquidityFacet", async function () {
       user1StartCollateralTokenBalance = 100000;
       user2StartCollateralTokenBalance = 50000;
       additionalCollateralAmount = parseUnits("5000", decimals);
-      positionTokensToRedeem = parseUnits("66", decimals);
 
       // Mint ERC20 collateral token with `decimals` decimals and without fees and send it to user 1
       collateralTokenInstance = await erc20DeployFixture(
@@ -160,41 +157,20 @@ describe("LiquidityFacet", async function () {
           diamondAddress,
           parseUnits(user2StartCollateralTokenBalance.toString(), decimals)
         );
-    });
+      
+      // Specify the create contingent pool parameters. Refer to `utils/libDiva.ts` for default values.
+      createContingentPoolParams = {
+        ...defaultPoolParameters,
+        collateralToken: collateralTokenInstance.address,
+        dataProvider: oracle.address,
+        poolCreater: user1,
+        poolFacet: poolFacet,
+        longRecipient: user1.address,
+        shortRecipient: user1.address
+      }
 
-    // Function to create a contingent pool pre-populated with default values that can be overwritten depending on the test case
-    async function createContingentPool({
-      referenceAsset = "BTC/USD",
-      expireInSeconds = 7200,
-      floor = 1198.53,
-      inflection = 1605.33,
-      cap = 2001.17,
-      gradient = 0.33,
-      collateralAmount = 15001.358,
-      collateralToken = collateralTokenInstance.address,
-      dataProvider = oracle.address,
-      capacity = MAX_UINT,
-      longRecipient = user1.address,
-      shortRecipient = user1.address, // set equal to longRecipient as non-equal case is covered in PoolFacet.test.js
-      permissionedERC721Token = ethers.constants.AddressZero,
-      poolCreater = user1,
-    } = {}): Promise<ContractTransaction> {
-      return await poolFacet.connect(poolCreater).createContingentPool({
-        referenceAsset,
-        expiryTime: await getExpiryTime(expireInSeconds),
-        floor: parseUnits(floor.toString()),
-        inflection: parseUnits(inflection.toString()),
-        cap: parseUnits(cap.toString()),
-        gradient: parseUnits(gradient.toString(), decimals),
-        collateralAmount: parseUnits(collateralAmount.toString(), decimals),
-        collateralToken,
-        dataProvider,
-        capacity,
-        longRecipient,
-        shortRecipient,
-        permissionedERC721Token,
-      });
-    }
+      positionTokensToRedeem = createContingentPoolParams.collateralAmount.div(3);
+    });
 
     describe("addLiquidity with zero permissionedERC721Token", async () => {
       let maxPoolCapacity: BigNumber;
@@ -211,7 +187,7 @@ describe("LiquidityFacet", async function () {
           // ---------
           // Arrange: Create a contingent pool
           // ---------
-          const tx = await createContingentPool();
+          const tx = await createContingentPool(createContingentPoolParams);
           poolId = await getPoolIdFromTx(tx);
           poolParamsBefore = await getterFacet.getPoolParameters(poolId);
           shortTokenInstance = await positionTokenAttachFixture(
@@ -231,7 +207,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create a contingent pool
         // ---------
-        const tx = await createContingentPool();
+        const tx = await createContingentPool(createContingentPoolParams);
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         shortTokenInstance = await positionTokenAttachFixture(
@@ -390,6 +366,7 @@ describe("LiquidityFacet", async function () {
           parseUnits("100", decimals)
         );
         const tx = await createContingentPool({
+          ...createContingentPoolParams,
           capacity: maxPoolCapacity,
         });
         poolId = await getPoolIdFromTx(tx);
@@ -572,7 +549,8 @@ describe("LiquidityFacet", async function () {
         nextBlockTimestamp = (await getLastTimestamp()) + 1;
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
-          expireInSeconds: 2,
+          ...createContingentPoolParams,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -604,7 +582,8 @@ describe("LiquidityFacet", async function () {
         nextBlockTimestamp = (await getLastTimestamp()) + 1;
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
-          expireInSeconds: 2,
+          ...createContingentPoolParams,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -633,16 +612,19 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create pool with capacity > 0 (chosen to be equal to collateral amount in the pool)
         // ---------
-        maxPoolCapacity = parseUnits("15001.358", decimals);
+        maxPoolCapacity = createContingentPoolParams.collateralAmount
+          .add(parseUnits("1", decimals));
         const tx = await createContingentPool({
+          ...createContingentPoolParams,
           capacity: maxPoolCapacity,
         });
         poolId = await getPoolIdFromTx(tx);
+        poolParams = await getterFacet.getPoolParameters(poolId);
 
         // ---------
         // Act & Assert: Check that adding liquidity fails if the pool capacity is exceeded
         // ---------
-        additionalCollateralAmount = parseUnits("1", decimals);
+        additionalCollateralAmount = parseUnits("2", decimals);
         await expect(
           liquidityFacet.connect(user2).addLiquidity(
             poolId,
@@ -811,7 +793,10 @@ describe("LiquidityFacet", async function () {
         await permissionedERC721TokenInstance.connect(user2).mint();
         permissionedERC721Token = permissionedERC721TokenInstance.address;
 
-        const tx = await createContingentPool({ permissionedERC721Token });
+        const tx = await createContingentPool({
+          ...createContingentPoolParams,
+          permissionedERC721Token: permissionedERC721Token
+        });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         shortTokenInstance = await permissionedPositionTokenAttachFixture(
@@ -946,7 +931,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create 2 contingent pools and set additional collateral amount
         // ---------
-        let tx = await createContingentPool();
+        let tx = await createContingentPool(createContingentPoolParams);
         const poolId1 = await getPoolIdFromTx(tx);
         const poolParamsBefore1 = await getterFacet.getPoolParameters(poolId1);
         const shortTokenInstance1 = await positionTokenAttachFixture(
@@ -956,7 +941,7 @@ describe("LiquidityFacet", async function () {
           poolParamsBefore1.longToken
         );
 
-        tx = await createContingentPool();
+        tx = await createContingentPool(createContingentPoolParams);
         const poolId2 = await getPoolIdFromTx(tx);
         const poolParamsBefore2 = await getterFacet.getPoolParameters(poolId2);
         const shortTokenInstance2 = await positionTokenAttachFixture(
@@ -1033,7 +1018,7 @@ describe("LiquidityFacet", async function () {
           // ---------
           // Arrange: Create a contingent pool, set amount of position tokens to redeem and calculate fees to be paid
           // ---------
-          const tx = await createContingentPool(); // expires in 7200 seconds
+          const tx = await createContingentPool(createContingentPoolParams); // expires in 7200 seconds
           poolId = await getPoolIdFromTx(tx);
           poolParamsBefore = await getterFacet.getPoolParameters(poolId);
           shortTokenInstance = await positionTokenAttachFixture(
@@ -1093,7 +1078,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create a contingent pool, set amount of position tokens to redeem and calculate fees to be paid
         // ---------
-        const tx = await createContingentPool();
+        const tx = await createContingentPool(createContingentPoolParams);
         poolId = await getPoolIdFromTx(tx);
 
         // Get status before removing liquidity (after the pool has been created)        
@@ -1732,7 +1717,7 @@ describe("LiquidityFacet", async function () {
         govParams = await getterFacet.getGovernanceParameters();
 
         // Create new pool that adopts the new fees
-        const tx = await createContingentPool();
+        const tx = await createContingentPool(createContingentPoolParams);
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         positionTokensToRedeem = parseUnits("0", decimals);
@@ -2002,7 +1987,8 @@ describe("LiquidityFacet", async function () {
         nextBlockTimestamp = (await getLastTimestamp()) + 1;
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await createContingentPool({
-          expireInSeconds: 2,
+          ...createContingentPoolParams,
+          poolExpiryInSeconds: 2,
         });
         poolId = await getPoolIdFromTx(tx);
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -2124,7 +2110,7 @@ describe("LiquidityFacet", async function () {
         await mineBlock(nextBlockTimestamp);
 
         // Create new pool that adopts the new fees
-        const tx = await createContingentPool();
+        const tx = await createContingentPool(createContingentPoolParams);
         poolId = await getPoolIdFromTx(tx);
 
         poolParams = await getterFacet.getPoolParameters(poolId);
@@ -2191,7 +2177,10 @@ describe("LiquidityFacet", async function () {
         permissionedERC721Token = permissionedERC721TokenInstance.address;
         expect(permissionedERC721Token).to.not.eq(ethers.constants.AddressZero);
 
-        const tx = await createContingentPool({ permissionedERC721Token });
+        const tx = await createContingentPool({
+          ...createContingentPoolParams,
+          permissionedERC721Token
+        });
         poolId = await getPoolIdFromTx(tx);
         poolParamsBefore = await getterFacet.getPoolParameters(poolId);
         shortTokenInstance = await positionTokenAttachFixture(
@@ -2201,7 +2190,7 @@ describe("LiquidityFacet", async function () {
           poolParamsBefore.longToken
         );
 
-        positionTokensToRedeem = parseUnits("66", decimals);
+        positionTokensToRedeem = createContingentPoolParams.collateralAmount.div(3);
       });
 
       // -------------------------------------------
@@ -2281,7 +2270,7 @@ describe("LiquidityFacet", async function () {
         // ---------
         // Arrange: Create 2 contingent pools, set amount of position tokens to redeem and calculate
         // ---------
-        let tx = await createContingentPool();
+        let tx = await createContingentPool(createContingentPoolParams);
         // Status of first pool before removing liquidity (after the pool has been created)
         const poolId1 = await getPoolIdFromTx(tx);
         const poolParamsBefore1 = await getterFacet.getPoolParameters(poolId1);
@@ -2305,9 +2294,8 @@ describe("LiquidityFacet", async function () {
           )
         ).to.eq(0);
 
-        tx = await createContingentPool({
-          collateralAmount: 25001.358,
-        });
+        tx = await createContingentPool(createContingentPoolParams);
+
         // Status of second pool before removing liquidity (after the pool has been created)
         const poolId2 = await getPoolIdFromTx(tx);
         const poolParamsBefore2 = await getterFacet.getPoolParameters(poolId2);
@@ -2332,8 +2320,8 @@ describe("LiquidityFacet", async function () {
         ).to.eq(0);
 
         // Format `batchRemoveLiquidity` function input to BigNumber with the right number of decimals
-        const positionTokensToRedeem1 = parseUnits("66", decimals);
-        const positionTokensToRedeem2 = parseUnits("76", decimals);
+        const positionTokensToRedeem1 = createContingentPoolParams.collateralAmount.div(5);
+        const positionTokensToRedeem2 = createContingentPoolParams.collateralAmount.div(4);
 
         // ---------
         // Act: Remove liquidity

@@ -20,7 +20,7 @@ interface IPool {
      * `longRecipient` and `shortRecipient` upon collateral deposit by `msg.sender`. 
      * Provided collateral is kept inside the contract until position tokens are 
      * redeemed by calling `redeemPositionToken` or `removeLiquidity`.
-     * @dev Position token supply equals `collateralAmount` (minimum 1e6).
+     * @dev Position token supply equals `collateralAmount`.
      * Position tokens have the same number of decimals as the collateral token.
      * Only ERC20 tokens that do not charge fees on transfers and have a decimal
      * precision between 6 and 18 are accepted as collateral.
