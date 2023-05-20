@@ -41,7 +41,7 @@ interface IPermissionedPositionToken is IERC20Upgradeable {
     /**
      * @notice Returns the Id of the contingent pool that the position token is
      * linked to in the context of DIVA.
-     * @return The pool Id.
+     * @return The poolId.
      */
     function poolId() external view returns (bytes32);
 
