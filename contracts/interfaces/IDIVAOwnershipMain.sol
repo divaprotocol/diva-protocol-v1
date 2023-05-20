@@ -115,6 +115,7 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
      * @notice Function to return the amount staked by a given `_voter` for a given `_candidate`.
      * @param _voter Voter address.
      * @param _candidate Candidate address.
+     * @return Staked amount for `_candidate` by `_voter`.
      */
     function getStakedAmount(address _voter, address _candidate)
         external
@@ -124,6 +125,7 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
     /**
      * @notice Function to return the amount staked for a given `_candidate`.
      * @param _candidate Candidate address.
+     * @return Staked amount for `_candidate`.
      */
     function getStakedAmount(address _candidate)
         external
@@ -133,6 +135,7 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
     /**
      * @notice Function to get the timestamp of the last stake operation for a
      * given `_user` and `candidate`.
+     * @return Timestamp in seconds since epoch.
      */
     function getTimestampLastStakedForCandidate(
         address _user,
@@ -144,32 +147,38 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
 
     /**
      * @notice Function to return the showdown period end.
+     * @return Timestamp in seconds since epoch.
      */
     function getShowdownPeriodEnd() external view returns (uint256);
 
     /**
      * @notice Function to return the ownership claim submission period end.
+     * @return Timestamp in seconds since epoch.
      */
     function getSubmitOwnershipClaimPeriodEnd() external view returns (uint256);
 
     /**
      * @notice Function to return the cooldown period end.
+     * @return Timestamp in seconds since epoch.
      */
     function getCooldownPeriodEnd() external view returns (uint256);
 
     /**
      * @notice Function to return the DIVA token address that is used for voting.
+     * @return The address of the DIVA token.
      */
     function getDIVAToken() external view returns (address);
 
     /**
      * @notice Function to return the showdown period length in seconds (30 days).
+     * @return Period length in seconds.
      */
     function getShowdownPeriod() external pure returns (uint256);
 
     /**
      * @notice Function to return the ownership claim submission period length
      * in seconds (7 days).
+     * @return Period length in seconds.
      */
     function getSubmitOwnershipClaimPeriod() external pure returns (uint256);
 
@@ -177,11 +186,13 @@ interface IDIVAOwnershipMain is IDIVAOwnershipShared {
      * @notice Function to return the cooldown period length in seconds (7 days)
      * during which no new election cycle can be triggered following the end of an
      * election cycle.
+     * @return Period length in seconds.
      */
     function getCooldownPeriod() external pure returns (uint256);
 
     /**
      * @notice Function to return the minimum staking period (7 days).
+     * @return Period length in seconds.
      */
     function getMinStakingPeriod() external pure returns (uint256);
 }
