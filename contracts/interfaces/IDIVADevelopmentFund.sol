@@ -108,18 +108,21 @@ interface IDIVADevelopmentFund {
 
     /**
      * @notice Function to return the number of deposits.
+     * @return The number of deposits.
      */
     function getDepositsLength() external view returns (uint256);
 
     /**
      * @notice Function to return the DIVAOwnership contract address on
      * the corresponding chain.
+     * @return The address of the DIVAOwnership contract.
      */
     function getDivaOwnership() external view returns (IDIVAOwnershipShared);
 
     /**
      * @notice Function to get the deposit info for a given `_index`.
      * @param _index Deposit index.
+     * @return Deposit info.
      */
     function getDepositInfo(uint256 _index)
         external
@@ -135,6 +138,8 @@ interface IDIVADevelopmentFund {
      * @param _token Token address.
      * @param _startIndex Start index of deposit indices list to get.
      * @param _endIndex End index of deposit indices list to get.
+     * @return An array of deposit indices for `_token` within the specified
+     * range.
      */
     function getDepositIndices(
         address _token,
@@ -146,6 +151,7 @@ interface IDIVADevelopmentFund {
      * @notice Function to get the length of deposit indices for a given `_token`.
      * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
      * @param _token Token address.
+     * @return The length of deposit indices for the specified `_token`.
      */
     function getDepositIndicesLengthForToken(address _token)
         external
@@ -156,6 +162,7 @@ interface IDIVADevelopmentFund {
      * @notice Function to get the unclaimed deposit amount for a given `_token`.
      * @dev Use the zero address for the native asset (e.g., ETH on Ethereum).
      * @param _token Token address.
+     * @return The unclaimed deposit amount for the specified `_token`.
      */
     function getUnclaimedDepositAmount(address _token)
         external
