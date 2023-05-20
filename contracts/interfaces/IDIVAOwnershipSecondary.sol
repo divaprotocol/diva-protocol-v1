@@ -45,11 +45,13 @@ interface IDIVAOwnershipSecondary is IDIVAOwnershipShared {
 
     /**
      * @notice Function to return the ownership contract address on the main chain.
+     * @return The ownership contract address on the main chain.
      */
     function getOwnershipContractMainChain() external view returns (address);
 
     /**
      * @notice Function to return the main chain id.
+     * @return The main chain id.
      */
     function getMainChainId() external view returns (uint256);
 
@@ -63,6 +65,7 @@ interface IDIVAOwnershipSecondary is IDIVAOwnershipShared {
      * hash of the query Data. Refer to the Tellor specs
      * (https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md)
      * for details.
+     * @return The query data as a `bytes` array and the query Id as a `bytes32` value.
      */
     function getQueryDataAndId() external view returns (bytes memory, bytes32);
 }
