@@ -41,17 +41,20 @@ interface IPermissionedPositionToken is IERC20Upgradeable {
     /**
      * @notice Returns the Id of the contingent pool that the position token is
      * linked to in the context of DIVA.
+     * @return The poolId.
      */
     function poolId() external view returns (bytes32);
 
     /**
      * @notice Returns the owner of the position token (Diamond contract in the
      * context of DIVA).
+     * @return The address of the position token owner.
      */
     function owner() external view returns (address);
 
     /**
-     * @notice Return permissioned ERC721 token address
+     * @notice Return permissioned ERC721 token address.
+     * @return The address of the permissioned ERC721 token.
      */
     function permissionedERC721Token() external view returns (address);
 }

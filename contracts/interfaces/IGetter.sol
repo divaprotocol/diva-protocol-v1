@@ -117,12 +117,14 @@ interface IGetter {
     /**
      * @notice Returns the total number of fee updates. At least 1 as the initial
      * fees are set at contract deployment.
+     * @return The length of the fees history.
      */
     function getFeesHistoryLength() external view returns (uint256);
 
     /**
      * @notice Returns the total number of settlement period updates. At least 1 as
      * the initial settlement periods are set at contract deployment.
+     * @return The length of the settlement periods history.
      */
     function getSettlementPeriodsHistoryLength()
         external
@@ -213,6 +215,7 @@ interface IGetter {
 
     /**
      * @notice Returns the chain Id.
+     * @return Chain Id.
      */
     function getChainId() external view returns (uint256);
 

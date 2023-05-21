@@ -72,8 +72,9 @@ interface IPool {
         returns (bytes32);
 
     /**
-     * @notice Batch version of `createContingentPool`
-     * @param _poolsParams Array of PoolParams struct
+     * @notice Batch version of `createContingentPool`.
+     * @param _poolsParams Array of PoolParams struct.
+     * @return Array of poolIds.
      */
     function batchCreateContingentPool(LibDIVA.PoolParams[] memory _poolsParams)
         external
