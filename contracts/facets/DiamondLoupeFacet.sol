@@ -15,12 +15,15 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
             ._diamondStorage();
         uint256 numFacets = ds.facetAddresses.length;
         facets_ = new Facet[](numFacets);
-        for (uint256 i; i < numFacets; i++) {
+        for (uint256 i; i < numFacets; ) {
             address facetAddress_ = ds.facetAddresses[i];
             facets_[i].facetAddress = facetAddress_;
             facets_[i].functionSelectors = ds
                 .facetFunctionSelectors[facetAddress_]
                 .functionSelectors;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -33,9 +36,7 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
         override
         returns (bytes4[] memory facetFunctionSelectors_)
     {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        facetFunctionSelectors_ = ds
+        facetFunctionSelectors_ = LibDiamondStorage._diamondStorage()
             .facetFunctionSelectors[_facet]
             .functionSelectors;
     }
@@ -48,9 +49,7 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
         override
         returns (address[] memory facetAddresses_)
     {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        facetAddresses_ = ds.facetAddresses;
+        facetAddresses_ = LibDiamondStorage._diamondStorage().facetAddresses;
     }
 
     /// @notice Gets the facet that supports the given selector.
@@ -63,9 +62,7 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
         override
         returns (address facetAddress_)
     {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        facetAddress_ = ds
+        facetAddress_ = LibDiamondStorage._diamondStorage()
             .selectorToFacetAndPosition[_functionSelector]
             .facetAddress;
     }
@@ -77,8 +74,6 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
         override
         returns (bool)
     {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        return ds.supportedInterfaces[_interfaceId];
+        return LibDiamondStorage._diamondStorage().supportedInterfaces[_interfaceId];
     }
 }

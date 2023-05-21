@@ -375,12 +375,11 @@ library LibDIVA {
      * @param _recipient Reserve recipient.
      */
     function _allocateReservedClaim(bytes32 _poolId, address _recipient) internal {
-        // Get references to relevant storage slots
+        // Get reference to relevant storage slot
         LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage._feeClaimStorage();
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
 
         // Initialize Pool struct
-        LibDIVAStorage.Pool storage _pool = ps.pools[_poolId];
+        LibDIVAStorage.Pool storage _pool = LibDIVAStorage._poolStorage().pools[_poolId];
 
         // Get reserve for pool
         uint256 _reserve = fs.poolIdToReservedClaim[_poolId];
@@ -410,7 +409,13 @@ library LibDIVA {
         uint256 _collateralAmount,
         uint8 _collateralTokenDecimals
     ) internal pure returns (uint256) {
-        uint256 _SCALINGFACTOR = uint256(10**(18 - _collateralTokenDecimals));
+
+        uint256 _SCALINGFACTOR;
+        unchecked {
+            // Cannot over-/underflow as collateral token decimals are restricted to
+            // a minimum of 6 and a maximum of 18.
+            _SCALINGFACTOR = uint256(10**(18 - _collateralTokenDecimals));
+        }
 
         uint256 _feeAmount = uint256(_fee).multiplyDecimal(
             _collateralAmount * _SCALINGFACTOR
@@ -452,7 +457,12 @@ library LibDIVA {
         uint256 _collateralTokenDecimals,
         uint96 _fee // max value: 1.5% <= 2^96
     ) internal pure returns (uint96 payoffShortNet, uint96 payoffLongNet) {
-        uint256 _SCALINGFACTOR = uint256(10**(18 - _collateralTokenDecimals));
+        uint256 _SCALINGFACTOR;
+        unchecked {
+            // Cannot over-/underflow as collateral token decimals are restricted to
+            // a minimum of 6 and a maximum of 18.
+            _SCALINGFACTOR = uint256(10**(18 - _collateralTokenDecimals));
+        }
         uint256 _UNIT = SafeDecimalMath.UNIT;
         uint256 _payoffLong;
         uint256 _payoffShort;
@@ -483,14 +493,17 @@ library LibDIVA {
                 ).divideDecimal(_cap - _inflection);
         }
 
-        _payoffShort = _UNIT - _payoffLong;
+        unchecked {
+            // Underflow not possible: as 0 <= _payoffLong <= _UNIT
+            _payoffShort = _UNIT - _payoffLong;
 
-        payoffShortNet = uint96(
-            _payoffShort.multiplyDecimal(_UNIT - _fee) / _SCALINGFACTOR
-        );
-        payoffLongNet = uint96(
-            _payoffLong.multiplyDecimal(_UNIT - _fee) / _SCALINGFACTOR
-        );
+            payoffShortNet = uint96(
+                _payoffShort.multiplyDecimal(_UNIT - _fee) / _SCALINGFACTOR
+            );
+            payoffLongNet = uint96(
+                _payoffLong.multiplyDecimal(_UNIT - _fee) / _SCALINGFACTOR
+            );
+        }        
 
         return (payoffShortNet, payoffLongNet); // collateral token decimals
     }
@@ -787,11 +800,9 @@ library LibDIVA {
     function _addLiquidityLib(AddLiquidityParams memory addLiquidityParams)
         internal
     {
-        // Get reference to relevant storage slot
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-
         // Initialize Pool struct
-        LibDIVAStorage.Pool storage _pool = ps.pools[addLiquidityParams.poolId];
+        LibDIVAStorage.Pool storage _pool =
+            LibDIVAStorage._poolStorage().pools[addLiquidityParams.poolId];
 
         // Check if pool exists
         if (!_poolExists(_pool)) revert NonExistentPool();

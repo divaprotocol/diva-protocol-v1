@@ -31,7 +31,7 @@ contract PoolFacet is IPool, ReentrancyGuard {
     {
         uint256 len = _poolsParams.length;
         bytes32[] memory poolIds = new bytes32[](len);
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             poolIds[i] = LibDIVA._createContingentPoolLib(
                 LibDIVA.CreatePoolParams({
                     poolParams: _poolsParams[i],

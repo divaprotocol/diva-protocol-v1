@@ -25,8 +25,11 @@ contract GovernanceFacet is IGovernance {
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
             ._governanceStorage();
 
-        // Load latest fee regime
-        LibDIVAStorage.Fees memory _fees = gs.fees[gs.fees.length - 1];
+        // Load latest fee regime. Index cannot overflow.
+        LibDIVAStorage.Fees memory _fees;
+        unchecked {
+            _fees = gs.fees[gs.fees.length - 1];
+        }
 
         // Confirm that there is no pending fees update. Revoke to update
         // pending values.
@@ -34,8 +37,12 @@ contract GovernanceFacet is IGovernance {
             revert PendingFeesUpdate(block.timestamp, _fees.startTime);
         }
 
-        // Set time at which the new fees will become applicable
-        uint256 _startTime = block.timestamp + 60 days;
+        // Set time at which the new fees will become applicable.
+        // Cannot realistically overflow.
+        uint256 _startTime;
+        unchecked {
+            _startTime = block.timestamp + 60 days;
+        }
 
         // Add new fee regime to the fees array. New fee regime become active after
         // a delay of 60 days unless revoked.
@@ -91,8 +98,12 @@ contract GovernanceFacet is IGovernance {
             );
         }
 
-        // Set time at which the new periods will become applicable
-        uint256 _startTime = block.timestamp + 60 days;
+        // Set time at which the new periods will become applicable.
+        // Cannot realistically overflow.
+        uint256 _startTime;
+        unchecked {
+            _startTime = block.timestamp + 60 days;    
+        }
 
         // Add new settlement period regime to the settlement periods array. New periods
         // become active after a delay of 60 days unless revoked.
@@ -161,8 +172,12 @@ contract GovernanceFacet is IGovernance {
         // Store current fallback provider in `previousFallbackDataProvider` variable
         gs.previousFallbackDataProvider = gs.fallbackDataProvider;
 
-        // Set time at which the new fallback will become applicable
-        uint256 _startTimeNewFallbackDataProvider = block.timestamp + 60 days;
+        // Set time at which the new fallback will become applicable.
+        // Cannot realistically overflow.
+        uint256 _startTimeNewFallbackDataProvider;
+        unchecked {
+            _startTimeNewFallbackDataProvider = block.timestamp + 60 days;
+        }        
 
         // Store start time and new fallback data provider
         gs.startTimeFallbackDataProvider = _startTimeNewFallbackDataProvider;
@@ -197,7 +212,11 @@ contract GovernanceFacet is IGovernance {
         gs.previousTreasury = gs.treasury;
 
         // Set time at which the new treasury address will become applicable
-        uint256 _startTimeNewTreasury = block.timestamp + 2 days;
+        // Cannot realistically overflow.
+        uint256 _startTimeNewTreasury;
+        unchecked {
+            _startTimeNewTreasury = block.timestamp + 2 days;
+        }        
 
         // Store start time and new treasury address
         gs.startTimeTreasury = _startTimeNewTreasury;
@@ -215,9 +234,12 @@ contract GovernanceFacet is IGovernance {
         // Minimum time between two pause events is 10 days, but users can interact
         // with `redeemPositionToken` and `removeLiquidity` already after 8 days giving them
         // at least 2 days to remove collateral until the next pause can be activated.
-        if (block.timestamp <= gs.pauseReturnCollateralUntil + 2 days)
-            revert TooEarlyToPauseAgain();
-        gs.pauseReturnCollateralUntil = block.timestamp + 8 days;
+        unchecked {
+            // Cannot realistically overflow
+            if (block.timestamp <= gs.pauseReturnCollateralUntil + 2 days)
+                revert TooEarlyToPauseAgain();        
+            gs.pauseReturnCollateralUntil = block.timestamp + 8 days;
+        }
 
         // Log the timestamp until when collateral withdrawals are paused as well as the
         // address that initiated the change
@@ -250,8 +272,11 @@ contract GovernanceFacet is IGovernance {
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
             ._governanceStorage();
 
-        // Load latest fee regime
-        LibDIVAStorage.Fees memory _fees = gs.fees[gs.fees.length - 1];
+        // Load latest fee regime. Index cannot overflow.
+        LibDIVAStorage.Fees memory _fees;
+        unchecked {
+            _fees = gs.fees[gs.fees.length - 1];
+        } 
 
         // Confirm that fees are not active yet
         if (_fees.startTime <= block.timestamp) {
@@ -264,8 +289,11 @@ contract GovernanceFacet is IGovernance {
         // Remove pending fees from array
         gs.fees.pop();
 
-        // Get new applicable fees
-        LibDIVAStorage.Fees memory _previousFees = gs.fees[gs.fees.length - 1];
+        // Get new applicable fees. Index cannot overflow.
+        LibDIVAStorage.Fees memory _previousFees;
+        unchecked {
+            _previousFees = gs.fees[gs.fees.length - 1];
+        }
 
         // Log the fees revoked, the previous fees that now apply as well as
         // the address that initiated the change
@@ -292,9 +320,13 @@ contract GovernanceFacet is IGovernance {
         LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
             ._governanceStorage();
 
-        // Load latest settlement period regime
-        LibDIVAStorage.SettlementPeriods memory _settlementPeriods = gs
-            .settlementPeriods[gs.settlementPeriods.length - 1];
+        // Load latest settlement period regime. Index cannot overflow.
+        LibDIVAStorage.SettlementPeriods memory _settlementPeriods;
+        unchecked {            
+            _settlementPeriods = gs
+                .settlementPeriods[gs.settlementPeriods.length - 1];
+        }
+        
 
         // Confirm that settlement periods are not active yet
         if (_settlementPeriods.startTime <= block.timestamp) {
@@ -311,9 +343,12 @@ contract GovernanceFacet is IGovernance {
         // Remove pending periods from array
         gs.settlementPeriods.pop();
 
-        // Get new applicable periods
-        LibDIVAStorage.SettlementPeriods memory _previousSettlementPeriods = gs
-            .settlementPeriods[gs.settlementPeriods.length - 1];
+        // Get new applicable periods. Index cannot overflow.
+        LibDIVAStorage.SettlementPeriods memory _previousSettlementPeriods;
+        unchecked {
+            _previousSettlementPeriods = gs
+                .settlementPeriods[gs.settlementPeriods.length - 1];
+        }
 
         // Log the periods revoked, the previous periods that now apply as well as
         // the address that initiated the change
@@ -408,7 +443,7 @@ contract GovernanceFacet is IGovernance {
     }
 
     function _isValidFee(uint96 _fee) private pure {
-        if (_fee > 0) {
+        if (_fee != 0) {
             // Min fee of 0.01% introduced to have a minimum non-zero fee in `removeLiquidity`
             if (_fee < 1e14) revert FeeBelowMinimum(); // 0.01% = 0.0001
             if (_fee > 1.5e16) revert FeeAboveMaximum(); // 1.5% = 0.015

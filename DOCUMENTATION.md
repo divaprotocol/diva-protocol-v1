@@ -3092,6 +3092,7 @@ The following errors may be emitted when interacting with DIVA Development Fund 
 | `NotDIVAOwner(address _user, address _divaOwner)`                      | `withdraw` | Thrown if `msg.sender` is not the owner of DIVA Protocol                                                                                                                   |
 | `InvalidReleasePeriod()`                      | `deposit` | Thrown if `_releasePeriodInSeconds` argument is zero or exceeds 30 years|
 | `FeeTokensNotSupported()`                   | `deposit`                                                                                   | Thrown if the deposit token implements a fee.                                                                             |
+| `FailedToSendNativeAsset()`                      | `withdraw` / `withdrawDirectDeposit` | Thrown if the transfer of the native asset failed                                                                                                                   |
 | `DifferentTokens()`                      | `withdraw` | Thrown if token addresses for indices passed are different                                                                                                                   |
 
 # Risk disclaimer

@@ -9,10 +9,9 @@ error NotContractOwner(address _user, address _contractOwner);
 
 library LibOwnership {
     function _contractOwner() internal view returns (address contractOwner_) {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        contractOwner_ = IDIVAOwnershipShared(ds.ownershipContract)
-            .getCurrentOwner();
+        contractOwner_ = IDIVAOwnershipShared(
+            LibDiamondStorage._diamondStorage().ownershipContract
+        ).getCurrentOwner();
     }
 
     function _ownershipContract()
@@ -20,9 +19,7 @@ library LibOwnership {
         view
         returns (address ownershipContract_)
     {
-        LibDiamondStorage.DiamondStorage storage ds = LibDiamondStorage
-            ._diamondStorage();
-        ownershipContract_ = ds.ownershipContract;
+        ownershipContract_ = LibDiamondStorage._diamondStorage().ownershipContract;
     }
 
     function _enforceIsContractOwner() internal view {

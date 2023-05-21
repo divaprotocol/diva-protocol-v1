@@ -14,17 +14,12 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         uint256 _finalReferenceValue,
         bool _allowChallenge
     ) external override nonReentrant {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         _setFinalReferenceValue(
             _poolId,
             _finalReferenceValue,
             _allowChallenge,
-            ps,
-            gs
+            LibDIVAStorage._poolStorage(),
+            LibDIVAStorage._governanceStorage()
         );
     }
 
@@ -32,19 +27,14 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         ArgsBatchSetFinalReferenceValue[]
             calldata _argsBatchSetFinalReferenceValue
     ) external override nonReentrant {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         uint256 len = _argsBatchSetFinalReferenceValue.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _setFinalReferenceValue(
                 _argsBatchSetFinalReferenceValue[i].poolId,
                 _argsBatchSetFinalReferenceValue[i].finalReferenceValue,
                 _argsBatchSetFinalReferenceValue[i].allowChallenge,
-                ps,
-                gs
+                LibDIVAStorage._poolStorage(),
+                LibDIVAStorage._governanceStorage()
             );
             unchecked {
                 ++i;
@@ -56,16 +46,11 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         bytes32 _poolId,
         uint256 _proposedFinalReferenceValue
     ) external override nonReentrant {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         _challengeFinalReferenceValue(
             _poolId,
             _proposedFinalReferenceValue,
-            ps,
-            gs
+            LibDIVAStorage._poolStorage(),
+            LibDIVAStorage._governanceStorage()
         );
     }
 
@@ -73,19 +58,14 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         ArgsBatchChallengeFinalReferenceValue[]
             calldata _argsBatchChallengeFinalReferenceValue
     ) external override nonReentrant {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         uint256 len = _argsBatchChallengeFinalReferenceValue.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _challengeFinalReferenceValue(
                 _argsBatchChallengeFinalReferenceValue[i].poolId,
                 _argsBatchChallengeFinalReferenceValue[i]
                     .proposedFinalReferenceValue,
-                ps,
-                gs
+                LibDIVAStorage._poolStorage(),
+                LibDIVAStorage._governanceStorage()
             );
             unchecked {
                 ++i;
@@ -98,29 +78,24 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
         override
         nonReentrant
     {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
-        _redeemPositionToken(_positionToken, _amount, ps, gs);
+        _redeemPositionToken(
+            _positionToken,
+            _amount,
+            LibDIVAStorage._poolStorage(),
+            LibDIVAStorage._governanceStorage()
+        );
     }
 
     function batchRedeemPositionToken(
         ArgsBatchRedeemPositionToken[] calldata _argsBatchRedeemPositionToken
     ) external override nonReentrant {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.GovernanceStorage storage gs = LibDIVAStorage
-            ._governanceStorage();
-
         uint256 len = _argsBatchRedeemPositionToken.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _redeemPositionToken(
                 _argsBatchRedeemPositionToken[i].positionToken,
                 _argsBatchRedeemPositionToken[i].amount,
-                ps,
-                gs
+                LibDIVAStorage._poolStorage(),
+                LibDIVAStorage._governanceStorage()
             );
             unchecked {
                 ++i;
@@ -274,10 +249,13 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
             // Scenario 1: Data provider submitted a final value and it was
             // not challenged during the challenge period. In that case the
             // submitted value is considered the final one.
-            if (
-                block.timestamp <=
-                _pool.statusTimestamp + _settlementPeriods.challengePeriod
-            ) revert ChallengePeriodNotExpired();
+            unchecked {
+                // Cannot realistically overflow
+                if (
+                    block.timestamp <=
+                    _pool.statusTimestamp + _settlementPeriods.challengePeriod
+                ) revert ChallengePeriodNotExpired();
+            }
 
             _confirmFinalReferenceValue(
                 _poolId,
@@ -293,10 +271,13 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
             // Scenario 2: Submitted value was challenged, but data provider did not
             // respond during the review period. In that case, the initially submitted
             // value is considered the final one.
-            if (
-                block.timestamp <=
-                _pool.statusTimestamp + _settlementPeriods.reviewPeriod
-            ) revert ReviewPeriodNotExpired();
+            unchecked {
+                // Cannot realistically overflow
+                if (
+                    block.timestamp <=
+                    _pool.statusTimestamp + _settlementPeriods.reviewPeriod
+                ) revert ReviewPeriodNotExpired();
+            }            
 
             _confirmFinalReferenceValue(
                 _poolId,
@@ -372,10 +353,13 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
             _pool.statusFinalReferenceValue == LibDIVAStorage.Status.Submitted
         ) {
             // Check that challenge period did not expire yet
-            if (
-                block.timestamp >
-                _pool.statusTimestamp + _settlementPeriods.challengePeriod
-            ) revert ChallengePeriodExpired();
+            unchecked {
+                // Cannot realistically overflow
+                if (
+                    block.timestamp >
+                    _pool.statusTimestamp + _settlementPeriods.challengePeriod
+                ) revert ChallengePeriodExpired();
+            }
 
             // First challenge updates the status to "Challenged".
             // `_proposedFinalReferenceValue` will NOT update `finalReferenceValue`,
@@ -390,10 +374,13 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
             _pool.statusFinalReferenceValue == LibDIVAStorage.Status.Challenged
         ) {
             // Check that review period did not expire yet
-            if (
-                block.timestamp >
-                _pool.statusTimestamp + _settlementPeriods.reviewPeriod
-            ) revert ReviewPeriodExpired();
+            unchecked {
+                // Cannot realistically overflow
+                if (
+                    block.timestamp >
+                    _pool.statusTimestamp + _settlementPeriods.reviewPeriod
+                ) revert ReviewPeriodExpired();
+            }            
 
             // Log the proposed value by the challenger. Status and timestamp
             // do not change.
@@ -511,8 +498,12 @@ contract SettlementFacet is ISettlement, ReentrancyGuard {
             _pool.statusFinalReferenceValue == LibDIVAStorage.Status.Challenged
         ) {
             // Calculate end of review period
-            uint256 reviewEndTime = _pool.statusTimestamp +
-                _settlementPeriods.reviewPeriod;
+            uint256 reviewEndTime;
+            unchecked {
+                // Cannot realistically overflow
+                reviewEndTime = _pool.statusTimestamp +
+                    _settlementPeriods.reviewPeriod;
+            }            
 
             // Check that called inside the review period. No pool expiry end check
             // needed here as "Challenged" status cannot be before expiry end.

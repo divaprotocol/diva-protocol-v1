@@ -22,6 +22,7 @@ export const COLLATERAL_TOKENS = {
 };
 
 // Tellor contract INCLUDING the requirement to stake prior to reporting
+// Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
 export const TELLOR_ADDRESS = {
   ethMain: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
   polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
@@ -29,11 +30,13 @@ export const TELLOR_ADDRESS = {
   goerli: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  sepolia: "0x199839a4907ABeC8240D119B606C98c405Bb0B33",
 } as {
   [key: string]: string;
 };
 
 // Tellor playground contract EXCLUDING the requirement to stake prior to reporting
+// Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
 export const TELLOR_PLAYGROUND_ADDRESS = {
   goerli: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
   sepolia: "0x3251838bd813fdf6a97D32781e011cce8D225d59",

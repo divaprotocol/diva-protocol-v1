@@ -64,8 +64,8 @@ const _checkConditions = (
     throw new Error("Collateral token cannot have more than 18 decimals");
   }
 
-  if (decimals < 3) {
-    throw new Error("Collateral token cannot have less than 3 decimals");
+  if (decimals < 6) {
+    throw new Error("Collateral token cannot have less than 6 decimals");
   }
 
   if (

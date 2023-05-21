@@ -18,7 +18,7 @@ contract EIP712CancelFacet is IEIP712Cancel, ReentrancyGuard {
             calldata _offersCreateContingentPool
     ) external override nonReentrant {
         uint256 len = _offersCreateContingentPool.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _cancelOfferCreateContingentPool(_offersCreateContingentPool[i]);
             unchecked {
                 ++i;
@@ -36,7 +36,7 @@ contract EIP712CancelFacet is IEIP712Cancel, ReentrancyGuard {
         LibEIP712.OfferAddLiquidity[] calldata _offersAddLiquidity
     ) external override nonReentrant {
         uint256 len = _offersAddLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _cancelOfferAddLiquidity(_offersAddLiquidity[i]);
             unchecked {
                 ++i;
@@ -54,7 +54,7 @@ contract EIP712CancelFacet is IEIP712Cancel, ReentrancyGuard {
         LibEIP712.OfferRemoveLiquidity[] calldata _offersRemoveLiquidity
     ) external override nonReentrant {
         uint256 len = _offersRemoveLiquidity.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _cancelOfferRemoveLiquidity(_offersRemoveLiquidity[i]);
             unchecked {
                 ++i;
@@ -115,14 +115,10 @@ contract EIP712CancelFacet is IEIP712Cancel, ReentrancyGuard {
 
     // Cancel offer with `_typedOfferHash`
     function _cancelTypedOfferHash(bytes32 _typedOfferHash) private {
-        // Get reference to relevant storage slot
-        LibEIP712Storage.EIP712Storage storage es = LibEIP712Storage
-            ._eip712Storage();
-
         // Set the max int value on the taker filled amount to indicate
         // a cancel. It's OK to cancel twice.
-        es.typedOfferHashToTakerFilledAmount[_typedOfferHash] = LibEIP712
-            .MAX_INT;
+        LibEIP712Storage._eip712Storage().typedOfferHashToTakerFilledAmount[_typedOfferHash] =
+            LibEIP712.MAX_INT;
 
         // Log offer cancellation (msg.sender = maker)
         emit OfferCancelled(_typedOfferHash, msg.sender);

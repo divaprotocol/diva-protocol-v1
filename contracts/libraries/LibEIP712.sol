@@ -823,10 +823,8 @@ library LibEIP712 {
         );
 
         // Get pool params using `poolId` specified in `_offerRemoveLiquidity`
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[
-            _offerRemoveLiquidity.poolId
-        ];
+        LibDIVAStorage.Pool storage _pool = 
+            LibDIVAStorage._poolStorage().pools[_offerRemoveLiquidity.poolId];
 
         // Get the total collateral amount to return to maker and taker net of fees
         uint256 _collateralAmountRemovedNet = LibDIVA._removeLiquidityLib(
@@ -1049,8 +1047,8 @@ library LibEIP712 {
         offerInfo = _getOfferInfoAddLiquidity(_offerAddLiquidity);
 
         // Get pool params using the `poolId` specified in `_offerAddLiquidity`
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[_offerAddLiquidity.poolId];
+        LibDIVAStorage.Pool storage _pool =
+            LibDIVAStorage._poolStorage().pools[_offerAddLiquidity.poolId];
 
         // Set `actualTakerFillableAmount` depending on whether pool exists or not 
         if (LibDIVA._poolExists(_pool)) {
@@ -1104,10 +1102,8 @@ library LibEIP712 {
         offerInfo = _getOfferInfoRemoveLiquidity(_offerRemoveLiquidity);
 
         // Get pool params using the `poolId` specified in `_offerRemoveLiquidity`
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.Pool storage _pool = ps.pools[
-            _offerRemoveLiquidity.poolId
-        ];
+        LibDIVAStorage.Pool storage _pool =
+            LibDIVAStorage._poolStorage().pools[_offerRemoveLiquidity.poolId];
 
         // Using collateralToken != address(0) to determine the existence of a pool. This works
         // because this case is excluded when creating a contingent pool as the zero address

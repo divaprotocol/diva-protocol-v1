@@ -16,13 +16,12 @@ contract TipFacet is ITip, ReentrancyGuard {
         override
         nonReentrant
     {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Add tip
-        _addTip(_poolId, _amount, ps, fs);
+        _addTip(
+            _poolId,
+            _amount,
+            LibDIVAStorage._poolStorage(),
+            LibDIVAStorage._feeClaimStorage()
+        );
     }
 
     function batchAddTip(ArgsBatchAddTip[] calldata _argsBatchAddTip)
@@ -30,19 +29,13 @@ contract TipFacet is ITip, ReentrancyGuard {
         override
         nonReentrant
     {
-        // Get references to relevant storage slots
-        LibDIVAStorage.PoolStorage storage ps = LibDIVAStorage._poolStorage();
-        LibDIVAStorage.FeeClaimStorage storage fs = LibDIVAStorage
-            ._feeClaimStorage();
-
-        // Add tips
         uint256 len = _argsBatchAddTip.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _addTip(
                 _argsBatchAddTip[i].poolId,
                 _argsBatchAddTip[i].amount,
-                ps,
-                fs
+                LibDIVAStorage._poolStorage(),
+                LibDIVAStorage._feeClaimStorage()
             );
             unchecked {
                 ++i;

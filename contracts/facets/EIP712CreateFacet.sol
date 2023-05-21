@@ -13,15 +13,11 @@ contract EIP712CreateFacet is IEIP712Create, ReentrancyGuard {
         LibEIP712.Signature calldata _signature,
         uint256 _takerFillAmount
     ) external override nonReentrant {
-        // Get reference to relevant storage slot
-        LibEIP712Storage.EIP712Storage storage es = LibEIP712Storage
-            ._eip712Storage();
-
         _fillOfferCreateContingentPool(
             _offerCreateContingentPool,
             _signature,
             _takerFillAmount,
-            es
+            LibEIP712Storage._eip712Storage()
         );
     }
 
@@ -29,20 +25,15 @@ contract EIP712CreateFacet is IEIP712Create, ReentrancyGuard {
         ArgsBatchFillOfferCreateContingentPool[]
             calldata _argsBatchFillOfferCreateContingentPool
     ) external override nonReentrant {
-        // Get reference to relevant storage slot
-        LibEIP712Storage.EIP712Storage storage es = LibEIP712Storage
-            ._eip712Storage();
-
         uint256 len = _argsBatchFillOfferCreateContingentPool.length;
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             _fillOfferCreateContingentPool(
                 _argsBatchFillOfferCreateContingentPool[i]
                     .offerCreateContingentPool,
                 _argsBatchFillOfferCreateContingentPool[i].signature,
                 _argsBatchFillOfferCreateContingentPool[i].takerFillAmount,
-                es
+                LibEIP712Storage._eip712Storage()
             );
-
             unchecked {
                 ++i;
             }
