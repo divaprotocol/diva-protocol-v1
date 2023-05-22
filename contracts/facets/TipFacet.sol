@@ -62,9 +62,6 @@ contract TipFacet is ITip, ReentrancyGuard {
         // Cache collateral token
         IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
 
-        // Cache collateral token
-        IERC20Metadata collateralToken = IERC20Metadata(_pool.collateralToken);
-
         // Update claim mapping
         _fs.poolIdToReservedClaim[_poolId] += _amount;
 
