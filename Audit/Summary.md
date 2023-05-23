@@ -3,12 +3,12 @@
 ## Overview
 
 The audit was performed by six independent teams:
-* Team 1: [ComposableSecurity](https://composable-security.com/) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam4.md#project-overview)
+* Team 1: [ComposableSecurity](https://composable-security.com/) [🔗][ComposableSecurity]
 * Team 2: [gogo](https://twitter.com/gogotheauditor), [kodyvim](https://twitter.com/kodyvim_), [Santipu_](https://twitter.com/MrCaesarDev), [zaskoh](https://twitter.com/0xzaskoh) (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam4.md)
 * Team 3: [TrungOre](https://twitter.com/Trungore), [Duc](https://twitter.com/duc_hph) (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam5.md)
 * Team 4: said017, WangChao, kodak_rome, Emmalien  (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam6.md)
 * Team 5: [devScrooge (JMariadlcs)](https://twitter.com/devScrooge), Cryptor, Saksham (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam7.md)
-* Team 6: [HiAudit](https://hiaudit.io/consulting) 🔗
+* Team 6: [HiAudit](https://hiaudit.io/consulting) [🔗][HiAudit]
 
 The contracts in scope included:
 * [DIVA Protocol V1](https://github.com/divaprotocol/diva-protocol-v1/tree/main/contracts)
@@ -18,7 +18,7 @@ The contracts in scope included:
 
 >**Note:** The DIVA token distribution contract was not in scope for the SolidityLabs teams. It was audited by ComposableSecurity, HiAudit and an independent [solo auditor](https://github.com/ahmedovv123/audits/blob/main/audits/DivaVesting(QA).md).
 
->**⚠️Warning:** HiAudit claims to be the #1 auditing firm in Japan but delivered a very disappointing report considering the amount of money we paid for their services. The team appeared to lack sufficient experience and expertise in their field. Regrettably, we made a mistake in hiring them, and we strongly advise any other team against using their services. Surprisingly, they felt comfortable sharing their report publicly. Search for "HiAudit" in this summary to find out more about their findings or read their report.
+>**⚠️Warning:** HiAudit claims to be the #1 auditing firm in Japan but delivered a very disappointing report considering the amount of money we paid for their services. The team charged a flat fee rather than based on performance as advertised on ther [website](https://hiaudit.io/consulting). The team appeared to lack sufficient experience and expertise in their field. Regrettably, we made a mistake in hiring them, and we strongly advise any other team against using their services. Surprisingly, they felt comfortable sharing their report publicly. Take your popcorn 🍿 and search for "HiAudit".
 
 ## Summary
 
@@ -26,7 +26,7 @@ The table below provides an overview of the findings grouped by contract. The nu
 
 |  | Critical | High | Medium | Low | Informational |Gas optimization |
 |:---------------------|-------:|---------:|----------:|--------------:|--------------------:|--------------------:|
-| [DIVA Protocol](#diva-protocol)| - | 3 (3) | 6 (5) | 19 (11) | 19 (9) | 10 (5) |
+| [DIVA Protocol](#diva-protocol)| - | 3 (3) | 6 (5) | 19 (11) | 20 (9) | 10 (5) |
 | [DIVA Development Fund](#diva-development-fund) | - | 1 (1) | - | 6 (2) | 5 (3) | 1 (1) |
 | [Tellor oracle adapter](#tellor-oracle-adapter) | - | - | - | 1 (1) | 6 (5) | - |
 | [DIVA Token distribution contract](#diva-token-distribution-contract) | - | - | - | - | 3 (2) | - |
@@ -43,12 +43,12 @@ The table below provides an overview of the findings grouped by contract. The nu
 ## Medium
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
 | :---| :--- |:--- | :--- |:--- |:--- |:--- |:--- |:--- |:--- |
-|M-01|Wrong protocol fee recipient when withdrawing liquidity|🔗 (5.3)|[🔗][M-01-T2]|[🔗][M-01-T3]|[🔗][M-01-T4]||🔗 (9)|[Resolved][PR11]|Good spot! We overlooked it when we updated the governance logic to introduce an activation delay. The impact would have been rather limited as the new treasury account would have received protocol fees two days earlier than expected. The purpose of the two-day delay for treasury updates was primarily to reduce the incentives for reporting incorrect owners on secondary chains. No user funds would have been at risk.|
-|M-02|PreviousFallbackDataProvider won't have incentive to provide accurate value|🔗 (5.2)|[🔗][M-02-T2]||[🔗][M-02-T4]||🔗 (4)|[Resolved][PR12]|Same comment as for M-01, we overlooked it when we updated the governance logic. The impact would have been rather limited. We don't anticipate high TVL pools with a reputable data provider reaching a stage where the fallback data provider has to step in. In the unlikely event that such a scenario would have occured, the previous fallback provider could be incentivized through a direct payment to report the outcome. Additionally, it is worth noting that the fallback provider won't change too frequently.|
+|M-01|Wrong protocol fee recipient when withdrawing liquidity|[🔗][ComposableSecurity] (5.3)|[🔗][M-01-T2]|[🔗][M-01-T3]|[🔗][M-01-T4]||[🔗][HiAudit] (9)|[Resolved][PR11]|Good spot! We overlooked it when we updated the governance logic to introduce an activation delay. The impact would have been rather limited as the new treasury account would have received protocol fees two days earlier than expected. The purpose of the two-day delay for treasury updates was primarily to reduce the incentives for reporting incorrect owners on secondary chains. No user funds would have been at risk.|
+|M-02|PreviousFallbackDataProvider won't have incentive to provide accurate value|[🔗][ComposableSecurity] (5.2)|[🔗][M-02-T2]||[🔗][M-02-T4]||[🔗][HiAudit] (4)|[Resolved][PR12]|Same comment as for M-01, we overlooked it when we updated the governance logic. The impact would have been rather limited. We don't anticipate high TVL pools with a reputable data provider reaching a stage where the fallback data provider has to step in. In the unlikely event that such a scenario would have occured, the previous fallback provider could be incentivized through a direct payment to report the outcome. Additionally, it is worth noting that the fallback provider won't change too frequently.|
 |M-03|Fee-on-Transfer tokens used as collateral will make a pool undercollateralized||[🔗][M-03-T2]|[🔗][M-03-T3]||||[Resolved][PR27]|We agreed to block all fee-on-transfer tokens.|
 |M-04|DoS in `_calcPayoffs` function when calculating big numbers||[🔗][M-04-T2]|||||[Resolved][PR16]|Very special finding that no one else spotted!|
 |M-05|`_getActualTakerFillableAmount` will return `_takerCollateralAmount - _offerInfo.takerFilledAmount` even if the order is not fillable|||||[🔗][M-05-T5]||[Resolved][PR31]|Good finding that will help to avoid confusion for a certain class of offers. No user funds would have been at risk though. |
-|M-06|Potentially In-Correct calculation of actual taker fillable amount||||||🔗 (3)|Declined|The HiAudit team failed to provide a more accurate formula than the existing one. |
+|M-06|Potentially In-Correct calculation of actual taker fillable amount||||||[🔗][HiAudit] (3)|Declined|The HiAudit team failed to provide a more accurate formula than the existing one and refused to remove the issue from the report. |
 
 ## Low
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
@@ -65,13 +65,14 @@ The table below provides an overview of the findings grouped by contract. The nu
 |L-10|Centralization risk in token supply can result in users being unable to remove DIVA owner|||||[🔗][L-17-T5]||Acknowledged|This issue is not a concern because power will eventually concentrate in the hands of those who have the highest belief in the project. Since these parties are likely to also stake for themselves, they will have a vested interest in acting in the best interest of the protocol.|
 |L-11|Voting for a different owner can become impossible|||||[🔗][L-18-T5]||[Resolved][PR32]|Great unique finding! The implemented solution to store the timestamp for “each stake” of each user would be an overkill. We have decided to store the staking timestamp at a user-candidate level instead of a user level as done before. This solves the problem if a user is staking for two different candidates. We acknowledge that the timestamp will be overwritten if a user stakes for the same candidate multiple times.|
 |L-12|Diamond facet upgrade|||||[🔗][L-19-T5]||Acknowledged|Not relevant as the protocol will be rendered immutable from the start.|
-|L-13|Missing interface in IERC165|🔗 (5.4)||||||[Resolved][PR44]||
-|L-14|Unverified position token|🔗 (5.5)||||||[Resolved][PR42]||
-|L-15|Invalid receiver of settlement fee in liquidity removal|🔗 (5.7)||||||[Resolved][PR21]|Upon reviewing the recommendation, we discovered that our original (conscious) design choice could have led to incorrect settlement fee accounting within the Tellor adapter. To fix this issue, we applied a similar logic to the one used for tips, meaning that any accrued fees are held in a reserve and allocated to the corresponding recipient only after the final value has been confirmed. |
-|L-16|Un-Satisfactory check while setting up `permissionedERC721Token`||||||🔗 (5)|Declined|The `permissionedERC721Token` address cannot be zero inside the `PermissionedPositionToken` contract as it's excluded in an `if` block inside the `PositionTokenFactory` contract. Despite highlighting this to HiAudit, they refused to remove this finding from the report, insisting that it aligns with best practices.|
-|L-17|In-sufficient transfer check while allocating fees to `recipient`||||||🔗 (8)|Declined|Neither the treasury, the data provider nor the fallback provider can be the zero address (excluded inside the corresponding setter functions). Despite highlighting this to HiAudit, they refused to remove this finding from the report, insisting that it aligns with best practices.|
+|L-13|Missing interface in IERC165|[🔗][ComposableSecurity] (5.4)||||||[Resolved][PR44]||
+|L-14|Unverified position token|[🔗][ComposableSecurity] (5.5)||||||[Resolved][PR42]||
+|L-15|Invalid receiver of settlement fee in liquidity removal|[🔗][ComposableSecurity] (5.7)||||||[Resolved][PR21]|Upon reviewing the recommendation, we discovered that our original (conscious) design choice could have led to incorrect settlement fee accounting within the Tellor adapter. To fix this issue, we applied a similar logic to the one used for tips, meaning that any accrued fees are held in a reserve and allocated to the corresponding recipient only after the final value has been confirmed. |
+|L-16|Un-Satisfactory check while setting up `permissionedERC721Token`||||||[🔗][HiAudit] (5)|Declined|The `permissionedERC721Token` address cannot be zero inside the `PermissionedPositionToken` contract as it's excluded in an `if` block inside the `PositionTokenFactory` contract. Despite highlighting this to HiAudit, they refused to remove this finding from the report, insisting that it aligns with best practices.|
+|L-17|In-sufficient transfer check while allocating fees to `recipient`||||||[🔗][HiAudit] (8)|Declined|Neither the treasury, the data provider nor the fallback provider can be the zero address (excluded inside the corresponding setter functions). Despite highlighting this to HiAudit, they refused to remove this finding from the report, insisting that it aligns with best practices.|
 |L-18|Wrong implementation of EIP-2535 in LibDiamond library||[🔗][L-06-T2]|||||[Resolved][PR6]|Resulted from using a slightly outdated version of the Diamond Standard which didn't include these optimizations.|
 |L-19|Update openzeppelin NPM dependencies in package.json||[🔗][L-03-T2]|||||[Resolved][PR3]||
+|L-20|Un-Satisfactory check while setting up owner||||||[🔗][HiAudit] (1)|Declined|Despite pointing out to the HiAudit team that the owner of the position tokens is always the DIVA smart contract and can never be the zero address, they refused to remove this finding from the report, insisting that it aligns with best practices.|
 
 ## Informational
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
@@ -79,22 +80,22 @@ The table below provides an overview of the findings grouped by contract. The nu
 |I-01|Missing function to query for `_permissionedPositionTokenImplementation` in `PositionTokenFactory`||[🔗][I-05-T2]|||||[Resolved][PR6]||
 |I-02|Consider resetting values after a new Owner has claimed the ownership in `DIVAOwnershipMain`||[🔗][I-07-T2]|||||Declined|Note that any non-winning candidate who has received more votes than the current owner can theoretically submit an ownership claim. That was a conscious design choice to simplify the snapshot logic. Resetting the values would allow a non-winning candidate to submit a claim and with that prevent the actual winner to submit their claim. |
 |I-03|Misleading typo in comment||[🔗][I-11-T2]|||||[Resolved][PR6]||
-|I-04|Violation Of Checks Effects Interation Pattern|🔗 (6.2)||||[🔗][I-12-T5]||Acknowledged|We have thoroughly evaluated the current implementation and are confident that it does not introduce any vulnerabilities. It was a conscious decision to prioritize drawing the capital before benefiting the `msg.sender`. Additionally, we have implemented reentrancy guards on all state-modifying functions (except governance related functions) to provide the necessary protection against reentrancy attacks. |
-|I-05|Remove `poolId` from PoolStorage|🔗 (6.1)||||||Resolved|Resolved via H-03.|
-|I-06|Improve code clarity|🔗 (6.3)||||[🔗][I-14-T5]||Resolved ([PR6] / [PR31])|Majority of the suggestions has been implemented.|
-|I-07|Use proper error for non-existing pool|🔗 (6.4)||||||Resolved ([#37][PR37] / [#38][PR38] / [#39][PR39] / [#40][PR40] / [#50][PR50])||
-|I-08|Add incentive for the default settlement|🔗 (6.5)||||||Declined|That was a conscious design choice. Position token holders will have a natural incentive to confirm the value and do not require additional incentives.|
-|I-09|Optimize gas consumption by removing redundant checks|🔗 (6.6)||[🔗][L-14-T3]||||[Resolved][PR18]||
-|I-10|Avoid zero value transfers initiated by the protocol|🔗 (6.7)||||||Acknowledged|We believe that zero value transfers should be excluded on the frontend side rather than within the contract itself. Introducing the proposed check would result in additional gas costs. In particular, as we anticipate that data providers will utilize the `batchClaimFee` function, passing a collateral token with an amount of 0 by accident would cause the entire transaction to revert, leading to significant costs for the data provider.|
-|I-11|Consider adding white hat hacks policy|🔗 (6.9)||||||Acknowledged|We will add a white hat hack policy at a later stage, post mainnet launch.|
-|I-12|Consider extending the effect of the `pauseReturnCollateral` function|🔗 (6.12)||||||Declined|The decision to not implement the ability to pause the creation of derivative contracts was deliberate to prevent the owner from being pressured by a central authority to halt the entire protocol.|
-|I-13|Add missing variable checks in constructor||[🔗][I-06-T2]||||🔗 (1)|[Resolved][PR31]||
-|I-14|Explicit Return [ Code Readability ]||||||🔗 (2)|Acknowledged||
-|I-15|Unclear usage when ERC20 blacklisted user removes liquidity||||||🔗 (6)|Acknowledged|A potential taker that gets blacklisted before filling a remove liquidity offer is equivalent to not having any taker at all. No user is losing any money in such a scenario. The maker can simply wait until expiry to redeem their funds. It doesn't need a taker to return the collateral. HiAudit's recommendation to implement a check to verify if a user is blacklisted is not realistic as any ERC20 token may implement a different function name. |
+|I-04|Violation Of Checks Effects Interation Pattern|[🔗][ComposableSecurity] (6.2)||||[🔗][I-12-T5]||Acknowledged|We have thoroughly evaluated the current implementation and are confident that it does not introduce any vulnerabilities. It was a conscious decision to prioritize drawing the capital before benefiting the `msg.sender`. Additionally, we have implemented reentrancy guards on all state-modifying functions (except governance related functions) to provide the necessary protection against reentrancy attacks. |
+|I-05|Remove `poolId` from PoolStorage|[🔗][ComposableSecurity] (6.1)||||||Resolved|Resolved via H-03.|
+|I-06|Improve code clarity|[🔗][ComposableSecurity] (6.3)||||[🔗][I-14-T5]||Resolved ([PR6] / [PR31])|Majority of the suggestions has been implemented.|
+|I-07|Use proper error for non-existing pool|[🔗][ComposableSecurity] (6.4)||||||Resolved ([#37][PR37] / [#38][PR38] / [#39][PR39] / [#40][PR40] / [#50][PR50])||
+|I-08|Add incentive for the default settlement|[🔗][ComposableSecurity] (6.5)||||||Declined|That was a conscious design choice. Position token holders will have a natural incentive to confirm the value and do not require additional incentives.|
+|I-09|Optimize gas consumption by removing redundant checks|[🔗][ComposableSecurity] (6.6)||[🔗][L-14-T3]||||[Resolved][PR18]||
+|I-10|Avoid zero value transfers initiated by the protocol|[🔗][ComposableSecurity] (6.7)||||||Acknowledged|We believe that zero value transfers should be excluded on the frontend side rather than within the contract itself. Introducing the proposed check would result in additional gas costs. In particular, as we anticipate that data providers will utilize the `batchClaimFee` function, passing a collateral token with an amount of 0 by accident would cause the entire transaction to revert, leading to significant costs for the data provider.|
+|I-11|Consider adding white hat hacks policy|[🔗][ComposableSecurity] (6.9)||||||Acknowledged|We will add a white hat hack policy at a later stage, post mainnet launch.|
+|I-12|Consider extending the effect of the `pauseReturnCollateral` function|[🔗][ComposableSecurity] (6.12)||||||Declined|The decision to not implement the ability to pause the creation of derivative contracts was deliberate to prevent the owner from being pressured by a central authority to halt the entire protocol.|
+|I-13|Add missing variable checks in constructor||[🔗][I-06-T2]||||[🔗][HiAudit] (1)|[Resolved][PR31]||
+|I-14|Explicit Return [ Code Readability ]||||||[🔗][HiAudit] (2)|Acknowledged||
+|I-15|Unclear usage when ERC20 blacklisted user removes liquidity||||||[🔗][HiAudit] (6)|Acknowledged|A potential taker that gets blacklisted before filling a remove liquidity offer is equivalent to not having any taker at all. No user is losing any money in such a scenario. The maker can simply wait until expiry to redeem their funds. It doesn't need a taker to return the collateral. HiAudit's recommendation to implement a check to verify if a user is blacklisted is not realistic as any ERC20 token may implement a different function name. |
 |I-16|Useless require statement at `_diamondCut` function||[🔗][I-04-T2]|||||[Resolved][PR6]|Resulted from using a slightly outdated version of the Diamond Standard which didn't include these optimizations. |
 |I-17|Missing NatSpec @inheritdoc in implementations||[🔗][I-08-T2]|||||Acknowledged|If a function is not documented inside the implementation contract, then it's natural to check whether it's included in the interface. We don't see any value-add of adding the @inheritdoc NatSpec. |
 |I-18|Missing NatSpec in diva-contracts Interfaces||[🔗][I-10-T2]|||||[Resolved][PR54]||
-|I-19|Consider adding popups for front-end application to warn users|🔗 (6.11)||||||Acknowledged|This finding is frontend-related and not directly relevant for the smart contract itself.|
+|I-19|Consider adding popups for front-end application to warn users|[🔗][ComposableSecurity] (6.11)||||||Acknowledged|This finding is frontend-related and not directly relevant for the smart contract itself.|
 
 # Gas optimization
 
@@ -125,7 +126,7 @@ Issues not specifically raised by any of the auditing teams but related to other
 ## High
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
 | :---| :--- |:--- | :--- |:--- |:--- |:--- |:--- |:--- |:--- |
-|H-01|Funds could be stuck in `DIVADevelopmentFund`|🔗 (5.1)|[🔗][H-02-T2]|||||[Resolved][PR8]||
+|H-01|Funds could be stuck in `DIVADevelopmentFund`|[🔗][ComposableSecurity] (5.1)|[🔗][H-02-T2]|||||[Resolved][PR8]||
 
 ## Low
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
@@ -133,15 +134,15 @@ Issues not specifically raised by any of the auditing teams but related to other
 |L-01|Add a minimum deposit amount in `DIVADevelopmentFund`||[🔗][L-09-T2]|||||Declined|Not addressed as someone could create a worthless token to circumvent such restriction. |
 |L-02|Missing possibility of removing deposits that are fully paid in `DIVADevelopmentFund`||[🔗][L-10-T2]|||||Declined|Not addressed as deleting array items would change the indices of deposits which is not desired. Also, the full array is never used, so we don't see any immediate benefit of deleting the items.|
 |L-04|Missing important data in events||[🔗][L-07-T2]|||||[Resolved][PR22]||
-|L-05|Fee-on-transfer tokens will get stuck in Development Fund|🔗 (5.6)|[🔗][L-05-T2]|||||[Resolved][PR27]||
-|L-06|Missing validations while adding new deposit to address ||||||🔗 (7)|Declined|Despite pointing out to the HiAudit team that the zero address does not implement the `safeTransferFrom` function, they refused to remove this finding from the report, insisting that it aligns with best practices.|
+|L-05|Fee-on-transfer tokens will get stuck in Development Fund|[🔗][ComposableSecurity] (5.6)|[🔗][L-05-T2]|||||[Resolved][PR27]||
+|L-06|Missing validations while adding new deposit to address ||||||[🔗][HiAudit] (7)|Declined|Despite pointing out to the HiAudit team that the zero address does not implement the `safeTransferFrom` function, they refused to remove this finding from the report, insisting that it aligns with best practices.|
 
 ## Informational
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
 | :---| :--- |:--- | :--- |:--- |:--- |:--- |:--- |:--- |:--- |
-|I-01|Add missing variable checks in constructor||[🔗][I-06-T2]||||🔗 (1)|[Resolved][PR31]||
-|I-02|Improve code clarity|🔗 (6.3)||||||Resolved ([#6][PR6] / [#31][PR31])|Majority of the suggestions has been implemented.|
-|I-03|Remove `payable` mutability from `withdraw` function|🔗 (6.10)||||||Acknowledged|We decided to leave it as is as the owner has the possibility to withdraw any directly deposited ETH.|
+|I-01|Add missing variable checks in constructor||[🔗][I-06-T2]|||||[Resolved][PR31]||
+|I-02|Improve code clarity|[🔗][ComposableSecurity] (6.3)||||||Resolved ([#6][PR6] / [#31][PR31])|Majority of the suggestions has been implemented.|
+|I-03|Remove `payable` mutability from `withdraw` function|[🔗][ComposableSecurity] (6.10)||||||Acknowledged|We decided to leave it as is as the owner has the possibility to withdraw any directly deposited ETH.|
 |I-04|Missing NatSpec @inheritdoc in implementations||[🔗][I-08-T2]|||||Acknowledged|If a function is not documented inside the implementation contract, then it's natural to check whether it's included in the interface. We don't see any value-add of adding the @inheritdoc NatSpec. |
 |I-05|Missing NatSpec in diva-contracts Interfaces||[🔗][I-10-T2]|||||[Resolved][PR54]||
 
@@ -165,8 +166,8 @@ Issues not specifically raised by any of the auditing teams but related to other
 |I-01|Missing validation on deployment of DIVAOracleTellor||[🔗][I-01-T2]|||||[Resolved][PR79-TA]||
 |I-02|Use specific imports instead of just a global import in DIVAOracleTellor||[🔗][I-03-T2]|||||[Resolved][PR79-TA]||
 |I-03|Change immutable to constant if a fixed value is used||[🔗][I-09-T2]|||||[Resolved][PR79-TA]||
-|I-04|Add missing variable checks in constructor||[🔗][I-06-T2]||||🔗 (1)|[Resolved][PR79-TA]||
-|I-05|Pragma version|🔗 (6.14)|[🔗][I-02-T2]|||||[Resolved][PR79-TA]|Decided to use Solidity version 0.8.19 for all contracts.|
+|I-04|Add missing variable checks in constructor||[🔗][I-06-T2]|||||[Resolved][PR79-TA]||
+|I-05|Pragma version|[🔗][ComposableSecurity] (6.14)|[🔗][I-02-T2]|||||[Resolved][PR79-TA]|Decided to use Solidity version 0.8.19 for all contracts.|
 |I-06|Missing NatSpec @inheritdoc in implementations||[🔗][I-08-T2]|||||Acknowledged|If a function is not documented inside the implementation contract, then it's natural to check whether it's included in the interface. We don't see any value-add in adding the @inheritdoc NatSpec. |
 
 ## Other
@@ -184,9 +185,9 @@ Issues not specifically raised by any of the auditing teams but related to other
 ## Informational
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
 | :---| :--- |:--- | :--- |:--- |:--- |:--- |:--- |:--- |:--- |
-|I-01|Detect duplicates in claimers' addresses|🔗 (6.8)||||||[Resolved][PR9-DC]||
-|I-02|Protect withdrawing all tokens before setting up trigger|🔗 (6.13)||||||Acknowledged|Not addressed as this may be useful in case something goes wrong at initialization. |
-|I-03|Pragma version|🔗 (6.14)||||||[Resolved][PR13-DC]||
+|I-01|Detect duplicates in claimers' addresses|[🔗][ComposableSecurity] (6.8)||||||[Resolved][PR9-DC]||
+|I-02|Protect withdrawing all tokens before setting up trigger|[🔗][ComposableSecurity] (6.13)||||||Acknowledged|Not addressed as this may be useful in case something goes wrong at initialization. |
+|I-03|Pragma version|[🔗][ComposableSecurity] (6.14)||||||[Resolved][PR13-DC]||
 
 ## Other
 
@@ -326,3 +327,6 @@ Issues not specifically raised by any of the auditing teams but related to other
 [G-10-T5]: https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam7.md#g-10-ps-variable-can-be-inlined
 [G-11-T5]: https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam7.md#-g-11-use-while-loop-instead-of-for-loop
 [I-14-T5]: https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam7.md#g-1-for-operations-that-will-not-overflow-you-could-use-unchecked
+
+[ComposableSecurity]: https://drive.google.com/file/d/1ScOni4xLaB2XPv7_7mYgcCLwrhGA5q3t/view?usp=sharing
+[HiAudit]: https://drive.google.com/file/d/1_4ulGrrKutDWP-1nCdLuaHttXoiNVwHq/view?usp=sharing
