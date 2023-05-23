@@ -165,6 +165,7 @@ n/a
 
 Note that the following findings are the result of a slightly outdated version of the Diamond Standard that was used.
 
+## Low
 |ID | Description        | T1 |T2 | T3 | T4 | T5 | T6 | Status | Team comment|
 | :---| :--- |:--- | :--- |:--- |:--- |:--- |:--- |:--- |:--- |
 |L-01|Wrong implementation of EIP-2535 in LibDiamond library||[🔗][L-06-T2]|||||[Fixed][PR6]||

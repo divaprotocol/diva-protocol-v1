@@ -2704,7 +2704,7 @@ To ensure the reliability of reported data, Tellor recommends that only data rep
 
 To bridge the DIVA owner information stored in the `DIVAOwnershipMain` contract on Ethereum (main chain) to the `DIVAOwnershipSecondary` contract on a secondary chain, Tellor's [`EVMCall`](https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md) query type, which is specifically designed for cross-chain communication, is used.
 
-To report the DIVA owner to a secondary chain, a Tellor reporter would perform the following steps (for code examples, refer to the [`DIVAOwnershipSecondary.test.ts`](https://github.com/divaprotocol/diva-contracts/blob/main/test/DIVAOwnershipSecondary.test.ts) script):
+To report the DIVA owner to a secondary chain, a Tellor reporter would perform the following steps (for code examples, refer to the [`DIVAOwnershipSecondary.test.ts`](https://github.com/divaprotocol/diva-protocol-v1/blob/main/test/DIVAOwnershipSecondary.test.ts) script):
 1. Retrieve the current owner address via [`getCurrentOwner()`](#getcurrentowner) function on the main chain ownership contract.
 1. Submit the encoded owner address along with the query data and Id returned by [`getQueryDataAndId`](#getquerydataandid) by calling Tellor's [`submitValue`](https://docs.tellor.io/tellor/getting-data/tellor-playground#testing-with-tellor) function on the secondary chain.
 1. Wait until the 12-hour dispute period has passed.
