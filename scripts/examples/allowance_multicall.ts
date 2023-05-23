@@ -1,18 +1,26 @@
 /**
- * Script to get the allowances using multicall contract
+ * Script to get the allowances using multicall contract.
  * Run: `yarn erc20::allowance_multicall`
  */
 
 import { ethers, network } from "hardhat";
-
 import ERC20_ABI from "../../abis/erc20.json";
 import { multicall } from "../../utils";
 import { DIVA_ADDRESS, COLLATERAL_TOKENS } from "../../constants";
 
 async function main() {
-  // INPUT: collateral token
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+  
+  // Collateral token
   const collateralTokenSymbol = "dUSD";
 
+  
+  // ************************************
+  //              EXECUTION
+  // ************************************
+  
   // Get signer of users
   const [user1, user2, user3] = await ethers.getSigners();
 

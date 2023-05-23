@@ -1,5 +1,5 @@
 /**
- * Script to set the allowance for the 0x exchange contract
+ * Script to set the allowance for a given spender address.
  * Run: `yarn erc20::approve`
  */
 
@@ -7,18 +7,29 @@ import { ethers } from "hardhat";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
 async function main() {
-  // INPUT: address of token to approve
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Address of token to approve
   const tokenToApprove = "0xFA158C9B780A4213f3201Ae74Cca013712c8538d";
 
-  // Input arguments for `approve` function
-  const exchangeProxyAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207"; // same for several chains including Mainnet and Ropsten
+  // Spender address
+  const spenderAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207"; // same for several chains including Mainnet and Ropsten
+  
+  // Allowance amount
   const allowanceString = "10000000000000000"; // conversion into BigNumber with the respective number of decimals is done below
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get signer of user
   const [, user] = await ethers.getSigners();
 
   console.log("Approved by: " + user.address);
-  console.log("Approved for: " + exchangeProxyAddress);
+  console.log("Approved for: " + spenderAddress);
 
   // Connect to token to approve
   const erc20 = await ethers.getContractAt("MockERC20", tokenToApprove);
@@ -30,7 +41,7 @@ async function main() {
   // Allowance before
   const allowanceBefore = await erc20.allowance(
     user.address,
-    exchangeProxyAddress
+    spenderAddress
   );
   console.log(
     "Current approved amount (integer): " + allowanceBefore.toString()
@@ -45,14 +56,14 @@ async function main() {
   console.log("balance of (integer): ", balance.toString());
   console.log("balance of (decimals): ", formatUnits(balance, decimals));
 
-  // Set allowance for exchangeProxyAddress
-  const tx = await erc20.connect(user).approve(exchangeProxyAddress, allowance);
+  // Set allowance for spenderAddress
+  const tx = await erc20.connect(user).approve(spenderAddress, allowance);
   await tx.wait();
 
-  // Print
+  // Log relevant information
   const allowanceAfter = await erc20.allowance(
     user.address,
-    exchangeProxyAddress
+    spenderAddress
   );
   console.log("New approved amount (integer): " + allowanceAfter.toString());
   console.log(

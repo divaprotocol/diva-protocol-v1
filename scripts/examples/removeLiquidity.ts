@@ -1,18 +1,22 @@
 /**
- * Script to remove liquidity from an existing pool
+ * Script to remove liquidity from an existing pool.
  * Run: `yarn diva::remove`
+ * 
+ * Example usage:
+ * Create pool via `yarn diva::create`.
+ * Remove a portion of the collateral deposited via `yarn diva::remove`.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status } from "../../constants";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
 const _checkConditions = (
   amountTokens: BigNumber,
   longBalance: BigNumber,
@@ -50,10 +54,22 @@ const _checkConditions = (
 };
 
 async function main() {
-  // Input arguments for `removeLiquidity` function
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Id of an existing pool
   const poolId =
-    "0x7842b049600e8a69f7462b02bb1fe2e489cfe8939e238be28e6d02e8a5868782"; // id of an existing pool
-  const amountTokensString = "1"; // number of long and short tokens to return to the pool; conversion into large integer happens below in the code
+    "0xedc198bf15d0d07da3e8a19a0c7cb73d63ca15d69e0453b8a171c49b643ff6f6";
+
+  // Number of long and short tokens to return to the pool. Conversion into
+  // integer happens below in the code as it depends on the collateral token decimals.
+  const amountTokensString = "1";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get signer of account that will remove liquidity
   const [user] = await ethers.getSigners();
@@ -71,7 +87,7 @@ async function main() {
   );
   const decimals = await erc20Contract.decimals();
 
-  // Convert amountTokens into large integer with collateral token decimals
+  // Convert amountTokens into an integer with collateral token decimals
   const amountTokens = parseUnits(amountTokensString, decimals);
 
   // Connect to long and short tokens
