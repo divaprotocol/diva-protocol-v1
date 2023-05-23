@@ -1,23 +1,24 @@
 /**
  * Script to add liquidity to an existing contingent pool.
- * Run this function with existing pool id.
- * (i.e. You can create a pool by calling `createContingentPool` or `fillOfferCreateContingentPool`).
  * Run: `yarn diva::add`
+ * 
+ * Example usage:
+ * Create pool via `yarn diva::create`.
+ * Add more collateral to the pool via `yarn diva::add`.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
 const _checkConditions = async (
   poolParams: LibDIVAStorage.PoolStruct,
   additionalAmount: BigNumber,
@@ -28,12 +29,14 @@ const _checkConditions = async (
   // Get current time (proxy for block timestamp)
   const now = getCurrentTimestamp();
 
-  // Check that neither longRecipient nor shortRecipient equal to the zero address
-  if (
-    longRecipient === ethers.constants.AddressZero ||
-    shortRecipient === ethers.constants.AddressZero
-  ) {
-    throw new Error("Long and short token recipient cannot be zero address.");
+  // Check that longRecipient does not equal to the zero address
+  if (longRecipient === ethers.constants.AddressZero) {
+    throw new Error("Long token recipient cannot be the zero address.");
+  }
+
+  // Check that shortRecipient does not equal to the zero address
+  if (shortRecipient === ethers.constants.AddressZero) {
+    throw new Error("Short token recipient cannot be the zero address.");
   }
 
   // Check that pool didn't expiry yet
@@ -56,17 +59,32 @@ const _checkConditions = async (
   if (collateralBalanceUser.lt(additionalAmount)) {
     throw new Error("Insufficient collateral tokens in wallet.");
   }
+
+  // Note that additional of liquidity will not be possible if the collateral token
+  // activated a transfer fee after the pool was created.
 };
 
 async function main() {
   // ************************************
-  // INPUT ARGUMENTS
+  //           INPUT ARGUMENTS
   // ************************************
+
+  // Id of an existing pool
   const poolId =
-    "0x2db131f3a60c0ab863daa5410b7cae963b26423fc11811a126e84e72ebda54e3"; // id of an existing pool
-  const additionalAmountString = "3"; // Collateral token amount to be added to an existing pool; parseUnits conversion is done below as it depends on the collateral token decimals
+    "0xedc198bf15d0d07da3e8a19a0c7cb73d63ca15d69e0453b8a171c49b643ff6f6";
+  
+  // Collateral token amount to be added to an existing pool. Conversion into
+  // integer happens below in the code as it depends on the collateral token decimals.
+  const additionalAmountString = "3";
+  
+  // Long & short token recipients
   const longRecipient = "0x245B8ABbC1B70B370d1b81398dE0a7920B25E7ca";
   const shortRecipient = "0x2ADdE7aBe04Bc1F14a3c397251A01276344Cc8a8";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get liquidity provider's signer
   const [liquidityProvider] = await ethers.getSigners();
@@ -113,7 +131,7 @@ async function main() {
     );
     await approveTx.wait();
 
-    // Get liquidityProvider's new allowance
+    // Get liquidity provider's new allowance
     allowance = await erc20Contract.allowance(
       liquidityProvider.address,
       diva.address

@@ -3,8 +3,9 @@
  * Run: `yarn diva::addTip`
  *
  * Example usage:
- * Create pool via `yarn diva::create`
- * Add a tip in collateral token to that pool via `yarn diva::addTip`
+ * Create pool via `yarn diva::create`.
+ * Add a tip in collateral token to that pool via `yarn diva::addTip`.
+ * Note that the pool must not be expired.
  */
 
 import { ethers, network } from "hardhat";
@@ -18,7 +19,8 @@ import { DIVA_ADDRESS, Status } from "../../constants";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
 const _checkConditions = async (
   poolParams: LibDIVAStorage.PoolStruct,
   tipAmount: BigNumber,
@@ -37,11 +39,21 @@ const _checkConditions = async (
 
 async function main() {
   // ************************************
-  // INPUT ARGUMENTS
+  //           INPUT ARGUMENTS
   // ************************************
+
+  // Id of an existing pool
   const poolId =
-    "0x5d829fd4c4a7ea6b5854f4f4b22848ced3dcb5a2914ea9d2f4d28e9f4eb9cf6b"; // Id of an existing pool
-  const tipAmountString = "3"; // Collateral token amount to be added to an existing pool as a tip; parseUnits conversion is done below as it depends on the collateral token decimals
+    "0x7f09df8dc50f70b2f8c8252d744af3bcbe8ad01b2925feb92b87d0ccac70195a";
+
+  // Collateral token amount to be added to an existing pool as a tip. Conversion into
+  // integer happens below in the code as it depends on the collateral token decimals.
+  const tipAmountString = "3";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get tipper's signer
   const [tipper] = await ethers.getSigners();

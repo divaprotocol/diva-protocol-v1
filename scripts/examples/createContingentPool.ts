@@ -89,8 +89,17 @@ const _checkConditions = (
 };
 
 async function main() {
-  // INPUT: collateral token
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Collateral token
   const collateralTokenSymbol = "dUSD";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Set ERC20 collateral token address
   const erc20CollateralTokenAddress =
@@ -111,7 +120,7 @@ async function main() {
 
   // Input arguments for `createContingentPool` function
   const referenceAsset = "ETH/USD";
-  const expiryTime = await getExpiryTime(1000); // 10 means expiry in 10 seconds from now
+  const expiryTime = await getExpiryTime(2000); // 10 means expiry in 10 seconds from now
   const floor = parseUnits("2000");
   const inflection = parseUnits("2500");
   const cap = parseUnits("3000");
