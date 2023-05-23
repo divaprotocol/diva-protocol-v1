@@ -6,14 +6,14 @@
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, COLLATERAL_TOKENS } from "../../constants";
 import { getCurrentTimestamp, getExpiryTime } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
 const _checkConditions = (
   referenceAsset: string,
   expiryTime: string,
@@ -45,11 +45,16 @@ const _checkConditions = (
     throw new Error("Ensure that floor <= inflection <= cap.");
   }
 
-  if (
-    collateralToken === ethers.constants.AddressZero ||
-    dataProvider === ethers.constants.AddressZero
-  ) {
-    throw new Error("collateralToken/dataProvider cannot be zero address.");
+  if (cap.gte(parseUnits("1", 59))) {
+    throw new Error("Cap should not exceed 1e59.");
+  }
+
+  if (collateralToken === ethers.constants.AddressZero) {
+    throw new Error("collateralToken cannot be zero address.");
+  }
+
+  if (dataProvider === ethers.constants.AddressZero) {
+    throw new Error("dataProvider cannot be zero address.");
   }
 
   if (gradient.gt(parseUnits("1", decimals))) {
@@ -68,16 +73,19 @@ const _checkConditions = (
     throw new Error("Collateral token cannot have less than 6 decimals.");
   }
 
-  if (
-    longRecipient === ethers.constants.AddressZero ||
-    shortRecipient === ethers.constants.AddressZero
-  ) {
-    throw new Error("Long and short token recipient cannot be zero address.");
+  if (longRecipient === ethers.constants.AddressZero) {
+    throw new Error("Long token recipient cannot be the zero address.");
+  }
+
+  if (shortRecipient === ethers.constants.AddressZero) {
+    throw new Error("Short token recipient cannot be the zero address.");
   }
 
   if (userBalance.lt(collateralAmount)) {
     throw new Error("Insufficient collateral tokens in wallet.");
   }
+
+  // Note that collateral tokens that charge fees on transfers are not supported.
 };
 
 async function main() {
@@ -103,7 +111,7 @@ async function main() {
 
   // Input arguments for `createContingentPool` function
   const referenceAsset = "ETH/USD";
-  const expiryTime = await getExpiryTime(100); // 10 means expiry in 10 seconds from now
+  const expiryTime = await getExpiryTime(1000); // 10 means expiry in 10 seconds from now
   const floor = parseUnits("2000");
   const inflection = parseUnits("2500");
   const cap = parseUnits("3000");
@@ -140,8 +148,8 @@ async function main() {
   // Get creator's current allowance
   let allowance = await erc20Contract.allowance(creator.address, diva.address);
 
+  // Increase allowance for DIVA contract if insufficient
   if (allowance.lt(collateralAmount)) {
-    // Increase allowance for DIVA contract
     const approveTx = await erc20Contract
       .connect(creator)
       .approve(diva.address, collateralAmount);
