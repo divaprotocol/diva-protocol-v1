@@ -1909,6 +1909,8 @@ Function to get the offer hash as well as information about the fillability and 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's collateral token allowance and balance. Any changes in those two variables may impact the fillability of the offer.
 - **Validity:** Validity of signature and create contingent pool parameters included in the offer.
 
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a fee token is used, the maker gets blacklisted after creating the offer, or the zero address is specified as the recipient of long and/or short position tokens. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
+
 ```js
 function getOfferRelevantStateCreateContingentPool(
     OfferCreateContingentPool calldata _offerCreateContingentPool, // Struct containing the create pool offer details
@@ -1932,6 +1934,8 @@ Function to get the offer hash as well as information about the fillability and 
 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's collateral token allowance and balance. Any changes in those two variables may impact the fillability of the offer.
 - **Validity:** Validity of signature and the `poolId` included in the offer.
+
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a fee was activated for the collateral token, the maker gets blacklisted after creating the offer, or the zero address is specified as the recipient of long and/or short position tokens. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
 
 ```js
 function getOfferRelevantStateAddLiquidity(
@@ -1958,6 +1962,8 @@ Function to get the offer hash as well as information about the fillability and 
 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's position token balance. Any changes in the maker's balance may impact the fillability of the offer.
 - **Validity:** Validity of signature and the `poolId` included in the offer.
+
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a non-existent poolId is used, the maker gets blacklisted after creating the offer, or the final value is already confirmed. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
 
 ```js
 function getOfferRelevantStateRemoveLiquidity(
