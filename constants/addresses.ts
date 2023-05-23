@@ -1,6 +1,8 @@
 // DIVA Protocol V1 contract addresses by network.
 // Used in example scripts only.
-export const DIVA_ADDRESS = {
+export const DIVA_ADDRESS: {
+  [key: string]: string;
+} = {
   ethMain: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
   polygon: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
   gnosis: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
@@ -10,28 +12,28 @@ export const DIVA_ADDRESS = {
   mumbai: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
   chiado: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
   arbitrumTestnet: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
-} as {
-  [key: string]: string;
 };
 
 // Ownership contract address on primary chain. Used in `stake.ts` example script only
-export const OWNERSHIP_ADDRESS = {
+export const OWNERSHIP_ADDRESS: {
+  [key: string]: string;
+} = {
   ethMain: "0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A",
   sepolia: "0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A",
-} as {
-  [key: string]: string;
 };
 
 // Used in `stake.ts` example script only
-export const DIVA_TOKEN_ADDRESS = {
+export const DIVA_TOKEN_ADDRESS: { [key: string]: string } = {
   ethMain: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
   sepolia: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
-} as {
-  [key: string]: string;
 };
 
 // Used in example scripts only (e.g., `createContingentPool.ts`)
-export const COLLATERAL_TOKENS = {
+export const COLLATERAL_TOKENS: {
+  [key: string]: {
+    [key: string]: string;
+  };
+} = {
   goerli: {
     dUSD: "0xFA158C9B780A4213f3201Ae74Cca013712c8538d",
   },
@@ -47,16 +49,14 @@ export const COLLATERAL_TOKENS = {
   arbitrumTestnet: {
     dUSD: "0x7F8c827150FeA992132Ad44Fe3EB58A9A5270490",
   },
-} as {
-  [key: string]: {
-    [key: string]: string;
-  };
 };
 
 // Tellor contract INCLUDING the requirement to stake prior to reporting.
 // Used for DIVA Protocol secondary version deployment.
 // Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
-export const TELLOR_ADDRESS = {
+export const TELLOR_ADDRESS: {
+  [key: string]: string;
+} = {
   ethMain: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   gnosis: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
@@ -66,14 +66,14 @@ export const TELLOR_ADDRESS = {
   mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   arbitrumTestnet: "0xb2CB696fE5244fB9004877e58dcB680cB86Ba444",
-} as {
-  [key: string]: string;
 };
 
 // Tellor playground contract EXCLUDING the requirement to stake prior to reporting.
 // Used for tests only.
 // Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
-export const TELLOR_PLAYGROUND_ADDRESS = {
+export const TELLOR_PLAYGROUND_ADDRESS: {
+  [key: string]: string;
+} = {
   goerli: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
   sepolia: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
   mumbai: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
@@ -82,7 +82,9 @@ export const TELLOR_PLAYGROUND_ADDRESS = {
 };
 
 // Used in example scripts only
-export const MULTICALL_ADDRESS = {
+export const MULTICALL_ADDRESS: {
+  [key: string]: string;
+} = {
   ethMain: "",
   polygon: "",
   gnosis: "",
@@ -92,6 +94,4 @@ export const MULTICALL_ADDRESS = {
   chiado: "",
   sepolia: "",
   arbitrumTestnet: "",
-} as {
-  [key: string]: string;
 };
