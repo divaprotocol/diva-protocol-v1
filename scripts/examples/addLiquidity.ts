@@ -5,7 +5,7 @@
  * Run: `yarn diva::add`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
@@ -13,6 +13,7 @@ import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFac
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
+import { getCurrentTimestamp } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -25,16 +26,14 @@ const _checkConditions = async (
   collateralBalanceUser: BigNumber
 ) => {
   // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
+  const now = getCurrentTimestamp();
 
   // Check that neither longRecipient nor shortRecipient equal to the zero address
   if (
     longRecipient === ethers.constants.AddressZero ||
     shortRecipient === ethers.constants.AddressZero
   ) {
-    throw new Error(
-      "Long or short token recipient cannot be both zero address"
-    );
+    throw new Error("Long and short token recipient cannot be zero address.");
   }
 
   // Check that pool didn't expiry yet
@@ -50,22 +49,22 @@ const _checkConditions = async (
       .add(additionalAmount)
       .gt(BigNumber.from(poolParams.capacity))
   ) {
-    throw new Error("Pool capacity exceeded");
+    throw new Error("Pool capacity exceeded.");
   }
 
   // Check user's collateral token balance
   if (collateralBalanceUser.lt(additionalAmount)) {
-    throw new Error("Insufficient collateral tokens in wallet");
+    throw new Error("Insufficient collateral tokens in wallet.");
   }
 };
 
 async function main() {
-  // Set network. Should be the same as in diva::add command.
-  const network = "goerli";
-
-  // Input arguments for `addLiquidity` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
-  const additionalAmountNumber = 3; // collateral token amount to be added to an existing pool; parseUnits conversion is done below as it depends on the collateral token decimals
+  // ************************************
+  // INPUT ARGUMENTS
+  // ************************************
+  const poolId =
+    "0x2db131f3a60c0ab863daa5410b7cae963b26423fc11811a126e84e72ebda54e3"; // id of an existing pool
+  const additionalAmountString = "3"; // Collateral token amount to be added to an existing pool; parseUnits conversion is done below as it depends on the collateral token decimals
   const longRecipient = "0x245B8ABbC1B70B370d1b81398dE0a7920B25E7ca";
   const shortRecipient = "0x2ADdE7aBe04Bc1F14a3c397251A01276344Cc8a8";
 
@@ -73,7 +72,7 @@ async function main() {
   const [liquidityProvider] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get pool parameters before new liquidity is added
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -83,11 +82,10 @@ async function main() {
     "MockERC20",
     poolParamsBefore.collateralToken
   );
+
+  // Convert tip amount into integer format expected by `addLiquidity` function
   const decimals = await erc20Contract.decimals();
-  const additionalAmount = parseUnits(
-    additionalAmountNumber.toString(),
-    decimals
-  );
+  const additionalAmount = parseUnits(additionalAmountString, decimals);
 
   // Get liquidityProvider's collateral token balances
   const balance = await erc20Contract.balanceOf(liquidityProvider.address);
@@ -107,9 +105,8 @@ async function main() {
     diva.address
   );
 
-  // Set allowance if insufficient
+  // Increase allowance if insufficient
   if (allowance.lt(additionalAmount)) {
-    // Increase allowance for DIVA contract
     const approveTx = await erc20Contract.approve(
       diva.address,
       additionalAmount

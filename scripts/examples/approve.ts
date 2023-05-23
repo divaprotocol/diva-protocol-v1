@@ -7,10 +7,12 @@ import { ethers } from "hardhat";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
 async function main() {
-  // INPUT: 0x exchange proxy address, token to approve, amount to approve
-  const exchangeProxyAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207"; // same for several chains including Mainnet and Ropsten
+  // INPUT: address of token to approve
   const tokenToApprove = "0xFA158C9B780A4213f3201Ae74Cca013712c8538d";
-  const allowanceNumber = 10000000000000000; // conversion into BigNumber with the respective number of decimals is done below
+
+  // Input arguments for `approve` function
+  const exchangeProxyAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207"; // same for several chains including Mainnet and Ropsten
+  const allowanceString = "10000000000000000"; // conversion into BigNumber with the respective number of decimals is done below
 
   // Get signer of user
   const [, user] = await ethers.getSigners();
@@ -23,7 +25,7 @@ async function main() {
 
   // Get token decimals and convert allowance amount into BigNumber
   const decimals = await erc20.decimals();
-  const allowance = parseUnits(allowanceNumber.toString(), decimals);
+  const allowance = parseUnits(allowanceString, decimals);
 
   // Allowance before
   const allowanceBefore = await erc20.allowance(

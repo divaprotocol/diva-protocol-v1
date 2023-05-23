@@ -1,4 +1,4 @@
-import { BigNumber, Contract } from "ethers";
+import { BigNumber } from "ethers";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
 export type OfferCreateContingentPool = {
@@ -132,4 +132,16 @@ export type Deposit = {
   startTime: BigNumber;
   endTime: BigNumber;
   lastClaimedAt: BigNumber;
+};
+
+export type FallbackDataProviderInfo = {
+  previousFallbackDataProvider: string;
+  fallbackDataProvider: string;
+  startTimeFallbackDataProvider: BigNumber;
+};
+
+export type TreasuryInfo = {
+  previousTreasury: string;
+  treasury: string;
+  startTimeTreasury: BigNumber;
 };

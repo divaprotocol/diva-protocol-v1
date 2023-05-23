@@ -3,7 +3,7 @@
  * Run: `yarn diva::transferFeeClaim`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
@@ -18,30 +18,27 @@ const _checkConditions = (
   transferAmount: BigNumber
 ) => {
   if (newFeeRecipient === ethers.constants.AddressZero) {
-    throw new Error("Recipient is zero address");
+    throw new Error("Recipient is zero address.");
   }
 
   if (feeCurrentFeeRecipient.lt(transferAmount)) {
-    throw new Error("Transfer amount exceeds claimable fee");
+    throw new Error("Transfer amount exceeds claimable fee.");
   }
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
   // INPUT: collateral token symbol
   const collateralTokenSymbol = "dUSD";
 
   // Lookup collateral token address
   const collateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
 
   // Get signers of current fee recipient and new fee recipient
   const [, newFeeRecipient, currentFeeRecipient] = await ethers.getSigners();
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get fee claim amount before transfer fee
   const feeCurrentFeeRecipientBefore = await diva.getClaim(

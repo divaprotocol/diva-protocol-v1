@@ -7,7 +7,7 @@
  * calculated inside the smart contract.
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { formatUnits, parseUnits } from "@ethersproject/units";
 
@@ -15,6 +15,7 @@ import { MockERC20 } from "../../typechain-types/contracts/mocks/MockERC20";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, LONG_OR_SHORT, Status } from "../../constants";
+import { getCurrentTimestamp } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -27,16 +28,16 @@ const _checkConditions = (
   reviewPeriod: BigNumber
 ) => {
   // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
+  const now = getCurrentTimestamp();
 
   // Confirm that functionality is not paused
   if (now < pauseReturnCollateralUntil.toNumber()) {
-    throw new Error("Return collateral paused");
+    throw new Error("Return collateral paused.");
   }
 
   // Check that a reference value was already set
   if (statusFinalReferenceValue == Status.Open) {
-    throw new Error("Final reference value not set");
+    throw new Error("Final reference value not set.");
   }
 
   // Scenarios under which the submitted value will be set to Confirmed at
@@ -46,30 +47,28 @@ const _checkConditions = (
     // not challenged during the challenge period. In that case the
     // submitted value is considered the final one.
     if (now <= statusTimestamp.add(challengePeriod).toNumber()) {
-      throw new Error("Challenge period not expired");
+      throw new Error("Challenge period not expired.");
     }
   } else if (statusFinalReferenceValue == Status.Challenged) {
     // Scenario 2: Submitted value was challenged, but data provider did not
     // respond during the review period. In that case, the initially submitted
     // value is considered the final one.
     if (now <= statusTimestamp.add(reviewPeriod).toNumber()) {
-      throw new Error("Review period not expired");
+      throw new Error("Review period not expired.");
     }
   }
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
   // INPUT: id of an existing pool
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
+  const poolId =
+    "0x65d3fc0cb57553abc4441d384e6356bfcb04b550fa36aca716a86692b159f42d";
 
   // Get signer of position token holder
   const [positionTokenHolder] = await ethers.getSigners();
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   const redemptionAmount = parseUnits("10"); // number of position tokens to redeem
   const sideToRedeem = LONG_OR_SHORT.long; // short / long
@@ -109,7 +108,7 @@ async function main() {
       poolParams.longToken
     );
   } else {
-    throw new Error("Invalid input for sideToRedeem. Choose short or long");
+    throw new Error("Invalid input for sideToRedeem. Choose short or long.");
   }
 
   // Get total supply of position token before redemption

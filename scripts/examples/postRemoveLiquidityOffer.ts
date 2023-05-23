@@ -4,28 +4,28 @@
  */
 
 import fetch from "cross-fetch";
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { parseUnits } from "@ethersproject/units";
 import {
   DIVA_ADDRESS,
   REMOVE_LIQUIDITY_TYPE,
   OfferRemoveLiquidity,
+  EIP712API_URL,
 } from "../../constants";
 import {
   getExpiryTime,
   generateSignatureAndTypedMessageHash,
+  writeFile,
 } from "../../utils";
 import DIVA_ABI from "../../diamondABI/diamond.json";
-import { GetterFacet } from "../../typechain-types";
 
 async function main() {
-  const API_URL = "https://eip712api.xyz/diva/offer/v1/remove_liquidity";
-  const network = "goerli";
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
+  const apiUrl = `${EIP712API_URL[network.name]}/remove_liquidity`;
+  const poolId =
+    "0x5d829fd4c4a7ea6b5854f4f4b22848ced3dcb5a2914ea9d2f4d28e9f4eb9cf6b";
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Check whether pool exists (collateral token address is zero if it doesn't)
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -65,17 +65,13 @@ async function main() {
 
   // Prepare data for signing
   const [signer] = await ethers.getSigners();
-  const getterFacet: GetterFacet = await ethers.getContractAt(
-    "GetterFacet",
-    DIVA_ADDRESS[network]
-  );
-  const chainId = (await getterFacet.getChainId()).toNumber();
-  const verifyingContract = DIVA_ADDRESS[network];
+  const chainId = (await diva.getChainId()).toNumber();
+  const verifyingContract = DIVA_ADDRESS[network.name];
   const divaDomain = {
     name: "DIVA Protocol",
     version: "1",
     chainId,
-    verifyingContract: DIVA_ADDRESS[network],
+    verifyingContract: DIVA_ADDRESS[network.name],
   };
 
   // Sign offer
@@ -88,11 +84,10 @@ async function main() {
   );
 
   // Get offer hash
-  const relevantStateParams =
-    await getterFacet.getOfferRelevantStateRemoveLiquidity(
-      offerRemoveLiquidity,
-      signature
-    );
+  const relevantStateParams = await diva.getOfferRelevantStateRemoveLiquidity(
+    offerRemoveLiquidity,
+    signature
+  );
   const offerHash = relevantStateParams.offerInfo.typedOfferHash;
 
   // Prepare data to be posted to the api server
@@ -105,7 +100,7 @@ async function main() {
   };
 
   // Post offer data to the api server
-  await fetch(API_URL, {
+  await fetch(apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -113,10 +108,16 @@ async function main() {
     body: JSON.stringify(data),
   });
 
+  // Save offer as json
+  writeFile(
+    `offers/removeLiquidityOffer_${offerRemoveLiquidity.salt}.json`,
+    JSON.stringify(data)
+  );
+
   console.log("Hash of remove liquidity offer: ", offerHash);
 
   // Get posted offer
-  const getUrl = `${API_URL}/${offerHash}`;
+  const getUrl = `${apiUrl}/${offerHash}`;
   const res = await fetch(getUrl, {
     method: "GET",
   });

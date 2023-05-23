@@ -3,7 +3,7 @@
  * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
@@ -21,18 +21,15 @@ import { parseUnits } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
   // INPUT: collateral token
   const collateralTokenSymbol = "dUSD";
 
-  const divaAddress = DIVA_ADDRESS[network];
+  const divaAddress = DIVA_ADDRESS[network.name];
   const collateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get chainId
   const chainId = (await diva.getChainId()).toNumber();
@@ -101,7 +98,7 @@ async function main() {
   ];
 
   const offerRelevantStatesCreateContingentPool = await multicall(
-    network,
+    network.name,
     DIVA_ABI,
     offersCreateContingentPool
   );

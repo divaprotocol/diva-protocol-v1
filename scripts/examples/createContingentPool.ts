@@ -3,13 +3,13 @@
  * Run: `yarn diva::create`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits } from "@ethersproject/units";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, COLLATERAL_TOKENS } from "../../constants";
-import { getExpiryTime } from "../../utils";
+import { getCurrentTimestamp, getExpiryTime } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -31,67 +31,62 @@ const _checkConditions = (
   userBalance: BigNumber
 ) => {
   // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
+  const now = getCurrentTimestamp();
 
   if (Number(expiryTime) <= now) {
-    throw new Error("Expiry time has to be in the future");
+    throw new Error("Expiry time has to be in the future.");
   }
 
   if (referenceAsset.length === 0) {
-    throw new Error("Reference asset cannot be an empty string");
+    throw new Error("Reference asset cannot be an empty string.");
   }
 
   if (!(floor.lte(inflection) && inflection.lte(cap))) {
-    throw new Error("Ensure that floor <= inflection <= cap");
+    throw new Error("Ensure that floor <= inflection <= cap.");
   }
 
   if (
     collateralToken === ethers.constants.AddressZero ||
     dataProvider === ethers.constants.AddressZero
   ) {
-    throw new Error("collateralToken/dataProvider cannot be zero address");
+    throw new Error("collateralToken/dataProvider cannot be zero address.");
   }
 
   if (gradient.gt(parseUnits("1", decimals))) {
-    throw new Error("Gradient cannot be greater than 1e18");
+    throw new Error("Gradient cannot be greater than 1e18.");
   }
 
   if (capacity.lt(collateralAmount)) {
-    throw new Error("Capacity cannot be smaller than collateral amount");
+    throw new Error("Capacity cannot be smaller than collateral amount.");
   }
 
   if (decimals > 18) {
-    throw new Error("Collateral token cannot have more than 18 decimals");
+    throw new Error("Collateral token cannot have more than 18 decimals.");
   }
 
   if (decimals < 6) {
-    throw new Error("Collateral token cannot have less than 6 decimals");
+    throw new Error("Collateral token cannot have less than 6 decimals.");
   }
 
   if (
     longRecipient === ethers.constants.AddressZero ||
     shortRecipient === ethers.constants.AddressZero
   ) {
-    throw new Error(
-      "Long or short token recipient cannot be both zero address"
-    );
+    throw new Error("Long and short token recipient cannot be zero address.");
   }
 
   if (userBalance.lt(collateralAmount)) {
-    throw new Error("Insufficient collateral tokens in wallet");
+    throw new Error("Insufficient collateral tokens in wallet.");
   }
 };
 
 async function main() {
-  // Set network. Should be the same as in diva::create command.
-  const network = "goerli";
-
   // INPUT: collateral token
   const collateralTokenSymbol = "dUSD";
 
   // Set ERC20 collateral token address
   const erc20CollateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
 
   // Get signer of creator
   const [creator] = await ethers.getSigners();
@@ -108,7 +103,7 @@ async function main() {
 
   // Input arguments for `createContingentPool` function
   const referenceAsset = "ETH/USD";
-  const expiryTime = await getExpiryTime(2000000); // 10 means expiry in 10 seconds from now
+  const expiryTime = await getExpiryTime(100); // 10 means expiry in 10 seconds from now
   const floor = parseUnits("2000");
   const inflection = parseUnits("2500");
   const cap = parseUnits("3000");
@@ -140,7 +135,7 @@ async function main() {
   );
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get creator's current allowance
   let allowance = await erc20Contract.allowance(creator.address, diva.address);

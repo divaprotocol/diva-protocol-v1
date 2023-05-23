@@ -4,28 +4,28 @@
  */
 
 import fetch from "cross-fetch";
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { parseUnits } from "@ethersproject/units";
 import {
   DIVA_ADDRESS,
   ADD_LIQUIDITY_TYPE,
   OfferAddLiquidity,
+  EIP712API_URL,
 } from "../../constants";
 import {
   getExpiryTime,
   generateSignatureAndTypedMessageHash,
+  writeFile,
 } from "../../utils";
 import DIVA_ABI from "../../diamondABI/diamond.json";
-import { GetterFacet } from "../../typechain-types";
 
 async function main() {
-  const API_URL = "https://eip712api.xyz/diva/offer/v1/add_liquidity";
-  const network = "goerli";
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968";
+  const apiUrl = `${EIP712API_URL[network.name]}/add_liquidity`;
+  const poolId =
+    "0x8329855b0ce0036b8c709724078f2f20e0f579b97527b7c444c2ad77b5c2364b";
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Check whether pool exists (collateral token address is zero if it doesn't)
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -47,7 +47,7 @@ async function main() {
   const makerCollateralAmount = parseUnits("20", decimals).toString();
   const takerCollateralAmount = parseUnits("80", decimals).toString();
   const makerIsLong = false;
-  const offerExpiry = await getExpiryTime(50);
+  const offerExpiry = await getExpiryTime(5000);
   const minimumTakerFillAmount = parseUnits("60", decimals).toString();
   const salt = Date.now().toString();
 
@@ -66,17 +66,13 @@ async function main() {
 
   // Prepare data for signing
   const [signer] = await ethers.getSigners();
-  const getterFacet: GetterFacet = await ethers.getContractAt(
-    "GetterFacet",
-    DIVA_ADDRESS[network]
-  );
-  const chainId = (await getterFacet.getChainId()).toNumber();
-  const verifyingContract = DIVA_ADDRESS[network];
+  const chainId = (await diva.getChainId()).toNumber();
+  const verifyingContract = DIVA_ADDRESS[network.name];
   const divaDomain = {
     name: "DIVA Protocol",
     version: "1",
     chainId,
-    verifyingContract: DIVA_ADDRESS[network],
+    verifyingContract: DIVA_ADDRESS[network.name],
   };
 
   // Sign offer
@@ -89,11 +85,10 @@ async function main() {
   );
 
   // Get offer hash
-  const relevantStateParams =
-    await getterFacet.getOfferRelevantStateAddLiquidity(
-      offerAddLiquidity,
-      signature
-    );
+  const relevantStateParams = await diva.getOfferRelevantStateAddLiquidity(
+    offerAddLiquidity,
+    signature
+  );
   const offerHash = relevantStateParams.offerInfo.typedOfferHash;
 
   // Prepare data to be posted to the api server
@@ -106,7 +101,7 @@ async function main() {
   };
 
   // Post offer data to the api server
-  await fetch(API_URL, {
+  await fetch(apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -114,10 +109,16 @@ async function main() {
     body: JSON.stringify(data),
   });
 
+  // Save offer as json
+  writeFile(
+    `offers/addLiquidityOffer_${offerAddLiquidity.salt}.json`,
+    JSON.stringify(data)
+  );
+
   console.log("Hash of add liquidity offer: ", offerHash);
 
   // Get posted offer
-  const getUrl = `${API_URL}/${offerHash}`;
+  const getUrl = `${apiUrl}/${offerHash}`;
   const res = await fetch(getUrl, {
     method: "GET",
   });
