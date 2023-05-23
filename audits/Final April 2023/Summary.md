@@ -8,7 +8,7 @@ The audit was performed by six independent teams:
 * Team 3: [TrungOre](https://twitter.com/Trungore), [Duc](https://twitter.com/duc_hph) (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam5.md)
 * Team 4: said017, WangChao, kodak_rome, Emmalien  (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam6.md)
 * Team 5: [devScrooge (JMariadlcs)](https://twitter.com/devScrooge), Cryptor, Saksham (SolidityLabs) [🔗](https://github.com/GuardianAudits/SolidityLabAudits/blob/main/DIVA/DivaAuditTeam7.md)
-* Team 6: [HiAudit](https://hiaudit.io/consulting) 🔗
+* Team 6: [HiAudit](https://hiaudit.io/consulting) [🔗][HiAudit]
 
 The contracts in scope included:
 * [DIVA Protocol V1](https://github.com/divaprotocol/diva-protocol-v1/tree/main/contracts)
