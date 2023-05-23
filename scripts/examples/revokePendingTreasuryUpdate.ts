@@ -1,6 +1,6 @@
 /**
- * Script to update the treasury address
- * Run: `yarn diva::updateTreasury`
+ * Script to revoke pending treasury update
+ * Run: `yarn diva::revokePendingTreasuryUpdate`
  */
 
 import { ethers, network } from "hardhat";
@@ -17,7 +17,6 @@ import { getCurrentTimestamp } from "../../utils";
 const _checkConditions = async (
   diva: Contract,
   owner: SignerWithAddress,
-  newTreasuryAddress: string,
   treasuryInfo: TreasuryInfo
 ) => {
   // Confirm that signer of owner is correct
@@ -25,59 +24,45 @@ const _checkConditions = async (
     throw new Error("Invalid signer of owner.");
   }
 
-  // Confirm that provided treasury address is not zero address
-  if (newTreasuryAddress === ethers.constants.AddressZero) {
-    throw new Error("Treasury address could not be zero address.");
-  }
-
-  // Confirm that there is no pending treasury address update. Revoke to update pending value.
-  if (treasuryInfo.startTimeTreasury.gt(getCurrentTimestamp())) {
-    throw new Error("There is a pending treasury address update.");
+  // Confirm that new treasury address is not active yet
+  if (treasuryInfo.startTimeTreasury.lte(getCurrentTimestamp())) {
+    throw new Error("Treasury address is already active.");
   }
 };
 
 async function main() {
-  // Input argument for `updateTreasury` function
-  const newTreasuryAddress = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
-
   // Get signers
   const [owner] = await ethers.getSigners();
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get treasury info before update
+  // Get treasury info before revoke
   const treasuryInfoBefore = await diva.getTreasuryInfo();
 
   // Confirm that all conditions are met before continuing
-  await _checkConditions(diva, owner, newTreasuryAddress, treasuryInfoBefore);
+  await _checkConditions(diva, owner, treasuryInfoBefore);
 
-  // Get treasury address before update
+  // Get treasury address before revoke
   const treasuryAddressBefore = (await diva.getGovernanceParameters()).treasury;
 
-  // Update treasury address
-  const tx = await diva.connect(owner).updateTreasury(newTreasuryAddress);
-  const receipt = await tx.wait();
+  // Revoke pending treasury update
+  const tx = await diva.connect(owner).revokePendingTreasuryUpdate();
+  await tx.wait();
 
-  // Get treasury address from event
-  const treasuryFromEvent = receipt.events.find(
-    (item: any) => item.event === "TreasuryUpdated"
-  ).args.treasury;
-
-  // Get treasury info after update
+  // Get treasury info after revoke
   const treasuryInfoAfter = await diva.getTreasuryInfo();
 
-  // Get treasury address after update
+  // Get treasury address after revoke
   const treasuryAddressAfter = (await diva.getGovernanceParameters()).treasury;
 
   // Log relevant info
   console.log("DIVA address: ", diva.address);
   console.log("Contract owner address: ", owner.address);
-  console.log("Treasury info before update: ", treasuryInfoBefore);
-  console.log("Treasury info after update: ", treasuryInfoAfter);
-  console.log("Treasury address before update: ", treasuryAddressBefore);
-  console.log("Treasury address after update: ", treasuryAddressAfter);
-  console.log("Treasury address from event: ", treasuryFromEvent);
+  console.log("Treasury info before revoke: ", treasuryInfoBefore);
+  console.log("Treasury info after revoke: ", treasuryInfoAfter);
+  console.log("Treasury address before revoke: ", treasuryAddressBefore);
+  console.log("Treasury address after revoke: ", treasuryAddressAfter);
 }
 
 main()

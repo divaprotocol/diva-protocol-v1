@@ -3,7 +3,7 @@
  * Run: `yarn diva::remove`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
@@ -50,18 +50,16 @@ const _checkConditions = (
 };
 
 async function main() {
-  // Set network. Should be the same as in diva::remove command.
-  const network = "goerli";
-
   // Input arguments for `removeLiquidity` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
-  const amountTokensNumber = 1; // number of long and short tokens to return to the pool; conversion into large integer happens below in the code
+  const poolId =
+    "0x7842b049600e8a69f7462b02bb1fe2e489cfe8939e238be28e6d02e8a5868782"; // id of an existing pool
+  const amountTokensString = "1"; // number of long and short tokens to return to the pool; conversion into large integer happens below in the code
 
   // Get signer of account that will remove liquidity
   const [user] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get pool parameters before liquidity is removed
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -74,7 +72,7 @@ async function main() {
   const decimals = await erc20Contract.decimals();
 
   // Convert amountTokens into large integer with collateral token decimals
-  const amountTokens = parseUnits(amountTokensNumber.toString(), decimals);
+  const amountTokens = parseUnits(amountTokensString, decimals);
 
   // Connect to long and short tokens
   const longToken = await ethers.getContractAt(

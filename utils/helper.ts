@@ -24,3 +24,7 @@ export const getPoolIdFromTx = async (
     "0"
   );
 };
+
+export const getCurrentTimestamp = () => {
+  return Math.floor(Date.now() / 1000);
+};

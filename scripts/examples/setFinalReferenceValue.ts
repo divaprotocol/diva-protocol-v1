@@ -3,7 +3,7 @@
  * Run: `yarn diva::setFinalReferenceValue`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
@@ -11,6 +11,7 @@ import { LibDIVAStorage } from "../../typechain-types/contracts/interfaces/IGett
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status, STATUS } from "../../constants";
+import { getCurrentTimestamp } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -33,7 +34,7 @@ const _checkConditions = (
   callerAddress: string
 ) => {
   // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
+  const now = getCurrentTimestamp();
 
   // All periods are expressed in seconds
   const submissionPeriod =
@@ -52,24 +53,24 @@ const _checkConditions = (
 
   // Check that status is either Open (0) or Challenged (2)
   if (
-    poolParams.statusFinalReferenceValue != 0 &&
-    poolParams.statusFinalReferenceValue != 2
+    poolParams.statusFinalReferenceValue != Status.Open &&
+    poolParams.statusFinalReferenceValue != Status.Challenged
   ) {
     throw new Error(
       "Status is already submitted or confirmed. No submission possible."
     );
   }
 
-  if (poolParams.statusFinalReferenceValue === 0) {
+  if (poolParams.statusFinalReferenceValue === Status.Open) {
     // Check that pool already expired
     if (Number(poolParams.expiryTime) >= now) {
-      throw new Error("Pool not yet expired");
+      throw new Error("Pool not yet expired.");
     }
 
     if (now <= initialSubmissionPeriodEnd.toNumber()) {
       // Check that caller is the data provider if called within initial submission period
       if (callerAddress != poolParams.dataProvider) {
-        throw new Error("Caller is not data provider");
+        throw new Error("Caller is not data provider.");
       }
     } else if (
       now > initialSubmissionPeriodEnd.toNumber() &&
@@ -77,31 +78,29 @@ const _checkConditions = (
     ) {
       // Check that caller is the fallbackDataProvider if called within fallback period
       if (callerAddress === fallbackDataProvider) {
-        throw new Error("Caller is not fallback data provider");
+        throw new Error("Caller is not fallback data provider.");
       }
     }
-  } else if (poolParams.statusFinalReferenceValue === 2) {
+  } else if (poolParams.statusFinalReferenceValue === Status.Challenged) {
     // Check that review period didn't expire
     const reviewPeriodEnd = BigNumber.from(
       poolParams.statusFinalReferenceValue
     ).add(reviewPeriod);
     if (now > reviewPeriodEnd.toNumber()) {
-      throw new Error("Review period expired");
+      throw new Error("Review period expired.");
     }
 
     // Check that caller is the data provider
     if (callerAddress != poolParams.dataProvider) {
-      throw new Error("Caller is not data provider");
+      throw new Error("Caller is not data provider.");
     }
   }
 };
 
 async function main() {
-  // Set network. Should be the same as in diva::setFinalReferenceValue command.
-  const network = "goerli";
-
   // Input arguments for `setFinalReferenceValue` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
+  const poolId =
+    "0x65d3fc0cb57553abc4441d384e6356bfcb04b550fa36aca716a86692b159f42d"; // id of an existing pool
   const finalReferenceValue = parseUnits("2444.8"); // 18 decimals
   const allowChallenge = false; // false: first value submitted will automatically be confirmed; true: challenge by position token holders is enabled
 
@@ -109,7 +108,7 @@ async function main() {
   const [dataProvider] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Load pool parameters
   const poolParamsBefore = await diva.getPoolParameters(poolId);

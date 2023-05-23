@@ -4,12 +4,13 @@
  * Run: `yarn diva::challengeFinalReferenceValue`
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, STATUS, Status } from "../../constants";
+import { getCurrentTimestamp } from "../../utils";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -31,37 +32,35 @@ const _checkConditions = async (
   const longTokenInstance = await ethers.getContractAt("MockERC20", longToken);
 
   // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
+  const now = getCurrentTimestamp();
 
   // Check that user holds position tokens
   if (
     (await shortTokenInstance.balanceOf(msgSender)).eq(0) &&
     (await longTokenInstance.balanceOf(msgSender)).eq(0)
   ) {
-    throw new Error("No position tokens");
+    throw new Error("No position tokens.");
   }
 
   if (statusFinalReferenceValue == Status.Submitted) {
     // Check that challenge period did not expire yet
     if (now > statusTimestamp.add(challengePeriod).toNumber()) {
-      throw new Error("Challenge period expired");
+      throw new Error("Challenge period expired.");
     }
   } else if (statusFinalReferenceValue == Status.Challenged) {
     // Check that review period did not expire yet
     if (now > statusTimestamp.add(reviewPeriod).toNumber()) {
-      throw new Error("Review period expired");
+      throw new Error("Review period expired.");
     }
   } else {
-    throw new Error("Nothing to challenge");
+    throw new Error("Nothing to challenge.");
   }
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
-  // INPUT: arguments into `setFinalReferenceValue` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
+  // INPUT: arguments for `challengeFinalReferenceValue` function
+  const poolId =
+    "0x2db131f3a60c0ab863daa5410b7cae963b26423fc11811a126e84e72ebda54e3"; // id of an existing pool
   const proposedFinalReferenceValue = parseUnits("1670"); // 18 decimals
 
   // Get signer of position token holder
@@ -69,10 +68,10 @@ async function main() {
   console.log("Position token holder address: " + positionTokenHolder.address);
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
   console.log("DIVA address: ", diva.address);
 
-  // Get settlement relevant periods and parameters used to perform checks before executing the `setFinalReferenceValue` function.
+  // Get settlement relevant periods and parameters used to perform checks before executing the `challengeFinalReferenceValue` function.
   const governanceParameters = await diva.getGovernanceParameters();
 
   // Get pool parameters before submitted final reference value was challenged

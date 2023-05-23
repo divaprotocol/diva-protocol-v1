@@ -1,25 +1,22 @@
 /**
- * Script to create and fill an offer to create a contingent pool.
- * Run: `yarn diva::fillOfferCreateContingentPool`
+ * Script to get and fill an offer to create a contingent pool. (get offer from api service)
+ * Run: `yarn diva::fillOfferCreateContingentPool_from_api`
  */
 
+import fetch from "cross-fetch";
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { formatUnits, parseUnits } from "@ethersproject/units";
+import { formatUnits } from "@ethersproject/units";
 
 import DIVA_ABI from "../../diamondABI/diamond.json";
-import {
-  generateSignatureAndTypedMessageHash,
-  getExpiryTime,
-} from "../../utils";
 import {
   OfferCreateContingentPool,
   Signature,
   DivaDomain,
   CREATE_POOL_TYPE,
   DIVA_ADDRESS,
-  COLLATERAL_TOKENS,
   OfferStatus,
+  EIP712API_URL,
 } from "../../constants";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
@@ -101,68 +98,45 @@ const _checkConditions = async (
 };
 
 async function main() {
-  // INPUT: collateral token symbol
-  const collateralTokenSymbol = "dUSD";
+  // INPUT: offer hash value
+  const offerHash =
+    "0x13a7abccaf4f08ec38d509eedc3ae94582555ed7365c9b1bcbcfaf152dfad173";
 
-  // Lookup collateral token address
-  const collateralTokenAddress =
-    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
+  // Get offer info from api service
+  const res = await fetch(
+    `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`,
+    {
+      method: "GET",
+    }
+  );
+  const offerInfo = await res.json();
 
   // Connect to ERC20 token that will be used as collateral when creating a contingent pool
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
-    collateralTokenAddress
+    offerInfo.collateralToken
   );
   const decimals = await collateralToken.decimals();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get chainId
-  const chainId = (await diva.getChainId()).toNumber();
-
   // Define DIVA Domain struct
   const divaDomain = {
     name: "DIVA Protocol",
     version: "1",
-    chainId,
-    verifyingContract: DIVA_ADDRESS[network.name],
+    chainId: offerInfo.chainId,
+    verifyingContract: offerInfo.verifyingContract,
   };
 
   // Get signers
-  const [maker, taker, oracle] = await ethers.getSigners();
+  const [maker, taker] = await ethers.getSigners();
 
-  // Generate offerCreateContingentPool with user1 (maker) taking the long side and user2 (taker) the short side
-  const offerCreateContingentPool = {
-    maker: maker.address.toString(),
-    taker: taker.address.toString(),
-    makerCollateralAmount: parseUnits("90", decimals).toString(),
-    takerCollateralAmount: parseUnits("10", decimals).toString(),
-    makerIsLong: true,
-    offerExpiry: await getExpiryTime(10000),
-    minimumTakerFillAmount: parseUnits("10", decimals).toString(),
-    referenceAsset: "Rain amount (ml)",
-    expiryTime: await getExpiryTime(10000),
-    floor: parseUnits("200").toString(),
-    inflection: parseUnits("350").toString(),
-    cap: parseUnits("500").toString(),
-    gradient: parseUnits("0.5", decimals).toString(),
-    collateralToken: collateralTokenAddress,
-    dataProvider: oracle.address,
-    capacity: parseUnits("1000", decimals).toString(),
-    permissionedERC721Token: ethers.constants.AddressZero,
-    salt: Date.now().toString(),
-  };
+  // Get offerCreateContingentPool from offer info
+  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
 
-  // Generate signature and typed message hash
-  const [signature, typedMessageHash] =
-    await generateSignatureAndTypedMessageHash(
-      maker,
-      divaDomain,
-      CREATE_POOL_TYPE,
-      offerCreateContingentPool,
-      "OfferCreateContingentPool"
-    );
+  // Get signature from offerInfo
+  const signature = offerInfo.signature;
 
   // Set takerFillAmount
   const takerFillAmount = BigNumber.from(
@@ -250,14 +224,12 @@ async function main() {
     offerCreateContingentPool,
     CREATE_POOL_TYPE,
     signature,
-    offerCreateContingentPool.taker,
+    taker.address,
     takerFillAmount
   );
 
   // Get taker filled amount before fill offer
-  const takerFilledAmountBefore = await diva.getTakerFilledAmount(
-    typedMessageHash
-  );
+  const takerFilledAmountBefore = await diva.getTakerFilledAmount(offerHash);
 
   // Fill offer with taker account
   const tx = await diva
@@ -275,7 +247,9 @@ async function main() {
   const typedOfferHash = receipt.events.find(
     (x: any) => x.event === "OfferFilled"
   ).args.typedOfferHash;
-  const poolId = await diva.getPoolIdByTypedCreateOfferHash(typedOfferHash);
+  const poolId = (
+    await diva.getPoolIdByTypedCreateOfferHash(typedOfferHash)
+  ).toString();
 
   // Get maker's and taker's ERC20 token balance after fill offer
   const collateralTokenBalanceMakerAfter = await collateralToken.balanceOf(
@@ -286,16 +260,14 @@ async function main() {
   );
 
   // Get taker filled amount after fill offer
-  const takerFilledAmountAfter = await diva.getTakerFilledAmount(
-    typedMessageHash
-  );
+  const takerFilledAmountAfter = await diva.getTakerFilledAmount(offerHash);
 
   // Log relevant info
-  console.log("chainId", chainId);
+  console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId of newly created pool: ", poolId);
+  console.log("PoolId of newly created pool: ", poolId.toString());
   console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
-  console.log("Signed offer hash: ", typedMessageHash);
+  console.log("Signed offer hash: ", offerHash);
   console.log("Signature: ", signature);
   console.log("Allowance Maker: ", formatUnits(allowanceMaker, decimals));
   console.log("Allowance Taker: ", formatUnits(allowanceTaker, decimals));
