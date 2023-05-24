@@ -3,39 +3,19 @@
  * Run: `yarn diva::addTip`
  *
  * Example usage:
- * Create pool via `yarn diva::create`.
- * Add a tip in collateral token to that pool via `yarn diva::addTip`.
- * Note that the pool must not be expired.
+ * 1. `yarn diva::create`: Create pool.
+ * 2. `yarn diva::getReservedClaim`: Check the reserved claim amount before adding a tip.
+ * 3. `yarn diva::addTip`: Add a tip in collateral token to that pool. Note that
+ * the pool must not be expired.
+ * 4. `yarn diva::getReservedClaim`: Confirm that the reserved claim amount increased.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status } from "../../constants";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
-// before actually executing it.
-const _checkConditions = async (
-  poolParams: LibDIVAStorage.PoolStruct,
-  tipAmount: BigNumber,
-  collateralBalanceUser: BigNumber
-) => {
-  // Check the status of the pool
-  if (poolParams.statusFinalReferenceValue !== Status.Open) {
-    throw new Error("Final value already submitted.");
-  }
-
-  // Check user's collateral token balance
-  if (collateralBalanceUser.lt(tipAmount)) {
-    throw new Error("Insufficient collateral tokens in wallet.");
-  }
-};
 
 async function main() {
   // ************************************
@@ -44,7 +24,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x7f09df8dc50f70b2f8c8252d744af3bcbe8ad01b2925feb92b87d0ccac70195a";
+    "0x079247c64f4f0663fb44af88de2346a264fbd734eafb5d5eb82f664147746902";
 
   // Collateral token amount to be added to an existing pool as a tip. Conversion into
   // integer happens below in the code as it depends on the collateral token decimals.
@@ -127,6 +107,26 @@ async function main() {
     formatUnits(tipAfter)
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  poolParams: LibDIVAStorage.PoolStruct,
+  tipAmount: BigNumber,
+  collateralBalanceUser: BigNumber
+) => {
+  // Check the status of the pool
+  if (poolParams.statusFinalReferenceValue !== Status.Open) {
+    throw new Error("Final value already submitted.");
+  }
+
+  // Check user's collateral token balance
+  if (collateralBalanceUser.lt(tipAmount)) {
+    throw new Error("Insufficient collateral tokens in wallet.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

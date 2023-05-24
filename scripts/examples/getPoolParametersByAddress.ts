@@ -5,14 +5,22 @@
 
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status, STATUS } from "../../constants";
 
 async function main() {
-  // Input argument for `getPoolParametersByAddress` function
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Position token address
   const positionToken = "0x09630c89aA8ea22452F010C52F94254721D04464";
 
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+  
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 

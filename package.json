@@ -16,6 +16,8 @@
     "diva::remove": "yarn hardhat run scripts/examples/removeLiquidity.ts --network goerli",
     "diva::setFinalReferenceValue": "yarn hardhat run scripts/examples/setFinalReferenceValue.ts --network goerli",
     "diva::getPoolParameters": "yarn hardhat run scripts/examples/getPoolParameters.ts --network goerli",
+    "diva::getClaim": "yarn hardhat run scripts/examples/getClaim.ts --network goerli",
+    "diva::getReservedClaim": "yarn hardhat run scripts/examples/getReservedClaim.ts --network goerli",
     "diva::getPoolParametersByAddress": "yarn hardhat run scripts/examples/getPoolParametersByAddress.ts --network goerli",
     "diva::fillOfferCreateContingentPool": "yarn hardhat run scripts/examples/fillOfferCreateContingentPool.ts --network goerli",
     "diva::fillOfferCreateContingentPool_from_api": "yarn hardhat run scripts/examples/fillOfferCreateContingentPool_from_api.ts --network goerli",

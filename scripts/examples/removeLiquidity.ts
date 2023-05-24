@@ -3,8 +3,10 @@
  * Run: `yarn diva::remove`
  * 
  * Example usage:
- * Create pool via `yarn diva::create`.
- * Remove a portion of the collateral deposited via `yarn diva::remove`.
+ * 1. `yarn diva::create`: Create pool.
+ * 2. `yarn diva::getPoolParameters`: Check the collateral balance before removing liquidity.
+ * 3. `yarn diva::remove`: Remove a portion of the collateral deposited.
+ * 4. `yarn diva::getPoolParameters`: Check the updated collateral balance.
  */
 
 import { ethers, network } from "hardhat";
@@ -12,46 +14,6 @@ import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status } from "../../constants";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
-// before actually executing it.
-const _checkConditions = (
-  amountTokens: BigNumber,
-  longBalance: BigNumber,
-  shortBalance: BigNumber,
-  statusFinalReferenceValue: Status,
-  pauseReturnCollateralUntil: number,
-  decimals: number
-) => {
-  // Check that `removeLiquidity` function is not paused
-  if (pauseReturnCollateralUntil * 1000 > Date.now()) {
-    throw new Error(
-      "Function is paused. No removal of liquidity possible at the moment."
-    );
-  }
-
-  // Check that pool hasn't been confirmed yet
-  if (statusFinalReferenceValue === Status.Confirmed) {
-    throw new Error(
-      "Pool has already been confirmed. No removal of liquidity possible."
-    );
-  }
-
-  // Check whether user owns enough long and short tokens to perform the operation
-  if (longBalance.lt(amountTokens)) {
-    console.log(
-      "Long token balance user: " + formatUnits(longBalance, decimals)
-    );
-    throw new Error("Insufficient long token amount in wallet.");
-  } else if (shortBalance.lt(amountTokens)) {
-    console.log(
-      "Short token balance user: " + formatUnits(shortBalance, decimals)
-    );
-    throw new Error("Insufficient short token amount in wallet.");
-  }
-};
 
 async function main() {
   // ************************************
@@ -158,6 +120,46 @@ async function main() {
     formatUnits(supplyShortAfter, decimals)
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = (
+  amountTokens: BigNumber,
+  longBalance: BigNumber,
+  shortBalance: BigNumber,
+  statusFinalReferenceValue: Status,
+  pauseReturnCollateralUntil: number,
+  decimals: number
+) => {
+  // Check that `removeLiquidity` function is not paused
+  if (pauseReturnCollateralUntil * 1000 > Date.now()) {
+    throw new Error(
+      "Function is paused. No removal of liquidity possible at the moment."
+    );
+  }
+
+  // Check that pool hasn't been confirmed yet
+  if (statusFinalReferenceValue === Status.Confirmed) {
+    throw new Error(
+      "Pool has already been confirmed. No removal of liquidity possible."
+    );
+  }
+
+  // Check whether user owns enough long and short tokens to perform the operation
+  if (longBalance.lt(amountTokens)) {
+    console.log(
+      "Long token balance user: " + formatUnits(longBalance, decimals)
+    );
+    throw new Error("Insufficient long token amount in wallet.");
+  } else if (shortBalance.lt(amountTokens)) {
+    console.log(
+      "Short token balance user: " + formatUnits(shortBalance, decimals)
+    );
+    throw new Error("Insufficient short token amount in wallet.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

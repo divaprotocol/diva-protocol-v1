@@ -3,8 +3,10 @@
  * Run: `yarn diva::add`
  * 
  * Example usage:
- * Create pool via `yarn diva::create`.
- * Add more collateral to the pool via `yarn diva::add`.
+ * 1. `yarn diva::create`: Create pool.
+ * 2. `yarn diva::getPoolParameters`: Check the collateral balance before adding liquidity.
+ * 3. `yarn diva::add`: Add more collateral to the pool.
+ * 4. `yarn diva::getPoolParameters`: Check the updated collateral balance.
  */
 
 import { ethers, network } from "hardhat";
@@ -14,55 +16,6 @@ import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFac
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
-// before actually executing it.
-const _checkConditions = async (
-  poolParams: LibDIVAStorage.PoolStruct,
-  additionalAmount: BigNumber,
-  longRecipient: string,
-  shortRecipient: string,
-  collateralBalanceUser: BigNumber
-) => {
-  // Get current time (proxy for block timestamp)
-  const now = getCurrentTimestamp();
-
-  // Check that longRecipient does not equal to the zero address
-  if (longRecipient === ethers.constants.AddressZero) {
-    throw new Error("Long token recipient cannot be the zero address.");
-  }
-
-  // Check that shortRecipient does not equal to the zero address
-  if (shortRecipient === ethers.constants.AddressZero) {
-    throw new Error("Short token recipient cannot be the zero address.");
-  }
-
-  // Check that pool didn't expiry yet
-  if (now >= Number(poolParams.expiryTime)) {
-    throw new Error(
-      "Pool already expired. No addition of liquidity possible anymore."
-    );
-  }
-
-  // Check that pool capacity is not exceeded
-  if (
-    BigNumber.from(poolParams.collateralBalance)
-      .add(additionalAmount)
-      .gt(BigNumber.from(poolParams.capacity))
-  ) {
-    throw new Error("Pool capacity exceeded.");
-  }
-
-  // Check user's collateral token balance
-  if (collateralBalanceUser.lt(additionalAmount)) {
-    throw new Error("Insufficient collateral tokens in wallet.");
-  }
-
-  // Note that additional of liquidity will not be possible if the collateral token
-  // activated a transfer fee after the pool was created.
-};
 
 async function main() {
   // ************************************
@@ -183,6 +136,55 @@ async function main() {
   console.log("New long token supply: ", formatUnits(supplyLong, decimals));
   console.log("New short token supply: ", formatUnits(supplyShort, decimals));
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  poolParams: LibDIVAStorage.PoolStruct,
+  additionalAmount: BigNumber,
+  longRecipient: string,
+  shortRecipient: string,
+  collateralBalanceUser: BigNumber
+) => {
+  // Get current time (proxy for block timestamp)
+  const now = getCurrentTimestamp();
+
+  // Check that longRecipient does not equal to the zero address
+  if (longRecipient === ethers.constants.AddressZero) {
+    throw new Error("Long token recipient cannot be the zero address.");
+  }
+
+  // Check that shortRecipient does not equal to the zero address
+  if (shortRecipient === ethers.constants.AddressZero) {
+    throw new Error("Short token recipient cannot be the zero address.");
+  }
+
+  // Check that pool didn't expiry yet
+  if (now >= Number(poolParams.expiryTime)) {
+    throw new Error(
+      "Pool already expired. No addition of liquidity possible anymore."
+    );
+  }
+
+  // Check that pool capacity is not exceeded
+  if (
+    BigNumber.from(poolParams.collateralBalance)
+      .add(additionalAmount)
+      .gt(BigNumber.from(poolParams.capacity))
+  ) {
+    throw new Error("Pool capacity exceeded.");
+  }
+
+  // Check user's collateral token balance
+  if (collateralBalanceUser.lt(additionalAmount)) {
+    throw new Error("Insufficient collateral tokens in wallet.");
+  }
+
+  // Note that additional of liquidity will not be possible if the collateral token
+  // activated a transfer fee after the pool was created.
+};
 
 main()
   .then(() => process.exit(0))
