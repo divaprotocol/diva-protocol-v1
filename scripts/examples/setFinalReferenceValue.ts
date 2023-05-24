@@ -25,7 +25,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x1c4a068a345a3b92f9ae6d621b99e7484921cd9c0c41e69be876d603e1e5a43a";
+    "0x805ad9e4f64b5c3c9d9fd2591c9749cb03dd0bea528248ec409922aaaeb43d55";
   
   // Final reference value expressed as an integer with 18 decimals
   const finalReferenceValue = parseUnits("2444.8");

@@ -35,6 +35,7 @@ async function main() {
   // actual claim of the current recipient.
   const transferAmountInput = "0.01";
 
+  
   // ************************************
   //              EXECUTION
   // ************************************

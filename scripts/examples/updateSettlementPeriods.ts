@@ -1,5 +1,6 @@
 /**
- * Script to update settlement periods
+ * Script to update settlement periods.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::updateSettlementPeriods`
  */
 

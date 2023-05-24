@@ -1,5 +1,6 @@
 /**
- * Script to revoke pending fallback data provider update
+ * Script to revoke pending fallback data provider update.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::revokePendingFallbackDataProviderUpdate`
  */
 

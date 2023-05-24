@@ -1,6 +1,6 @@
 /**
  * Script to pause the `removeLiquidity` and `redeemPositionToken` functions.
- * The execution of this function is reserved to the owner only.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::pauseReturnCollateral`
  */
 

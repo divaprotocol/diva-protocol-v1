@@ -1,5 +1,6 @@
 /**
- * Script to revoke pending settlement periods update
+ * Script to revoke pending settlement periods update.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::revokePendingSettlementPeriodsUpdate`
  */
 

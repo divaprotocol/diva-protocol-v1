@@ -1,5 +1,5 @@
 /**
- * Script to get owner of DIVA contract
+ * Script to get the DIVA Protocol owner.
  * Run: `yarn diva::getOwner`
  */
 
