@@ -5,17 +5,25 @@
 
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status, STATUS } from "../../constants";
 
 async function main() {
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Id of an existing pool
+  const poolId =
+    "0xddc44482596ff2a2cf6241273adfcbe30f184f571db38a3e09984e9a822c38ed";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+  
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-
-  // Get pool id
-  const poolId =
-    "0x65d3fc0cb57553abc4441d384e6356bfcb04b550fa36aca716a86692b159f42d";
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
