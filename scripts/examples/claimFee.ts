@@ -3,8 +3,7 @@
  * Run: `yarn diva::claimFee`
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool with a short expiration and a
- * recipient as data provider.
+ * 1. `yarn diva::create`: Create pool with a short expiration.
  * 2. `yarn diva::getClaim`: Check the fee claim before confirming the final value.
  * 3. `yarn diva::setFinalReferenceValue`: Confirm the final value on first call using `allowChallenge = false`.
  * 4. `yarn diva::getClaim`: Check the updated fee claim.
