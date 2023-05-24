@@ -1,5 +1,6 @@
 /**
- * Script to get and fill an offer to create a contingent pool. (get offer from api service)
+ * Script to get and fill an offer to create a contingent pool. 
+ * Obtain the offer hash from the API service.
  * Run: `yarn diva::fillOfferCreateContingentPool_from_api`
  */
 

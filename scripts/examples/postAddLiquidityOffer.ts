@@ -1,5 +1,5 @@
 /**
- * Script to post OfferAddLiquidity to backend
+ * Script to post an add liquidity offer to the API service.
  * Run: `yarn diva::postAddLiquidityOffer`
  */
 

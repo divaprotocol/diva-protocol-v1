@@ -3,10 +3,6 @@
  * final value has been confirmed.
  * Run: `yarn diva::redeemPositionToken`
  *
- * Note that as opposed to `addLiquidity` where you specify the amount of collateral tokens to be added, in `removeLiquidity`, you pass in the
- * number of position tokens to remove (e.g., 200 means that 200 position and 200 short tokens will be removed). The collateral to return is
- * calculated inside the smart contract.
- * 
  * Example usage:
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a
  *    data provider account that you control.
