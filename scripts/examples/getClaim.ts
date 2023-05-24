@@ -19,7 +19,6 @@ async function main() {
   // Fee claim recipient
   const [recipientSigner] = await ethers.getSigners();
   const recipient = recipientSigner.address
-  console.log("Recipient address: ", recipient);
 
   // ************************************
   //              EXECUTION
@@ -41,7 +40,8 @@ async function main() {
   // Get fee claim
   const feeClaim = await diva.getClaim(collateralToken, recipient);
 
-  // Get collateral token decimals to perform conversions from integer to decimal. Note that position tokens have the same number of decimals.
+  // Get collateral token decimals to perform conversions from integer to decimal.
+  // Note that position tokens have the same number of decimals.
   const decimals = await collateralTokenInstance.decimals();
 
   // Log relevant info

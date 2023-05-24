@@ -13,7 +13,7 @@
  */
 
 import { ethers, network } from "hardhat";
-
+import { formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, COLLATERAL_TOKENS } from "../../constants";
 
@@ -26,8 +26,9 @@ async function main() {
   const collateralTokenSymbol = "dUSD";
 
   // Fee claim recipient
-  const [recipient] = await ethers.getSigners();
-  console.log("Recipient address: ", recipient.address);
+  const [recipientSigner] = await ethers.getSigners();
+  const recipient = recipientSigner.address
+
 
   // ************************************
   //              EXECUTION
@@ -43,22 +44,32 @@ async function main() {
     collateralToken
   );
 
+  // Get collateral token decimals to perform conversions from integer to decimal.
+  // Note that position tokens have the same number of decimals.
+  const decimals = await collateralTokenInstance.decimals();
+
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-  console.log("DIVA address: ", diva.address);
 
-  console.log(
-    "Balance before: " +
-      (await collateralTokenInstance.balanceOf(recipient.address))
-  );
+  // Get recipient's collateral token balance before claiming the fee
+  const collateralTokenBalanceRecipientBefore = await collateralTokenInstance.balanceOf(recipient);
 
   // Get fee claim amount
-  const tx = await diva.claimFee(collateralToken, recipient.address);
+  const tx = await diva.claimFee(collateralToken, recipient);
   await tx.wait();
 
-  console.log(
-    "Balance after: " +
-      (await collateralTokenInstance.balanceOf(recipient.address))
+  // Get recipient's collateral token balance after claiming the fee
+  const collateralTokenBalanceRecipientAfter = await collateralTokenInstance.balanceOf(recipient);
+
+  // Log relevant info
+  console.log("DIVA address: ", diva.address);
+  console.log("Collateral token: ", collateralToken);
+  console.log("Recipient: ", recipient);
+  console.log("Collateral token balance recipient before: ",
+    formatUnits(collateralTokenBalanceRecipientBefore, decimals)
+  );
+  console.log("Collateral token balance recipient after: ",
+    formatUnits(collateralTokenBalanceRecipientAfter, decimals)
   );
 }
 
