@@ -1,5 +1,5 @@
 /**
- * Script to post CreateContingentPoolOffer to backend
+ * Script to post a create contingent pool offer to the API service.
  * Run: `yarn diva::postCreateContingentPoolOffer`
  */
 
