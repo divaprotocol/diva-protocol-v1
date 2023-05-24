@@ -1,5 +1,6 @@
 /**
- * Script to update the protocol fee and settlement fee
+ * Script to update the protocol fee and settlement fee.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::updateFees`
  */
 

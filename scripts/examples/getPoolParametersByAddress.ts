@@ -57,7 +57,7 @@ async function main() {
     formatUnits(poolParams.finalReferenceValue)
   );
   console.log("Capacity: ", formatUnits(poolParams.capacity, decimals));
-  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
+  console.log("Status timestamp: ", new Date(poolParams.statusTimestamp * 1000).toLocaleString());
   console.log("Short token: ", poolParams.shortToken);
   console.log(
     "Payout short token: ",
@@ -69,7 +69,7 @@ async function main() {
     formatUnits(poolParams.payoutLong, decimals)
   );
   console.log("Collateral token: ", poolParams.collateralToken);
-  console.log("Expiry time: ", poolParams.expiryTime.toString());
+  console.log("Expiry time: ", new Date(poolParams.expiryTime * 1000).toLocaleString());
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "Status final reference value: ",

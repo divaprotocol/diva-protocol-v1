@@ -1,5 +1,5 @@
 /**
- * Script to get ownership contract address of DIVA contract
+ * Script to get the DIVA ownership contract address.
  * Run: `yarn diva::getOwnershipContract`
  */
 

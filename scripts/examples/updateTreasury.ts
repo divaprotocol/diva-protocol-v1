@@ -1,5 +1,6 @@
 /**
- * Script to update the treasury address
+ * Script to update the treasury address.
+ * The execution of this function is reserved to the protocol owner only.
  * Run: `yarn diva::updateTreasury`
  */
 
