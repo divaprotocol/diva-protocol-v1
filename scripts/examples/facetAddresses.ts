@@ -12,7 +12,7 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
   console.log("DIVA address: ", diva.address);
 
-  // Get facet addresses
+  // Log facet addresses
   console.log("Facet addresses: ", await diva.facetAddresses());
 }
 

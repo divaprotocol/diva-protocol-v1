@@ -15,10 +15,11 @@ async function main() {
   const tokenToApprove = "0xFA158C9B780A4213f3201Ae74Cca013712c8538d";
 
   // Spender address
-  const spenderAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207"; // same for several chains including Mainnet and Ropsten
+  const spenderAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207";
   
-  // Allowance amount
-  const allowanceString = "10000000000000000"; // conversion into BigNumber with the respective number of decimals is done below
+  // Allowance amount.Conversion into integer happens below in the code
+  // as it depends on the decimals of the token to approve.
+  const allowanceString = "10000000000000000";
 
 
   // ************************************
@@ -27,9 +28,6 @@ async function main() {
 
   // Get signer of user
   const [, user] = await ethers.getSigners();
-
-  console.log("Approved by: " + user.address);
-  console.log("Approved for: " + spenderAddress);
 
   // Connect to token to approve
   const erc20 = await ethers.getContractAt("MockERC20", tokenToApprove);
@@ -43,32 +41,26 @@ async function main() {
     user.address,
     spenderAddress
   );
-  console.log(
-    "Current approved amount (integer): " + allowanceBefore.toString()
-  );
-  console.log(
-    "Current approved amount (decimals): " +
-      formatUnits(allowanceBefore, decimals)
-  );
 
   // Balance check (can be useful information if balance < allowance)
   const balance = await erc20.balanceOf(user.address);
-  console.log("balance of (integer): ", balance.toString());
-  console.log("balance of (decimals): ", formatUnits(balance, decimals));
 
   // Set allowance for spenderAddress
   const tx = await erc20.connect(user).approve(spenderAddress, allowance);
   await tx.wait();
 
-  // Log relevant information
+  // Get the new allowance
   const allowanceAfter = await erc20.allowance(
     user.address,
     spenderAddress
   );
-  console.log("New approved amount (integer): " + allowanceAfter.toString());
-  console.log(
-    "New approved amount (decimals): " + formatUnits(allowanceAfter, decimals)
-  );
+
+  // Log relevant info
+  console.log("Owner: ", user.address);
+  console.log("Spender: ", spenderAddress);
+  console.log("Owner balance: ", formatUnits(balance, decimals));
+  console.log("Approved amount before: ", formatUnits(allowanceBefore, decimals));
+  console.log("Approved amount after: ", formatUnits(allowanceAfter, decimals));
 }
 
 main()

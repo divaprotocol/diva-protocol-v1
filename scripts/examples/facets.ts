@@ -4,7 +4,6 @@
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 
