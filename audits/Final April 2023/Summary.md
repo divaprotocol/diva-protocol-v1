@@ -18,7 +18,7 @@ The contracts in scope included:
 
 >**Note:** The DIVA token distribution contract was not in scope for the SolidityLabs teams. It was audited by ComposableSecurity, HiAudit and an independent [solo auditor](https://github.com/ahmedovv123/audits/blob/main/audits/DivaVesting(QA).md).
 
->**⚠️Warning:** HiAudit claims to be the #1 auditing firm in Japan but delivered a very disappointing report considering the amount of money we paid for their services. The team charged a flat fee rather than based on performance as advertised on ther [website](https://hiaudit.io/consulting). The team appeared to lack sufficient experience and expertise in their field. Regrettably, we made a mistake in hiring them, and we strongly advise any other team against using their services. Surprisingly, they felt comfortable sharing their report publicly. Take your popcorn 🍿 and search for "HiAudit".
+>**⚠️Warning:** HiAudit claims to be the #1 auditing firm in Japan but delivered a very disappointing report considering the amount of money we paid for their services. The team charged a flat fee rather than based on performance as advertised on their [website](https://hiaudit.io/consulting). The team appeared to lack sufficient experience and expertise in their field. Regrettably, we made a mistake in hiring them, and we strongly advise any other team against using their services. Surprisingly, they felt comfortable sharing their report publicly. Take your popcorn 🍿 and search for "HiAudit".
 
 ## Summary
 
