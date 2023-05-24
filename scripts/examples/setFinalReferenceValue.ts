@@ -4,7 +4,7 @@
  * 
  * Example usage:
  * 1. `yarn diva::create`: Create pool with a short expiration and a
- * data provider account that you control.
+ *    data provider account that you control.
  * 2. `yarn diva::getPoolParameters`: Check the pool status before reporting.
  * 3. `yarn diva::setFinalReferenceValue`: Report final value.
  * 4. `yarn diva::getPoolParameters`: Check the updated pool status.
@@ -25,7 +25,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x45248af01d84bb10bd31eb61fd6ed634f4c5c3ca408332dad2b193f9fa738524";
+    "0x1c4a068a345a3b92f9ae6d621b99e7484921cd9c0c41e69be876d603e1e5a43a";
   
   // Final reference value expressed as an integer with 18 decimals
   const finalReferenceValue = parseUnits("2444.8");

@@ -1,17 +1,119 @@
 /**
- * Script to transfer fee claims
+ * Script to transfer fee claims.
  * Run: `yarn diva::transferFeeClaim`
+ * 
+ * Example usage:
+ * 1. `yarn diva::create`: Create pool with a short expiration.
+ * 2. `yarn diva::setFinalReferenceValue`: Confirm the final value on first call using `allowChallenge = false`.
+ * 3. `yarn diva::getClaim`: Check the fee claims for the current and the new recipient
+ *    before transferring the fee claim.
+ * 4. `yarn diva::transferFeeClaim`: Transfer fee claim.
+ * 5. `yarn diva::getClaim`: Check the updated fee claims for the two accounts.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
-
+import { formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, COLLATERAL_TOKENS } from "../../constants";
+import { parseUnits } from "ethers/lib/utils";
+
+async function main() {
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Collateral token
+  const collateralTokenSymbol = "dUSD";
+
+  // Get signers of current fee recipient and new fee recipient
+  const [currentFeeRecipientSigner, newFeeRecipientSigner] = await ethers.getSigners();
+  const newFeeRecipient = newFeeRecipientSigner.address;
+  const currentFeeRecipient = currentFeeRecipientSigner.address;
+
+  // Fee claim amount to transfer. Make sure the amount is smaller than or equal to the
+  // actual claim of the current recipient.
+  const transferAmountInput = "0.01";
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Look-up collateral token address
+  const collateralTokenAddress =
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
+
+  // Connect to collateral token
+  const collateralTokenInstance = await ethers.getContractAt(
+    "MockERC20",
+    collateralTokenAddress
+  );
+
+  // Get collateral token decimals to perform conversion from integer to decimal.
+  const decimals = await collateralTokenInstance.decimals();
+
+  // Connect to DIVA contract
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
+
+  // Get fee claim amount before transfer fee
+  const feeCurrentFeeRecipientBefore = await diva.getClaim(
+    collateralTokenAddress,
+    currentFeeRecipient
+  );
+  const feeNewFeeRecipientBefore = await diva.getClaim(
+    collateralTokenAddress,
+    newFeeRecipient
+  );
+
+  // Set transfer amount
+  const transferAmount = parseUnits(transferAmountInput, decimals);
+
+  // Confirm that all conditions are met before continuing
+  _checkConditions(
+    newFeeRecipient,
+    feeCurrentFeeRecipientBefore,
+    transferAmount
+  );
+
+  // Transfer entire fee claim
+  const transferFeeTx = await diva
+    .connect(currentFeeRecipientSigner)
+    .transferFeeClaim(
+      newFeeRecipient,
+      collateralTokenAddress,
+      transferAmount
+    );
+  await transferFeeTx.wait();
+
+  // Get fee claim amount after transfer fee
+  const feeCurrentFeeRecipientAfter = await diva.getClaim(
+    collateralTokenAddress,
+    currentFeeRecipient
+  );
+  const feeNewFeeRecipientAfter = await diva.getClaim(
+    collateralTokenAddress,
+    newFeeRecipient
+  );
+
+  // Log relevant info
+  console.log("DIVA address: ", diva.address);
+  console.log("Current fee recipient address: ", currentFeeRecipient);
+  console.log("New fee recipient address: ", newFeeRecipient);
+  console.log("Collateral token address: ", collateralTokenAddress);
+  console.log(
+    "Fee current fee recipient before: " + formatUnits(feeCurrentFeeRecipientBefore, decimals)
+  );
+  console.log("Fee new fee recipient before: " + formatUnits(feeNewFeeRecipientBefore, decimals));
+  console.log(
+    "Fee current fee recipient after: " + formatUnits(feeCurrentFeeRecipientAfter, decimals)
+  );
+  console.log("Fee new fee recipient after: " + formatUnits(feeNewFeeRecipientAfter, decimals));
+}
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
 const _checkConditions = (
   newFeeRecipient: string,
   feeCurrentFeeRecipient: BigNumber,
@@ -25,75 +127,6 @@ const _checkConditions = (
     throw new Error("Transfer amount exceeds claimable fee.");
   }
 };
-
-async function main() {
-  // INPUT: collateral token symbol
-  const collateralTokenSymbol = "dUSD";
-
-  // Lookup collateral token address
-  const collateralTokenAddress =
-    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
-
-  // Get signers of current fee recipient and new fee recipient
-  const [, newFeeRecipient, currentFeeRecipient] = await ethers.getSigners();
-
-  // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-
-  // Get fee claim amount before transfer fee
-  const feeCurrentFeeRecipientBefore = await diva.getClaim(
-    collateralTokenAddress,
-    currentFeeRecipient.address
-  );
-  const feeNewFeeRecipientBefore = await diva.getClaim(
-    collateralTokenAddress,
-    newFeeRecipient.address
-  );
-
-  // Set transfer amount
-  const transferAmount = feeCurrentFeeRecipientBefore.div(2);
-
-  // Confirm that all conditions are met before continuing
-  _checkConditions(
-    newFeeRecipient.address,
-    feeCurrentFeeRecipientBefore,
-    transferAmount
-  );
-
-  // Transfer entire fee claim
-  const transferFeeTx = await diva
-    .connect(currentFeeRecipient)
-    .transferFeeClaim(
-      newFeeRecipient.address,
-      collateralTokenAddress,
-      transferAmount
-    );
-  await transferFeeTx.wait();
-
-  // Get fee claim amount after transfer fee
-  const feeCurrentFeeRecipientAfter = await diva.getClaim(
-    collateralTokenAddress,
-    currentFeeRecipient.address
-  );
-  const feeNewFeeRecipientAfter = await diva.getClaim(
-    collateralTokenAddress,
-    newFeeRecipient.address
-  );
-
-  // Log relevant info
-  console.log("DIVA address: ", diva.address);
-  console.log("Current fee recipient address: ", currentFeeRecipient.address);
-  console.log("New fee recipient address: ", newFeeRecipient.address);
-  console.log("Collateral token address: ", collateralTokenAddress);
-  console.log(
-    "Fee current fee recipient before: " + feeCurrentFeeRecipientBefore
-  );
-  console.log("Fee new fee recipient before: " + feeNewFeeRecipientBefore);
-  console.log(
-    "Fee current fee recipient after: " + feeCurrentFeeRecipientAfter
-  );
-  console.log("Fee new fee recipient after: " + feeNewFeeRecipientAfter);
-}
 
 main()
   .then(() => process.exit(0))
