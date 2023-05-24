@@ -7,42 +7,25 @@
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, TreasuryInfo } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
 
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  newTreasuryAddress: string,
-  treasuryInfo: TreasuryInfo
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that provided treasury address is not zero address
-  if (newTreasuryAddress === ethers.constants.AddressZero) {
-    throw new Error("Treasury address could not be zero address.");
-  }
-
-  // Confirm that there is no pending treasury address update. Revoke to update pending value.
-  if (treasuryInfo.startTimeTreasury.gt(getCurrentTimestamp())) {
-    throw new Error("There is a pending treasury address update.");
-  }
-};
-
 async function main() {
-  // Input argument for `updateTreasury` function
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // New treasury address
   const newTreasuryAddress = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
 
-  // Get signers
+  // Set owner
   const [owner] = await ethers.getSigners();
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -80,6 +63,32 @@ async function main() {
   console.log("Treasury address after update: ", treasuryAddressAfter);
   console.log("Treasury address from event: ", treasuryFromEvent);
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  newTreasuryAddress: string,
+  treasuryInfo: TreasuryInfo
+) => {
+  // Confirm that caller is the owner
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Caller is not owner.");
+  }
+
+  // Confirm that the provided treasury address is not the zero address
+  if (newTreasuryAddress === ethers.constants.AddressZero) {
+    throw new Error("Treasury address cannot be the zero address.");
+  }
+
+  // Confirm that there is no pending treasury address update. Revoke to update pending value.
+  if (treasuryInfo.startTimeTreasury.gt(getCurrentTimestamp())) {
+    throw new Error("There is a pending treasury address update.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

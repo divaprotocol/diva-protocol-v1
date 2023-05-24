@@ -7,7 +7,6 @@
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, FallbackDataProviderInfo } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";

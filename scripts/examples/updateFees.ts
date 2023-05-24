@@ -8,9 +8,7 @@ import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { parseUnits } from "@ethersproject/units";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, FeeType } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";

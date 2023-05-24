@@ -1,11 +1,11 @@
 /**
  * Script to remove liquidity from an existing pool.
- * Run: `yarn diva::remove`
+ * Run: `yarn diva::removeLiquidity`
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool.
+ * 1. `yarn diva::createContingentPool`: Create pool.
  * 2. `yarn diva::getPoolParameters`: Check the collateral balance before removing liquidity.
- * 3. `yarn diva::remove`: Remove a portion of the collateral deposited.
+ * 3. `yarn diva::removeLiquidity`: Remove a portion of the collateral deposited.
  * 4. `yarn diva::getPoolParameters`: Check the updated collateral balance.
  */
 

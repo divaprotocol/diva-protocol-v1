@@ -3,7 +3,7 @@
  * Run: `yarn diva::addTip`
  *
  * Example usage:
- * 1. `yarn diva::create`: Create pool.
+ * 1. `yarn diva::createContingentPool`: Create pool.
  * 2. `yarn diva::getReservedClaim`: Check the reserved claim amount before adding a tip.
  * 3. `yarn diva::addTip`: Add a tip in collateral token to that pool. Note that
  *    the pool must not be expired.

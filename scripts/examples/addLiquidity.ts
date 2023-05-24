@@ -1,11 +1,11 @@
 /**
  * Script to add liquidity to an existing contingent pool.
- * Run: `yarn diva::add`
+ * Run: `yarn diva::addLiquidity`
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool.
+ * 1. `yarn diva::createContingentPool`: Create pool.
  * 2. `yarn diva::getPoolParameters`: Check the collateral balance before adding liquidity.
- * 3. `yarn diva::add`: Add more collateral to the pool.
+ * 3. `yarn diva::addLiquidity`: Add more collateral to the pool.
  * 4. `yarn diva::getPoolParameters`: Check the updated collateral balance.
  */
 

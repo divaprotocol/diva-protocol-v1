@@ -7,37 +7,22 @@
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, FallbackDataProviderInfo } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
 
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  fallbackDataProviderInfo: FallbackDataProviderInfo
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that new fallback provider is not active yet
-  if (
-    fallbackDataProviderInfo.startTimeFallbackDataProvider.lte(
-      getCurrentTimestamp()
-    )
-  ) {
-    throw new Error("Fallback provider is already active.");
-  }
-};
-
 async function main() {
-  // Get signers
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Set owner
   const [owner] = await ethers.getSigners();
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -87,6 +72,30 @@ async function main() {
     fallbackDataProviderAfter
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  fallbackDataProviderInfo: FallbackDataProviderInfo
+) => {
+  // Confirm that signer of owner is correct
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Invalid signer of owner.");
+  }
+
+  // Confirm that new fallback provider is not active yet
+  if (
+    fallbackDataProviderInfo.startTimeFallbackDataProvider.lte(
+      getCurrentTimestamp()
+    )
+  ) {
+    throw new Error("Fallback provider is already active.");
+  }
+};
 
 main()
   .then(() => process.exit(0))
