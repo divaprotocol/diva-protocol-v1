@@ -1,39 +1,46 @@
 /**
- * Script to stake for a candidate on the Ownership contract
+ * Script to stake for a candidate using the DIVA token.
  * Run: `yarn ownership::stake`
  */
 
-import { parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
+import { parseUnits, formatUnits } from "ethers/lib/utils";
 import { OWNERSHIP_ADDRESS, DIVA_TOKEN_ADDRESS } from "../../constants";
 
 async function main() {
-  // Input arguments for `stake` function
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+  
+  // Candidate address to vote for
   const candidate = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
+
+  // Stake amount (DIVA token has 18 decimals)
   const stakeAmount = parseUnits("20");
 
-  // Get signers
+  // Staking user
   const [user] = await ethers.getSigners();
-  console.log("User address: ", user.address);
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA token contract
   const divaToken = await ethers.getContractAt(
     "DIVAToken",
     DIVA_TOKEN_ADDRESS[network.name]
   );
-
-  const ownershipContractAddress = OWNERSHIP_ADDRESS[network.name];
+  
   // Connect to Ownership contract
+  const ownershipContractAddress = OWNERSHIP_ADDRESS[network.name];
   const ownership = await ethers.getContractAt(
     "DIVAOwnershipMain",
     ownershipContractAddress
   );
 
-  // Get current stake
-  console.log(
-    "Current stake amount for candidate: ",
-    await ownership["getStakedAmount(address)"](candidate)
-  );
+  // Get stake amount for candidate before staking
+  const candidateStakeAmountBefore = await ownership["getStakedAmount(address)"](candidate);
 
   // Approve DIVA token
   const approveTx = await divaToken
@@ -45,11 +52,14 @@ async function main() {
   const tx = await ownership.connect(user).stake(candidate, stakeAmount);
   await tx.wait();
 
-  // Get new stake amount
-  console.log(
-    "New stake amount for candidate: ",
-    await ownership["getStakedAmount(address)"](candidate)
-  );
+  // Get stake amount for candidate after staking
+  const candidateStakeAmountAfter = await ownership["getStakedAmount(address)"](candidate);
+
+  // Log relevant info
+  console.log("Staking user: ", user.address);
+  console.log("Candidate: ", candidate);
+  console.log("Stake amount for candidate before: ", formatUnits(candidateStakeAmountBefore));
+  console.log("Stake amount for candidate after: ", formatUnits(candidateStakeAmountAfter));
 }
 
 main()
