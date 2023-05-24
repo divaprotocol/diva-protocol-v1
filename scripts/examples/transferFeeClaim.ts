@@ -3,7 +3,7 @@
  * Run: `yarn diva::transferFeeClaim`
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool with a short expiration.
+ * 1. `yarn diva::createContingentPool`: Create pool with a short expiration.
  * 2. `yarn diva::setFinalReferenceValue`: Confirm the final value on first call using `allowChallenge = false`.
  * 3. `yarn diva::getClaim`: Check the fee claims for the current and the new recipient
  *    before transferring the fee claim.
@@ -35,7 +35,7 @@ async function main() {
   // actual claim of the current recipient.
   const transferAmountInput = "0.01";
 
-  
+
   // ************************************
   //              EXECUTION
   // ************************************

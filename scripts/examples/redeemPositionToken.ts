@@ -8,7 +8,7 @@
  * calculated inside the smart contract.
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool with a short expiration and a
+ * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a
  *    data provider account that you control.
  * 2. `yarn diva::getPoolParameters`: Check the pool collateral balance before reporting.
  * 3. `yarn diva::setFinalReferenceValue`: Report final value with `allowChallenge = false`.

@@ -1,6 +1,6 @@
 /**
  * Script to create a contingent pool on DIVA Protocol.
- * Run: `yarn diva::create`
+ * Run: `yarn diva::createContingentPool`
  */
 
 import { ethers, network } from "hardhat";

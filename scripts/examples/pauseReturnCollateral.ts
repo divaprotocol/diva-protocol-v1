@@ -12,8 +12,17 @@ import { DIVA_ADDRESS, ONE_DAY } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
 
 async function main() {
-  // Get signers
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Set owner
   const [owner] = await ethers.getSigners();
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

@@ -5,7 +5,7 @@
  * Run: `yarn diva::challengeFinalReferenceValue`
  * 
  * Example usage:
- * 1. `yarn diva::create`: Create pool with a short expiration and a data provider account
+ * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a data provider account
  * that you control.
  * 2. `yarn diva::setFinalReferenceValue`: Submit a final reference value with
  * `allowChallenge = true`.
