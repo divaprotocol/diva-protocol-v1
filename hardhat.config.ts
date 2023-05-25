@@ -87,13 +87,14 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: MNEMONIC,
       },
-      gasPrice: 7000000,
+      gasPrice: 7000000000,
     },
     polygon: {
       url: process.env.RPC_URL_POLYGON,
       accounts: {
         mnemonic: MNEMONIC,
       },
+      gasPrice: 200000000000,
     },
     mumbai: {
       url: process.env.RPC_URL_MUMBAI,
