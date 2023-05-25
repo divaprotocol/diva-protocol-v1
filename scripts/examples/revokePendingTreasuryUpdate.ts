@@ -1,7 +1,7 @@
 /**
  * Script to revoke pending treasury update.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::revokePendingTreasuryUpdate`
+ * Run: `yarn diva::revokePendingTreasuryUpdate --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

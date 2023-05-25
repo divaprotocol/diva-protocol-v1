@@ -1,8 +1,8 @@
 /**
  * Script to remove liquidity from an existing pool.
- * Run: `yarn diva::removeLiquidity`
+ * Run: `yarn diva::removeLiquidity --network mumbai`
  * 
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool.
  * 2. `yarn diva::getPoolParameters`: Check the collateral balance before removing liquidity.
  * 3. `yarn diva::removeLiquidity`: Remove a portion of the collateral deposited.
@@ -22,7 +22,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0xedc198bf15d0d07da3e8a19a0c7cb73d63ca15d69e0453b8a171c49b643ff6f6";
+    "0x957c0be964c4f9e528d5a23ecdd982e0d7a1bf3daa80fa4cde0d8c3071f3d717";
 
   // Number of long and short tokens to return to the pool. Conversion into
   // integer happens below in the code as it depends on the collateral token decimals.

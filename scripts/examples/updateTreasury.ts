@@ -1,7 +1,7 @@
 /**
  * Script to update the treasury address.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::updateTreasury`
+ * Run: `yarn diva::updateTreasury --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

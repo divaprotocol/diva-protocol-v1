@@ -1,6 +1,6 @@
 /**
  * Script to get facet function selectors for a given facet address.
- * Run: `yarn diva::facetFunctionSelectors`
+ * Run: `yarn diva::facetFunctionSelectors --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

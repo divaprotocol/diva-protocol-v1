@@ -1,8 +1,8 @@
 /**
  * Script to transfer fee claims.
- * Run: `yarn diva::transferFeeClaim`
+ * Run: `yarn diva::transferFeeClaim --network mumbai`
  * 
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration.
  * 2. `yarn diva::setFinalReferenceValue`: Confirm the final value on first call using `allowChallenge = false`.
  * 3. `yarn diva::getClaim`: Check the fee claims for the current and the new recipient
@@ -24,7 +24,7 @@ async function main() {
   // ************************************
 
   // Collateral token
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   // Get signers of current fee recipient and new fee recipient
   const [currentFeeRecipientSigner, newFeeRecipientSigner] = await ethers.getSigners();

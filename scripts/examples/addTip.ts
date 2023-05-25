@@ -1,8 +1,8 @@
 /**
  * Script to add a tip to an existing contingent pool.
- * Run: `yarn diva::addTip`
+ * Run: `yarn diva::addTip --network mumbai`
  *
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool.
  * 2. `yarn diva::getReservedClaim`: Check the reserved claim amount before adding a tip.
  * 3. `yarn diva::addTip`: Add a tip in collateral token to that pool. Note that
@@ -24,7 +24,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x079247c64f4f0663fb44af88de2346a264fbd734eafb5d5eb82f664147746902";
+    "0x1fecd07103f0ab9be67dbd4b19305fadc5360a8f09723c7633c6620931b4b009";
 
   // Collateral token amount to be added to an existing pool as a tip. Conversion into
   // integer happens below in the code as it depends on the collateral token decimals.

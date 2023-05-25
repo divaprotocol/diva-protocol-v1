@@ -1,6 +1,6 @@
 /**
  * Script to get the pool parameters for a position token address.
- * Run: `yarn diva::getPoolParametersByAddress`
+ * Run: `yarn diva::getPoolParametersByAddress --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -14,7 +14,7 @@ async function main() {
   // ************************************
 
   // Position token address
-  const positionToken = "0x09630c89aA8ea22452F010C52F94254721D04464";
+  const positionToken = "0xbe18cc7b67db215d60bad8789afbab91717e308c";
 
 
   // ************************************

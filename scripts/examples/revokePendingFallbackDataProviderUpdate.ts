@@ -1,7 +1,7 @@
 /**
  * Script to revoke pending fallback data provider update.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::revokePendingFallbackDataProviderUpdate`
+ * Run: `yarn diva::revokePendingFallbackDataProviderUpdate --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

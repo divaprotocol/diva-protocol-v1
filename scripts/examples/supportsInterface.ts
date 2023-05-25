@@ -1,6 +1,6 @@
 /**
- * Script to check whether an interface is supported on DIVA contract.
- * Run: `yarn diva::supportsInterface`
+ * Script to check whether an interface is supported by the DIVA contract.
+ * Run: `yarn diva::supportsInterface --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

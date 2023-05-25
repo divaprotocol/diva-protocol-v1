@@ -1,6 +1,6 @@
 /**
  * Script to get the DIVA ownership contract address.
- * Run: `yarn diva::getOwnershipContract`
+ * Run: `yarn diva::getOwnershipContract --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

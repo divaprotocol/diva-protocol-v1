@@ -1,6 +1,6 @@
 /**
  * Script to post an add liquidity offer to the API service.
- * Run: `yarn diva::postAddLiquidityOffer`
+ * Run: `yarn diva::postAddLiquidityOffer --network mumbai`
  */
 
 import fetch from "cross-fetch";

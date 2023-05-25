@@ -1,6 +1,6 @@
 /**
  * Script to stake for a candidate using the DIVA token.
- * Run: `yarn ownership::stake`
+ * Run: `yarn ownership::stake --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

@@ -1,7 +1,7 @@
 /**
  * Script to unpause the `removeLiquidity` and `redeemPositionToken` functions.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::unpauseReturnCollateral`
+ * Run: `yarn diva::unpauseReturnCollateral --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

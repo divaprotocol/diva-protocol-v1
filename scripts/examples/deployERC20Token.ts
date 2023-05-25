@@ -1,6 +1,6 @@
 /**
  * Script to deploy an ERC20 token for testing purposes.
- * Run: `yarn erc20::deploy`
+ * Run: `yarn erc20::deploy --network mumbai`
  */
 
 import { ethers } from "hardhat";
@@ -21,7 +21,7 @@ async function main() {
   // ************************************
   //              EXECUTION
   // ************************************
-  
+
   const ERC20 = await ethers.getContractFactory("MockERC20");
   const erc20 = await ERC20.deploy(
     tokenName,
