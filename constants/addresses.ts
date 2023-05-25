@@ -39,6 +39,7 @@ export const COLLATERAL_TOKENS: {
   },
   sepolia: {
     dUSD: "0xf0172F664195e3b91C3B8600476C58de48366a61",
+    TDT: "0xf22200303F68cDF25CbB8bB95Be802046a020Cf5",
   },
   mumbai: {
     dUSD: "0xf5d5Ea0a5E86C543bEC01a9e4f513525365a86fD",
@@ -49,6 +50,9 @@ export const COLLATERAL_TOKENS: {
   },
   arbitrumTestnet: {
     dUSD: "0x7F8c827150FeA992132Ad44Fe3EB58A9A5270490",
+  },
+  polygon: {
+    PILOT: "0x39e896451487f03dC2489AcAef1788C787885d35",
   },
 };
 
