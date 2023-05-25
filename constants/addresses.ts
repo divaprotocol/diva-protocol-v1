@@ -42,6 +42,7 @@ export const COLLATERAL_TOKENS: {
   },
   mumbai: {
     dUSD: "0xf5d5Ea0a5E86C543bEC01a9e4f513525365a86fD",
+    WAGMI18: "0x91F13B8da062f9a042dbD37D2e61FBfAcEB267aC",
   },
   chiado: {
     dUSD: "0x524eF4F6225365470E6da2BEA59aF5dFdd9C8108",
