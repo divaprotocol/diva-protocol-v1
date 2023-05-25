@@ -3,7 +3,7 @@ export const DIVA_ADDRESS: {
   [key: string]: string
 } = {
   polygon: "0x60f5A0c12457761558f5d9933f5924fE8907eBcf",
-  mumbai: "0xa761003C34936b760473eD993B2B6208aB07782E",
+  mumbai: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3",
   goerli: "0x131e157322b3DDaE6eF28a124f566bC9c177De69",
   sepolia: "0xF554e0FE7F75BaA00d76c4347fc098C9F88D2D25",
   apothem: "0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd",
@@ -26,6 +26,9 @@ export const COLLATERAL_TOKENS: {
 } = {
   goerli: {
     dUSD: "0xFA158C9B780A4213f3201Ae74Cca013712c8538d",
+  },
+  mumbai: {
+    WAGMI18: "0x91F13B8da062f9a042dbD37D2e61FBfAcEB267aC",
   },
 };
 

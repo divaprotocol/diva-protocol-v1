@@ -24,7 +24,7 @@ async function main() {
   const capInput = "3000"; // floorInput <= inflectionInput <= capInput
   const gradientInput = "0.5"; // 0 <= gradientInput <= 1
   const collateralAmountInput = "100"; // collateralAmountInput <= capacityInput
-  const collateralTokenSymbol = "dUSD"; // see `addresses.ts` for available tokens
+  const collateralTokenSymbol = "WAGMI18"; // see `addresses.ts` for available tokens
   const dataProvider = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
   const capacityInput = "200"; // collateralAmountInput <= capacityInput
   const longRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
