@@ -1,6 +1,6 @@
 /**
  * Script to get the current governance parameters.
- * Run: `yarn diva::getGovernanceParameters`
+ * Run: `yarn diva::getGovernanceParameters --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

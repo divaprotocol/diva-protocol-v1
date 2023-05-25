@@ -1,7 +1,7 @@
 /**
  * Script to revoke pending fees update.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::revokePendingFeesUpdate`
+ * Run: `yarn diva::revokePendingFeesUpdate --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

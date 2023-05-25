@@ -1,6 +1,6 @@
 /**
  * Script to claim fees.
- * Run: `yarn diva::claimFee`
+ * Run: `yarn diva::claimFee --network mumbai`
  * 
  * Example usage:
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration.
@@ -22,7 +22,7 @@ async function main() {
   // ************************************
   
   // Collateral token
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   // Fee claim recipient
   const [recipientSigner] = await ethers.getSigners();

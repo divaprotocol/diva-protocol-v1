@@ -1,6 +1,6 @@
 /**
  * Script to get the DIVA Protocol owner.
- * Run: `yarn diva::getOwner`
+ * Run: `yarn diva::getOwner --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

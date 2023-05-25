@@ -1,6 +1,6 @@
 /**
  * Script to get the fee claim for a given collateral token and recipient.
- * Run: `yarn diva::getClaim`
+ * Run: `yarn diva::getClaim --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -14,7 +14,7 @@ async function main() {
   // ************************************
   
   // Collateral token
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   // Fee claim recipient
   const [recipientSigner] = await ethers.getSigners();

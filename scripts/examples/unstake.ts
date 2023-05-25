@@ -1,6 +1,6 @@
 /**
  * Script to unstake a candidate.
- * Run: `yarn ownership::unstake`
+ * Run: `yarn ownership::unstake --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

@@ -1,6 +1,6 @@
 /**
  * Script to post a remove liquidity offer to the API service.
- * Run: `yarn diva::postRemoveLiquidityOffer`
+ * Run: `yarn diva::postRemoveLiquidityOffer --network mumbai`
  */
 
 import fetch from "cross-fetch";

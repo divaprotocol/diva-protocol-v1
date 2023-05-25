@@ -1,6 +1,6 @@
 /**
  * Script to get the allowances using multicall contract.
- * Run: `yarn erc20::allowance_multicall`
+ * Run: `yarn erc20::allowance_multicall --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -14,9 +14,9 @@ async function main() {
   // ************************************
   
   // Collateral token
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
-  
+
   // ************************************
   //              EXECUTION
   // ************************************

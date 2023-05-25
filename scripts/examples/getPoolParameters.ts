@@ -1,6 +1,6 @@
 /**
  * Script to get the pool parameters for an existing poolId.
- * Run: `yarn diva::getPoolParameters`
+ * Run: `yarn diva::getPoolParameters --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -15,7 +15,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x805ad9e4f64b5c3c9d9fd2591c9749cb03dd0bea528248ec409922aaaeb43d55";
+    "0x0fe386eff10c6903026ac911ea5e2d5076148a8f55aeea170f69a12e6da4353f";
 
 
   // ************************************

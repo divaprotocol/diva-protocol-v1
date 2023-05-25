@@ -1,14 +1,13 @@
 /**
  * Script to get and fill an offer to create a contingent pool. 
  * Obtain the offer hash from the API service.
- * Run: `yarn diva::fillOfferCreateContingentPool_from_api`
+ * Run: `yarn diva::fillOfferCreateContingentPool_from_api --network mumbai`
  */
 
 import fetch from "cross-fetch";
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
   OfferCreateContingentPool,
@@ -19,84 +18,6 @@ import {
   OfferStatus,
   EIP712API_URL,
 } from "../../constants";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  divaDomain: DivaDomain,
-  offerCreateContingentPool: OfferCreateContingentPool,
-  type: Record<string, { type: string; name: string }[]>,
-  signature: Signature,
-  userAddress: string,
-  takerFillAmount: BigNumber
-) => {
-  // Get information about the state of the create contingent pool offer
-  const relevantStateParams =
-    await diva.getOfferRelevantStateCreateContingentPool(
-      offerCreateContingentPool,
-      signature
-    );
-
-  // Confirm that the offer is fillable
-  // 0: INVALID, 1: CANCELLED, 2: FILLED, 3: EXPIRED, 4: FILLABLE
-  if (relevantStateParams.offerInfo.status === OfferStatus.Invalid) {
-    throw new Error("Offer is invalid because takerCollateralAmount is zero.");
-  }
-
-  if (relevantStateParams.offerInfo.status === OfferStatus.Cancelled) {
-    throw new Error("Offer was cancelled.");
-  }
-
-  if (relevantStateParams.offerInfo.status === OfferStatus.Filled) {
-    throw new Error("Offer is already filled.");
-  }
-
-  if (relevantStateParams.offerInfo.status === OfferStatus.Expired) {
-    throw new Error("Offer is already expired.");
-  }
-
-  // Confirm that the contingent pool parameters are valid
-  if (!relevantStateParams.isValidInputParamsCreateContingentPool) {
-    throw new Error("Invalid create contingent pool parameters.");
-  }
-
-  // Check actual fillable amount. The checks above provide more information on why
-  // actualTakerFillableAmount is smaller than takerCollateralAmount - takerFilledAmount.
-  if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {
-    throw new Error(
-      "Actually fillable amount is smaller than takerFillAmount."
-    );
-  }
-
-  // Confirm that signature matches the offer
-  const recoveredAddress = ethers.utils.verifyTypedData(
-    divaDomain,
-    type,
-    offerCreateContingentPool,
-    signature
-  );
-  if (recoveredAddress != offerCreateContingentPool.maker) {
-    throw new Error("Invalid signature.");
-  }
-
-  // Check that taker is allowed to fill the offer (relevant if taker specified in the offer is not the zero address)
-  if (
-    offerCreateContingentPool.taker != ethers.constants.AddressZero &&
-    userAddress != offerCreateContingentPool.taker
-  ) {
-    throw new Error("Offer is reserved for a different address.");
-  }
-
-  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**. Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
-  if (
-    relevantStateParams.offerInfo.takerFilledAmount.eq(0) &&
-    takerFillAmount.lt(offerCreateContingentPool.minimumTakerFillAmount)
-  ) {
-    throw new Error("takerFillAmount is smaller than minimumTakerFillAmount.");
-  }
-};
 
 async function main() {
   // INPUT: offer hash value
@@ -305,6 +226,85 @@ async function main() {
     formatUnits(takerFilledAmountAfter, decimals)
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  divaDomain: DivaDomain,
+  offerCreateContingentPool: OfferCreateContingentPool,
+  type: Record<string, { type: string; name: string }[]>,
+  signature: Signature,
+  userAddress: string,
+  takerFillAmount: BigNumber
+) => {
+  // Get information about the state of the create contingent pool offer
+  const relevantStateParams =
+    await diva.getOfferRelevantStateCreateContingentPool(
+      offerCreateContingentPool,
+      signature
+    );
+
+  // Confirm that the offer is fillable
+  // 0: INVALID, 1: CANCELLED, 2: FILLED, 3: EXPIRED, 4: FILLABLE
+  if (relevantStateParams.offerInfo.status === OfferStatus.Invalid) {
+    throw new Error("Offer is invalid because takerCollateralAmount is zero.");
+  }
+
+  if (relevantStateParams.offerInfo.status === OfferStatus.Cancelled) {
+    throw new Error("Offer was cancelled.");
+  }
+
+  if (relevantStateParams.offerInfo.status === OfferStatus.Filled) {
+    throw new Error("Offer is already filled.");
+  }
+
+  if (relevantStateParams.offerInfo.status === OfferStatus.Expired) {
+    throw new Error("Offer is already expired.");
+  }
+
+  // Confirm that the contingent pool parameters are valid
+  if (!relevantStateParams.isValidInputParamsCreateContingentPool) {
+    throw new Error("Invalid create contingent pool parameters.");
+  }
+
+  // Check actual fillable amount. The checks above provide more information on why
+  // actualTakerFillableAmount is smaller than takerCollateralAmount - takerFilledAmount.
+  if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {
+    throw new Error(
+      "Actually fillable amount is smaller than takerFillAmount."
+    );
+  }
+
+  // Confirm that signature matches the offer
+  const recoveredAddress = ethers.utils.verifyTypedData(
+    divaDomain,
+    type,
+    offerCreateContingentPool,
+    signature
+  );
+  if (recoveredAddress != offerCreateContingentPool.maker) {
+    throw new Error("Invalid signature.");
+  }
+
+  // Check that taker is allowed to fill the offer (relevant if taker specified in the offer is not the zero address)
+  if (
+    offerCreateContingentPool.taker != ethers.constants.AddressZero &&
+    userAddress != offerCreateContingentPool.taker
+  ) {
+    throw new Error("Offer is reserved for a different address.");
+  }
+
+  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**. Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
+  if (
+    relevantStateParams.offerInfo.takerFilledAmount.eq(0) &&
+    takerFillAmount.lt(offerCreateContingentPool.minimumTakerFillAmount)
+  ) {
+    throw new Error("takerFillAmount is smaller than minimumTakerFillAmount.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

@@ -2,9 +2,9 @@
  * Script to challenge the value submitted by the data feed provider. Only works if
  * challenge was enabled by the data feed provider at value submission and
  * if within the challenge period (24h after submission).
- * Run: `yarn diva::challengeFinalReferenceValue`
+ * Run: `yarn diva::challengeFinalReferenceValue --network mumbai`
  * 
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a data provider account
  * that you control.
  * 2. `yarn diva::setFinalReferenceValue`: Submit a final reference value with
@@ -28,10 +28,10 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0xddc44482596ff2a2cf6241273adfcbe30f184f571db38a3e09984e9a822c38ed";
+    "0x645f2a5924b93b93af4a29c4759422e24d7096c5e16bd72571410efe3cb2bcbd";
 
   // Proposed final reference value expressed as an integer with 18 decimals
-  const proposedFinalReferenceValue = parseUnits("1670");
+  const proposedFinalReferenceValue = parseUnits("1270");
 
 
   // ************************************

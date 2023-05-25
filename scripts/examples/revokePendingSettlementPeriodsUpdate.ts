@@ -1,7 +1,7 @@
 /**
  * Script to revoke pending settlement periods update.
  * The execution of this function is reserved to the protocol owner only.
- * Run: `yarn diva::revokePendingSettlementPeriodsUpdate`
+ * Run: `yarn diva::revokePendingSettlementPeriodsUpdate --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

@@ -1,9 +1,9 @@
 /**
  * Script to redeem position tokens from a pool that has expired and the 
  * final value has been confirmed.
- * Run: `yarn diva::redeemPositionToken`
+ * Run: `yarn diva::redeemPositionToken --network mumbai`
  *
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a
  *    data provider account that you control.
  * 2. `yarn diva::getPoolParameters`: Check the pool collateral balance before reporting.
@@ -28,7 +28,7 @@ async function main() {
   
   // Id of an existing pool
   const poolId =
-    "0x805ad9e4f64b5c3c9d9fd2591c9749cb03dd0bea528248ec409922aaaeb43d55";
+    "0x0fe386eff10c6903026ac911ea5e2d5076148a8f55aeea170f69a12e6da4353f";
 
   // Specifc position token holder that will redeem their position token
   const [positionTokenHolder] = await ethers.getSigners();

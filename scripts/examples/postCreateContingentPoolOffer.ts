@@ -1,6 +1,6 @@
 /**
  * Script to post a create contingent pool offer to the API service.
- * Run: `yarn diva::postCreateContingentPoolOffer`
+ * Run: `yarn diva::postCreateContingentPoolOffer --network mumbai`
  */
 
 import fetch from "cross-fetch";
@@ -22,7 +22,7 @@ import DIVA_ABI from "../../diamondABI/diamond.json";
 
 async function main() {
   const apiUrl = `${EIP712API_URL[network.name]}/create_contingent_pool`;
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   // Get collateral token decimals
   const collateralTokenAddress =

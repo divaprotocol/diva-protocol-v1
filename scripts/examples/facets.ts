@@ -1,6 +1,6 @@
 /**
- * Script to get facets of DIVA contract
- * Run: `yarn diva::facets`
+ * Script to get facets of DIVA contract.
+ * Run: `yarn diva::facets --network mumbai`
  */
 
 import { ethers, network } from "hardhat";

@@ -1,6 +1,6 @@
 /**
  * Script to set the allowance for a given spender address.
- * Run: `yarn erc20::approve`
+ * Run: `yarn erc20::approve --network mumbai`
  */
 
 import { ethers } from "hardhat";

@@ -1,7 +1,7 @@
 /**
  * Script to get the rewards (tips + settlement fees from removing liquidity)
  * reserved for the actual data provider.
- * Run: `yarn diva::getReservedClaim`
+ * Run: `yarn diva::getReservedClaim --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -16,7 +16,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x079247c64f4f0663fb44af88de2346a264fbd734eafb5d5eb82f664147746902";
+    "0x0fe386eff10c6903026ac911ea5e2d5076148a8f55aeea170f69a12e6da4353f";
 
 
   // ************************************

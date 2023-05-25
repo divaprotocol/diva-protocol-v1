@@ -1,8 +1,8 @@
 /**
  * Script to set the final reference price for an already expired pool.
- * Run: `yarn diva::setFinalReferenceValue`
+ * Run: `yarn diva::setFinalReferenceValue --network mumbai`
  * 
- * Example usage:
+ * Example usage (append corresponding network):
  * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a
  *    data provider account that you control.
  * 2. `yarn diva::getPoolParameters`: Check the pool status before reporting.
@@ -25,14 +25,14 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x805ad9e4f64b5c3c9d9fd2591c9749cb03dd0bea528248ec409922aaaeb43d55";
+    "0x645f2a5924b93b93af4a29c4759422e24d7096c5e16bd72571410efe3cb2bcbd";
   
   // Final reference value expressed as an integer with 18 decimals
   const finalReferenceValue = parseUnits("2444.8");
 
   // false: first value submitted will automatically be confirmed
   // true: challenge by position token holders is enabled
-  const allowChallenge = false;
+  const allowChallenge = true;
 
 
   // ************************************
