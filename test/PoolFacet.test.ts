@@ -778,7 +778,7 @@ describe("PoolFacet", async function () {
       ).to.be.revertedWith("FeeTokensNotSupported()");
     });
 
-    it("`getPoolParametersByAddress` reverts with `InvalidPositionToken` if an invalid position token address is provided", async () => {
+    it("`getPoolParametersByAddress` reverts default struct if an invalid position token address is provided", async () => {
 
       tx = await createContingentPool(createContingentPoolParams);
 
