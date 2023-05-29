@@ -1,11 +1,10 @@
 /**
  * Script to cancel an offer to create a contingent pool.
- * Run: `yarn diva::cancelOfferCreateContingentPool`
+ * Run: `yarn diva::cancelOfferCreateContingentPool --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { parseUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
   generateSignatureAndTypedMessageHash,
@@ -20,7 +19,7 @@ import {
 
 async function main() {
   // INPUT: collateral token symbol
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   // Lookup collateral token address
   const collateralTokenAddress =

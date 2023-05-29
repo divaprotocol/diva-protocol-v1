@@ -1,10 +1,9 @@
 /**
- * Script to get ownership contract address of DIVA contract
- * Run: `yarn diva::getOwnershipContract`
+ * Script to get the DIVA ownership contract address.
+ * Run: `yarn diva::getOwnershipContract --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 

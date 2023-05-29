@@ -1,46 +1,15 @@
 /**
- * Script to update the fallback data provider address
- * Run: `yarn diva::updateFallbackDataProvider`
+ * Script to update the fallback data provider address.
+ * The execution of this function is reserved to the protocol owner only.
+ * Run: `yarn diva::updateFallbackDataProvider --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, FallbackDataProviderInfo } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  newFallbackDataProvider: string,
-  fallbackDataProviderInfo: FallbackDataProviderInfo
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that provided fallback data provider address is not zero address
-  if (newFallbackDataProvider == ethers.constants.AddressZero) {
-    throw new Error(
-      "Fallback data provider address could not be zero address."
-    );
-  }
-
-  // Confirm that there is no pending fallback data provider update. Revoke to update pending value.
-  if (
-    fallbackDataProviderInfo.startTimeFallbackDataProvider.gt(
-      getCurrentTimestamp()
-    )
-  ) {
-    throw new Error("There is a pending fallback data provider update.");
-  }
-};
 
 async function main() {
   // Input argument for `updateFallbackDataProvider` function
@@ -111,6 +80,38 @@ async function main() {
     fallbackDataProviderFromEvent
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  newFallbackDataProvider: string,
+  fallbackDataProviderInfo: FallbackDataProviderInfo
+) => {
+  // Confirm that signer of owner is correct
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Invalid signer of owner.");
+  }
+
+  // Confirm that provided fallback data provider address is not zero address
+  if (newFallbackDataProvider == ethers.constants.AddressZero) {
+    throw new Error(
+      "Fallback data provider address could not be zero address."
+    );
+  }
+
+  // Confirm that there is no pending fallback data provider update. Revoke to update pending value.
+  if (
+    fallbackDataProviderInfo.startTimeFallbackDataProvider.gt(
+      getCurrentTimestamp()
+    )
+  ) {
+    throw new Error("There is a pending fallback data provider update.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

@@ -1,17 +1,25 @@
 /**
- * Script to check whether an interface is supported on DIVA contract
- * Run: `yarn diva::supportsInterface`
+ * Script to check whether an interface is supported by the DIVA contract.
+ * Run: `yarn diva::supportsInterface --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 
 async function main() {
-  // Input argument for `supportsInterface` function
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Interface Id to check
   const interfaceId = "0x01ffc9a7"; // EIP165 interface
   console.log("Interface ID: ", interfaceId);
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

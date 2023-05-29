@@ -1,57 +1,17 @@
 /**
- * Script to update the protocol fee and settlement fee
- * Run: `yarn diva::updateFees`
+ * Script to update the protocol fee and settlement fee.
+ * The execution of this function is reserved to the protocol owner only.
+ * Run: `yarn diva::updateFees --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { parseUnits } from "@ethersproject/units";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, FeeType } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  newProtocolFee: BigNumber,
-  newSettlementFee: BigNumber,
-  lastFees: LibDIVAStorage.FeesStructOutput
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that the new fees are valid
-  _isValidFee(newProtocolFee);
-  _isValidFee(newSettlementFee);
-
-  // Confirm that there is no pending fees update. Revoke to update pending values.
-  if (lastFees.startTime.gt(getCurrentTimestamp())) {
-    throw new Error("There is a pending fees update.");
-  }
-};
-
-const _isValidFee = (fee: BigNumber) => {
-  if (fee.gt(0)) {
-    // Min fee of 0.01% introduced to have a minimum non-zero fee in `removeLiquidity`
-    // 0.01% = 0.0001
-    if (fee.lt(parseUnits("0.0001"))) {
-      throw new Error("Fee is below minimum.");
-    }
-    // 1.5% = 0.015
-    if (fee.gt(parseUnits("0.015"))) {
-      throw new Error("Fee is above maximum.");
-    }
-  }
-};
 
 async function main() {
   // Input arguments for `updateFees` function
@@ -124,6 +84,46 @@ async function main() {
   console.log("Protocol fee from event: ", protocolFeeFromEvent);
   console.log("Settlement fee from event: ", settlementFeeFromEvent);
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  newProtocolFee: BigNumber,
+  newSettlementFee: BigNumber,
+  lastFees: LibDIVAStorage.FeesStructOutput
+) => {
+  // Confirm that signer of owner is correct
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Invalid signer of owner.");
+  }
+
+  // Confirm that the new fees are valid
+  _isValidFee(newProtocolFee);
+  _isValidFee(newSettlementFee);
+
+  // Confirm that there is no pending fees update. Revoke to update pending values.
+  if (lastFees.startTime.gt(getCurrentTimestamp())) {
+    throw new Error("There is a pending fees update.");
+  }
+};
+
+const _isValidFee = (fee: BigNumber) => {
+  if (fee.gt(0)) {
+    // Min fee of 0.01% introduced to have a minimum non-zero fee in `removeLiquidity`
+    // 0.01% = 0.0001
+    if (fee.lt(parseUnits("0.0001"))) {
+      throw new Error("Fee is below minimum.");
+    }
+    // 1.5% = 0.015
+    if (fee.gt(parseUnits("0.015"))) {
+      throw new Error("Fee is above maximum.");
+    }
+  }
+};
 
 main()
   .then(() => process.exit(0))

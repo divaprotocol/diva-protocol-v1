@@ -1,40 +1,29 @@
 /**
- * Script to revoke pending settlement periods update
- * Run: `yarn diva::revokePendingSettlementPeriodsUpdate`
+ * Script to revoke pending settlement periods update.
+ * The execution of this function is reserved to the protocol owner only.
+ * Run: `yarn diva::revokePendingSettlementPeriodsUpdate --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
 
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  lastSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that settlement periods are not active yet
-  if (lastSettlementPeriods.startTime.lte(getCurrentTimestamp())) {
-    throw new Error("Settlement periods are already active.");
-  }
-};
-
 async function main() {
-  // Get signers
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Set owner
   const [owner] = await ethers.getSigners();
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -90,6 +79,26 @@ async function main() {
     settlementPeriodsHistoryAfter
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  lastSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput
+) => {
+  // Confirm that signer of owner is correct
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Invalid signer of owner.");
+  }
+
+  // Confirm that settlement periods are not active yet
+  if (lastSettlementPeriods.startTime.lte(getCurrentTimestamp())) {
+    throw new Error("Settlement periods are already active.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

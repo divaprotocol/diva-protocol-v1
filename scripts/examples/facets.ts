@@ -1,10 +1,9 @@
 /**
- * Script to get facets of DIVA contract
- * Run: `yarn diva::facets`
+ * Script to get facets of DIVA contract.
+ * Run: `yarn diva::facets --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 

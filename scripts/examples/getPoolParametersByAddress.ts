@@ -1,18 +1,26 @@
 /**
  * Script to get the pool parameters for a position token address.
- * Run: `yarn diva::getPoolParametersByAddress`
+ * Run: `yarn diva::getPoolParametersByAddress --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status, STATUS } from "../../constants";
 
 async function main() {
-  // Input argument for `getPoolParametersByAddress` function
-  const positionToken = "0x09630c89aA8ea22452F010C52F94254721D04464";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
+  // Position token address
+  const positionToken = "0xbe18cc7b67db215d60bad8789afbab91717e308c";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+  
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
@@ -49,7 +57,7 @@ async function main() {
     formatUnits(poolParams.finalReferenceValue)
   );
   console.log("Capacity: ", formatUnits(poolParams.capacity, decimals));
-  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
+  console.log("Status timestamp: ", new Date(poolParams.statusTimestamp * 1000).toLocaleString());
   console.log("Short token: ", poolParams.shortToken);
   console.log(
     "Payout short token: ",
@@ -61,7 +69,7 @@ async function main() {
     formatUnits(poolParams.payoutLong, decimals)
   );
   console.log("Collateral token: ", poolParams.collateralToken);
-  console.log("Expiry time: ", poolParams.expiryTime.toString());
+  console.log("Expiry time: ", new Date(poolParams.expiryTime * 1000).toLocaleString());
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "Status final reference value: ",

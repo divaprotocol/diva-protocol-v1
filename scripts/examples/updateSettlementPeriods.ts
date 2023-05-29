@@ -1,52 +1,16 @@
 /**
- * Script to update settlement periods
- * Run: `yarn diva::updateSettlementPeriods`
+ * Script to update settlement periods.
+ * The execution of this function is reserved to the protocol owner only.
+ * Run: `yarn diva::updateSettlementPeriods --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, ONE_DAY, SettlementPeriodType } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = async (
-  diva: Contract,
-  owner: SignerWithAddress,
-  newSubmissionPeriod: number,
-  newChallengePeriod: number,
-  newReviewPeriod: number,
-  newFallbackSubmissionPeriod: number,
-  lastSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput
-) => {
-  // Confirm that signer of owner is correct
-  if ((await diva.getOwner()) !== owner.address) {
-    throw new Error("Invalid signer of owner.");
-  }
-
-  // Confirm that new settlement periods are valid
-  _isValidPeriod(newSubmissionPeriod);
-  _isValidPeriod(newChallengePeriod);
-  _isValidPeriod(newReviewPeriod);
-  _isValidPeriod(newFallbackSubmissionPeriod);
-
-  // Confirm that there is no pending settlement periods update.
-  if (lastSettlementPeriods.startTime.gt(getCurrentTimestamp())) {
-    throw new Error("There is a pending settlement periods update.");
-  }
-};
-
-const _isValidPeriod = (period: number) => {
-  if (period < 3 * ONE_DAY || period > 15 * ONE_DAY) {
-    throw new Error("Period is out of bounds.");
-  }
-};
 
 async function main() {
   // Input arguments for `updateSettlementPeriods` function
@@ -174,6 +138,42 @@ async function main() {
     fallbackSubmissionPeriodFromEvent
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = async (
+  diva: Contract,
+  owner: SignerWithAddress,
+  newSubmissionPeriod: number,
+  newChallengePeriod: number,
+  newReviewPeriod: number,
+  newFallbackSubmissionPeriod: number,
+  lastSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput
+) => {
+  // Confirm that signer of owner is correct
+  if ((await diva.getOwner()) !== owner.address) {
+    throw new Error("Invalid signer of owner.");
+  }
+
+  // Confirm that new settlement periods are valid
+  _isValidPeriod(newSubmissionPeriod);
+  _isValidPeriod(newChallengePeriod);
+  _isValidPeriod(newReviewPeriod);
+  _isValidPeriod(newFallbackSubmissionPeriod);
+
+  // Confirm that there is no pending settlement periods update.
+  if (lastSettlementPeriods.startTime.gt(getCurrentTimestamp())) {
+    throw new Error("There is a pending settlement periods update.");
+  }
+};
+
+const _isValidPeriod = (period: number) => {
+  if (period < 3 * ONE_DAY || period > 15 * ONE_DAY) {
+    throw new Error("Period is out of bounds.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

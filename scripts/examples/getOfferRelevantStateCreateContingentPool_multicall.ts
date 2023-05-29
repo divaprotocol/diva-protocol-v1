@@ -1,10 +1,9 @@
 /**
- * Script to get relevant states of create contingent pool offers using multicall contract
- * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall`
+ * Script to get relevant states of create contingent pool offers using multicall contract.
+ * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
   generateCreateContingentPoolOfferDetails,
@@ -22,7 +21,7 @@ import { BigNumber } from "ethers";
 
 async function main() {
   // INPUT: collateral token
-  const collateralTokenSymbol = "dUSD";
+  const collateralTokenSymbol = "WAGMI18";
 
   const divaAddress = DIVA_ADDRESS[network.name];
   const collateralTokenAddress =

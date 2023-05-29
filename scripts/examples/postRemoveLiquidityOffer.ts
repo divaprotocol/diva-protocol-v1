@@ -1,6 +1,6 @@
 /**
- * Script to post OfferRemoveLiquidity to backend
- * Run: `yarn diva::postRemoveLiquidityOffer`
+ * Script to post a remove liquidity offer to the API service.
+ * Run: `yarn diva::postRemoveLiquidityOffer --network mumbai`
  */
 
 import fetch from "cross-fetch";
@@ -20,7 +20,14 @@ import {
 import DIVA_ABI from "../../diamondABI/diamond.json";
 
 async function main() {
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // API service URL
   const apiUrl = `${EIP712API_URL[network.name]}/remove_liquidity`;
+
+
   const poolId =
     "0x5d829fd4c4a7ea6b5854f4f4b22848ced3dcb5a2914ea9d2f4d28e9f4eb9cf6b";
 
@@ -41,6 +48,7 @@ async function main() {
   );
   const decimals = await erc20Contract.decimals();
 
+  // @todo Move up similar to createContingentPool
   const maker = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
   const taker = "0x0000000000000000000000000000000000000000";
   const makerCollateralAmount = parseUnits("1", decimals).toString();

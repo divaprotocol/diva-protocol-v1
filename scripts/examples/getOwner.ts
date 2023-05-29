@@ -1,10 +1,9 @@
 /**
- * Script to get owner of DIVA contract
- * Run: `yarn diva::getOwner`
+ * Script to get the DIVA Protocol owner.
+ * Run: `yarn diva::getOwner --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS } from "../../constants";
 
