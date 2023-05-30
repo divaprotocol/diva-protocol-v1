@@ -159,6 +159,7 @@ const config: HardhatUserConfig = {
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.POLYGON_API_KEY || "",
       polygonMumbai: process.env.POLYGON_API_KEY || "",
+      gnosis: process.env.GNOSISSCAN_API_KEY || "",
     },
   },
   gasReporter: {
