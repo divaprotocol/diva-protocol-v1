@@ -47,7 +47,7 @@ export const COLLATERAL_TOKENS = {
 // Used for DIVA Protocol secondary version deployment.
 // Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
 export const TELLOR_ADDRESS = {
-  ethMain: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
+  ethMain: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   gnosis: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   arbitrumMainnet: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0", // Arbitrum One

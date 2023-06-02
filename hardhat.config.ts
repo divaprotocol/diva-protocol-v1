@@ -48,7 +48,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.RPC_URL_MUMBAI || "",
+        url: process.env.RPC_URL_ARBITRUMTESTNET || "",
         // blockNumber: 8219888, // Goerli
         // blockNumber: 4228882, // Chiado
         // blockNumber: 32419100, // Mumbai

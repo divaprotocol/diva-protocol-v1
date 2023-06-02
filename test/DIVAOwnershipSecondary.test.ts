@@ -19,7 +19,7 @@ import { deployMain } from "../scripts/deployMain";
 import { deploySecondary } from "../scripts/deploySecondary";
 
 // INPUTS
-const network = "goerli"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "arbitrumTestnet"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const mainChainId = 5;
 
 const getQueryDataAndId = (chainId: number, ownershipContractAddressMain: string): [string, string] => {

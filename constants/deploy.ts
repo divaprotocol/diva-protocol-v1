@@ -19,7 +19,7 @@ export const FACET_NAMES = [
 // networks in `addresses.ts` and the network names match the ones in `hardhat.config.ts`
 // and the networks in `hardhat.config.ts` match the ones in xdeployer:
 // https://www.npmjs.com/package/xdeployer
-export const XDEPLOY_CHAINS = ["sepolia"];
+export const XDEPLOY_CHAINS = ["mumbai", "chiado", "goerli", "sepolia", "gnosis"];
 
 export const CREATE2_DEPLOYER_ADDRESS =
   "0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2";
