@@ -112,7 +112,6 @@
     "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
     "eip-712": "^1.0.0",
-    "sourcify-js": "^1.6.7",
     "trees": "^0.0.4"
   },
   "resolutions": {
