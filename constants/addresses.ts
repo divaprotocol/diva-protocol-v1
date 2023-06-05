@@ -4,7 +4,7 @@ export const DIVA_ADDRESS = {
   ethMain: "",
   polygon: "0x60f5A0c12457761558f5d9933f5924fE8907eBcf",
   gnosis: "",
-  arbitrumMainnet: "", // Arbitrum One
+  arbitrumMain: "", // Arbitrum One
   goerli: "0xa6E26dbA7aA0d065b3C866Bb61B4AeF3Bb9d4874",
   sepolia: "0xF554e0FE7F75BaA00d76c4347fc098C9F88D2D25",
   mumbai: "0xa761003C34936b760473eD993B2B6208aB07782E",
@@ -50,7 +50,7 @@ export const TELLOR_ADDRESS = {
   ethMain: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   gnosis: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
-  arbitrumMainnet: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0", // Arbitrum One
+  arbitrumMain: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0", // Arbitrum One
   goerli: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   sepolia: "0x199839a4907ABeC8240D119B606C98c405Bb0B33",
   mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
@@ -76,7 +76,7 @@ export const MULTICALL_ADDRESS = {
   ethMain: "",
   polygon: "",
   gnosis: "",
-  arbitrumMainnet: "", // Arbitrum One
+  arbitrumMain: "", // Arbitrum One
   goerli: "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e",
   mumbai: "",
   chiado: "",
