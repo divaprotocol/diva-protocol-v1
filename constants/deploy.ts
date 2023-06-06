@@ -19,7 +19,9 @@ export const FACET_NAMES = [
 // networks in `addresses.ts` and the network names match the ones in `hardhat.config.ts`
 // and the networks in `hardhat.config.ts` match the ones in xdeployer:
 // https://www.npmjs.com/package/xdeployer
-export const XDEPLOY_CHAINS = ["goerli", "mumbai"];
+// IMPROTANT: Run for one chain at a time, otherwise you may end up picking a wrong
+// Tellor address. See `defaultChain` variable in `xdeploySecondary.ts` file.
+export const XDEPLOY_CHAINS = ["mumbai"];
 
 export const CREATE2_DEPLOYER_ADDRESS =
   "0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2";

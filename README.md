@@ -2,12 +2,12 @@
 
 1. Clone this repo:
 ```console
-git clone https://github.com/divaprotocol/diva-contracts.git
+git clone https://github.com/divaprotocol/diva-protocol-v1.git
 ```
 
 2. Install dependencies:
 ```console
-cd diva-contracts
+cd diva-protocol-v1
 yarn install
 ```
 
@@ -57,7 +57,7 @@ yarn abi
 Note that the command includes a compilation step (`npx hardhat compile`) as the `generateDiamondABI` tasks uses the artifacts as the basis. 
 
 ## Documentation
-Read the [DOCUMENTATION.md](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md) to find out how DIVA Protocol works.
+Read the [DOCUMENTATION.md](https://github.com/divaprotocol/diva-protocol-v1/blob/main/DOCUMENTATION.md) to find out how DIVA Protocol works.
 
 
 ## Get Help and Join the Community

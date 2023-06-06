@@ -86,9 +86,50 @@ The DIVA Protocol system on main and secondary chains is depicted below:
 
 ![221219 DIVA Protocol System Overview-Incl  Development Fund on Sec chain drawio](https://user-images.githubusercontent.com/37043174/215358726-68017036-c001-4eef-acea-60587f6a3830.png)
 
+## Contract addresses
+
+The DIVA Protocol system is available on the following chains:
+
+* **Mainnet:** Ethereum, Polygon, Gnosis, Arbitrum One
+* **Testnet:** Sepolia, Goerli, Mumbai, Chiado, Arbitrum Goerli
+
+Ethereum and Sepolia represent the primary chains which implement the DIVA Token, the Ownership contract including the governance mechanism as well as the DIVA Development Fund. The other chains are considered secondary chains, receiving owner information from the primary chain via the [Tellor protocol based cross-communication mechanism](#diva-ownership-on-secondary-chains).
+
+### Ethereum (primary chain on mainnet)
+
+| Contract name | Address |Description |
+| :--- |:--- | :--- |
+|DIVA Protocol|`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`|The diamond proxy contract through which users interact with DIVA Protocol's functions.|
+|DIVA Token|`0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e`|The governance token of DIVA Protocol used for voting. Available only on the primary chain.|
+|Ownership|`0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A`|Implements the governance mechanism.|
+|DIVA Development Fund|`0xb3e25F6c7d1074f2cfE0F2Dc8586D1e74234338b`|Contract holding assets donated to fund the development of the protocol. Restricted access to the protocol owner only.|
+
+### Polygon, Gnosis and Arbitrum One (secondary chains on mainnet)
+| Contract name | Address |Description |
+| :--- |:--- | :--- |
+|DIVA Protocol|`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`|The diamond proxy contract through which users interact with DIVA Protocol's functions.|
+|Ownership|`0x0a7B725F595F44d38b1c16091EDE5945aF4De9FE`|Contract that receives owner information from the primary chain via the [Tellor protocol based cross-communication mechanism](#diva-ownership-on-secondary-chains).|
+
+### Sepolia (primary chain on testnet)
+
+| Contract name | Address |Description |
+| :--- |:--- | :--- |
+|DIVA Protocol|`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`|The diamond proxy contract through which users interact with DIVA Protocol's functions.|
+|DIVA Token|`0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e`|The governance token of DIVA Protocol used for voting. Available only on the primary chain.|
+|Ownership|`0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A`|Implements the governance mechanism.|
+|DIVA Development Fund|`0xb3e25F6c7d1074f2cfE0F2Dc8586D1e74234338b`|Contract holding assets donated to fund the development of the protocol. Restricted access to the protocol owner only.|
+
+### Goerli, Mumbai, Chiado, Arbitrum Goerli (secondary chains on testnet)
+| Contract name | Address |Description |
+| :--- |:--- | :--- |
+|DIVA Protocol|`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`|The diamond proxy contract through which users interact with DIVA Protocol's functions.|
+|Ownership|`0x0a7B725F595F44d38b1c16091EDE5945aF4De9FE`|Contract that receives owner information from the primary chain via the [Tellor protocol based cross-communication mechanism](#diva-ownership-on-secondary-chains).|
+
+All relevant contract addresses are stored in the [`addresses.json`](https://github.com/divaprotocol/diva-protocol-v1/blob/main/addresses/addresses.json) file.
+
 ## Upgradeability
 
-Although DIVA Protocol implements an upgradeability feature, it will be disabled shortly after deployment via the `disableUpgradeability.ts` and `xdeployDisableUpgradeability.ts` scripts. All other contracts in the DIVA system are not upgradeable.
+The DIVA Protocol system was rendered immutable shortly after deployment.
 
 ## Ownership
 
@@ -195,7 +236,7 @@ Key benefits of a Diamond based architecture:
 
 ## Upgradeability
 
-A Diamond allows to add/replace/remove facet functions if the `diamondCut` function is implemented. The mutability of the DIVA smart contract will be deactivated shortly after contract deployment via the `disableUpgradeability.ts` and `xdeployDisableUpgradeability.ts` scripts.
+A Diamond allows to add/replace/remove facet functions if the `diamondCut` function is implemented. The mutability of the DIVA smart contract was deactivated shortly after contract deployment.
 
 ## Facet overview
 
@@ -1909,6 +1950,8 @@ Function to get the offer hash as well as information about the fillability and 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's collateral token allowance and balance. Any changes in those two variables may impact the fillability of the offer.
 - **Validity:** Validity of signature and create contingent pool parameters included in the offer.
 
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a fee token is used, the maker gets blacklisted after creating the offer, or the zero address is specified as the recipient of long and/or short position tokens. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
+
 ```js
 function getOfferRelevantStateCreateContingentPool(
     OfferCreateContingentPool calldata _offerCreateContingentPool, // Struct containing the create pool offer details
@@ -1932,6 +1975,8 @@ Function to get the offer hash as well as information about the fillability and 
 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's collateral token allowance and balance. Any changes in those two variables may impact the fillability of the offer.
 - **Validity:** Validity of signature and the `poolId` included in the offer.
+
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a fee was activated for the collateral token, the maker gets blacklisted after creating the offer, or the zero address is specified as the recipient of long and/or short position tokens. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
 
 ```js
 function getOfferRelevantStateAddLiquidity(
@@ -1958,6 +2003,8 @@ Function to get the offer hash as well as information about the fillability and 
 
 - **Fillability:** Whether the offer is still fillable and how much can be actually filled by a `taker` taking into account a maker's position token balance. Any changes in the maker's balance may impact the fillability of the offer.
 - **Validity:** Validity of signature and the `poolId` included in the offer.
+
+>**Note:** There may be situations where an offer appears fillable but the transaction can still fail. This is because certain criteria cannot or are expensive to check on-chain. For example, if a non-existent poolId is used, the maker gets blacklisted after creating the offer, or the final value is already confirmed. In order to mitigate these issues, API services should implement appropriate off-chain filters, and frontends are advised to pre-simulate the transaction before executing it on-chain. By conducting these checks and simulations, potential issues can be identified and addressed prior to submitting the transaction.
 
 ```js
 function getOfferRelevantStateRemoveLiquidity(
@@ -2704,7 +2751,7 @@ To ensure the reliability of reported data, Tellor recommends that only data rep
 
 To bridge the DIVA owner information stored in the `DIVAOwnershipMain` contract on Ethereum (main chain) to the `DIVAOwnershipSecondary` contract on a secondary chain, Tellor's [`EVMCall`](https://github.com/tellor-io/dataSpecs/blob/main/types/EVMCall.md) query type, which is specifically designed for cross-chain communication, is used.
 
-To report the DIVA owner to a secondary chain, a Tellor reporter would perform the following steps (for code examples, refer to the [`DIVAOwnershipSecondary.test.ts`](https://github.com/divaprotocol/diva-contracts/blob/main/test/DIVAOwnershipSecondary.test.ts) script):
+To report the DIVA owner to a secondary chain, a Tellor reporter would perform the following steps (for code examples, refer to the [`DIVAOwnershipSecondary.test.ts`](https://github.com/divaprotocol/diva-protocol-v1/blob/main/test/DIVAOwnershipSecondary.test.ts) script):
 1. Retrieve the current owner address via [`getCurrentOwner()`](#getcurrentowner) function on the main chain ownership contract.
 1. Submit the encoded owner address along with the query data and Id returned by [`getQueryDataAndId`](#getquerydataandid) by calling Tellor's [`submitValue`](https://docs.tellor.io/tellor/getting-data/tellor-playground#testing-with-tellor) function on the secondary chain.
 1. Wait until the 12-hour dispute period has passed.
@@ -3114,3 +3161,11 @@ The use of any DeFi protocol comes with certain risks. Be responsible when inter
 [wsteth]: https://help.lido.fi/en/articles/5231836-what-is-wrapped-steth-wsteth
 [divasubgraph]: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
 [whitelistgithub]: https://github.com/divaprotocol/whitelist
+[Ethereum]: https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=mainnet
+[Polygon]: https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=polygon
+[Gnosis]: https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=xdai
+[Arbitrum One]: https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=arbitrum
+[OwnershipMain]: https://etherscan.io/address/0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A#code
+[OwnershipSecondary]: https://polygonscan.com/address/0x0a7b725f595f44d38b1c16091ede5945af4de9fe#code
+[DIVA Token]: https://etherscan.io/address/0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e#code
+[DIVA Development Fund]: https://etherscan.io/address/0xb3e25F6c7d1074f2cfE0F2Dc8586D1e74234338b#code

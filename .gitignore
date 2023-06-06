@@ -23,6 +23,8 @@ deploySecondary.ts
 disableUpgradeability.ts
 verifyMain.ts
 verifySecondary.ts
+deployFromBytecode
+mainnet
 
 #xdeploy
 xdeploy
@@ -33,3 +35,4 @@ ownershipSecondary-args.ts
 xdeploy-config.ts
 diamond-args.ts
 developmentFund-args.ts
+
