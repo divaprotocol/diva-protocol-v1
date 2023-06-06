@@ -12,16 +12,16 @@ export const DIVA_ADDRESS = {
   arbitrumTestnet: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
 };
 
-// Used in `stake.ts` example script only
+// Ownership contract address on primary chain. Used in `stake.ts` example script only
 export const OWNERSHIP_ADDRESS = {
-  ethMain: "",
-  goerli: "",
+  ethMain: "0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A",
+  sepolia: "0xE39dEC81B2186A1A2e36bFC260F3Df444b36948A",
 };
 
 // Used in `stake.ts` example script only
 export const DIVA_TOKEN_ADDRESS = {
-  ethMain: "",
-  goerli: "",
+  ethMain: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
+  sepolia: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
 };
 
 // Used in example scripts only (e.g., `createContingentPool.ts`)

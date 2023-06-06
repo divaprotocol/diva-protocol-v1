@@ -115,7 +115,7 @@ const config: HardhatUserConfig = {
     },
     arbitrumMain: {
       // arbitrumOne; there also exists arbitrumNova in xdeployer
-      url: process.env.RPC_URL_ARBITRUMMAINNET,
+      url: process.env.RPC_URL_ARBITRUMMAIN,
       chainId: 42161,
       accounts: {
         mnemonic: MNEMONIC,
