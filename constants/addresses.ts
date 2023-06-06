@@ -1,15 +1,15 @@
 // DIVA Protocol V1 contract addresses by network.
 // Used in example scripts only.
 export const DIVA_ADDRESS = {
-  ethMain: "",
-  polygon: "0x60f5A0c12457761558f5d9933f5924fE8907eBcf",
-  gnosis: "",
-  arbitrumMain: "", // Arbitrum One
-  goerli: "0xa6E26dbA7aA0d065b3C866Bb61B4AeF3Bb9d4874",
-  sepolia: "0xF554e0FE7F75BaA00d76c4347fc098C9F88D2D25",
-  mumbai: "0xa761003C34936b760473eD993B2B6208aB07782E",
-  chiado: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3",
-  arbitrumTestnet: "0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd",
+  ethMain: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  polygon: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  gnosis: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  arbitrumMain: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D", // Arbitrum One
+  goerli: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  sepolia: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  mumbai: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  chiado: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
+  arbitrumTestnet: "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D",
 };
 
 // Used in `stake.ts` example script only
