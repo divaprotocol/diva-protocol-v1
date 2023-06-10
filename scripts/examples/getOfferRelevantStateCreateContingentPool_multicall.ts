@@ -1,105 +1,83 @@
 /**
- * Script to get relevant states of create contingent pool offers using multicall contract.
+ * Script to get the state of multiple create contingent pool offers using multicall contract.
  * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall --network mumbai`
  */
 
-import { ethers, network } from "hardhat";
+import { network } from "hardhat";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
-  generateCreateContingentPoolOfferDetails,
-  generateSignatureAndTypedMessageHash,
   multicall,
+  getOfferInfoFromAPI,
+  getOfferInfoFromJSONFile
 } from "../../utils";
 import {
   DIVA_ADDRESS,
-  COLLATERAL_TOKENS,
-  CREATE_POOL_TYPE,
+  EIP712API_URL,
   OfferInfo,
+  OfferCreateContingentPool,
+  Offer
 } from "../../constants";
-import { parseUnits } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
 
+
 async function main() {
-  // INPUT: collateral token
-  const collateralTokenSymbol = "WAGMI18";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  const divaAddress = DIVA_ADDRESS[network.name];
-  const collateralTokenAddress =
-    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
-
-  // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-
-  // Get chainId
-  const chainId = (await diva.getChainId()).toNumber();
-
-  // Define DIVA Domain struct
-  const divaDomain = {
-    name: "DIVA Protocol",
-    version: "1",
-    chainId,
-    verifyingContract: divaAddress,
-  };
-
-  // Get signer of users
-  const [user1, user2, oracle] = await ethers.getSigners();
-
-  // Generate first offerCreateContingentPool with user1 (maker) taking the short side and user2 (taker) the long side
-  const offerCreateContingentPool1 =
-    await generateCreateContingentPoolOfferDetails({
-      maker: user1.address.toString(), // maker
-      taker: user2.address.toString(), // taker
-      makerIsLong: false, // makerIsLong
-      dataProvider: oracle.address,
-      collateralToken: collateralTokenAddress,
-    });
-
-  // Generate first signature
-  const [signature1] = await generateSignatureAndTypedMessageHash(
-    user1,
-    divaDomain,
-    CREATE_POOL_TYPE,
-    offerCreateContingentPool1,
-    "OfferCreateContingentPool"
-  );
-
-  // Generate second offerCreateContingentPool with user1 (maker) taking the short side and user2 (taker) the long side
-  const offerCreateContingentPool2 =
-    await generateCreateContingentPoolOfferDetails({
-      maker: user1.address.toString(), // maker
-      taker: user2.address.toString(), // taker
-      makerCollateralAmount: parseUnits("20").toString(),
-      makerIsLong: false, // makerIsLong
-      dataProvider: oracle.address,
-      collateralToken: collateralTokenAddress,
-    });
-
-  // Generate second signature and typed message hash
-  const [signature2] = await generateSignatureAndTypedMessageHash(
-    user1,
-    divaDomain,
-    CREATE_POOL_TYPE,
-    offerCreateContingentPool2,
-    "OfferCreateContingentPool"
-  );
-
-  const offersCreateContingentPool = [
+  // Specify the offers to query. Set the source to "JSON" if an offer
+  // is filled/expired/cancelled/invalid and no longer exist on the API server.
+  // Specify `offerHashInput` if `sourceOfferDetails` = "API".
+  // Specify `jsonFilePath` if `sourceOfferDetails` = "JSON".
+  const offers: Offer[] = [
     {
-      address: divaAddress,
-      name: "getOfferRelevantStateCreateContingentPool",
-      params: [offerCreateContingentPool1, signature1],
+      sourceOfferDetails: "API",
+      offerHashInput: "0x4ba5b8afdd48a7d96b72611dfa3ff947d1699df5603148df0ed2d4f33a5db524",
+      jsonFilePath: "./offers/createContingentPoolOffer_1686376553697.json",
     },
     {
-      address: divaAddress,
-      name: "getOfferRelevantStateCreateContingentPool",
-      params: [offerCreateContingentPool2, signature2],
+      sourceOfferDetails: "API",
+      offerHashInput: "0x3e36961ae90c1df22a032510bb70195093cb5bae906244be616ac91daf14ed75",
+      jsonFilePath: "./offers/createContingentPoolOffer_1686376572499.json",
     },
+    // Add more offer objects as needed
   ];
 
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Get DIVA contract address
+  const divaAddress = DIVA_ADDRESS[network.name];
+
+  // Retrieve offer info from specified sources
+  let offerInfos;
+  try {
+    offerInfos = await queryOffers(offers);
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+  }
+  
+  // Extract relevant offer details to prepare data for multicall
+  const offersRelevantState = await Promise.all(
+    offerInfos.map(async (offerInfo) => {
+      const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+        
+      const offerRelevantState = {
+        address: divaAddress,
+        name: "getOfferRelevantStateCreateContingentPool",
+        params: [offerCreateContingentPool, offerInfo.signature],
+      };
+      
+      return offerRelevantState;
+    })
+  );
+  
   const offerRelevantStatesCreateContingentPool = await multicall(
     network.name,
     DIVA_ABI,
-    offersCreateContingentPool
+    offersRelevantState
   );
   offerRelevantStatesCreateContingentPool.forEach(
     (
@@ -118,6 +96,31 @@ async function main() {
       );
     }
   );
+}
+
+async function queryOffers(offers) {
+  const queryPromises = offers.map(async (offer) => {
+    const { sourceOfferDetails, offerHashInput, jsonFilePath } = offer;
+    return queryItem(sourceOfferDetails, offerHashInput, jsonFilePath);
+  });
+
+  try {
+    const offerInfos = await Promise.all(queryPromises);
+    return offerInfos;
+  } catch (error) {
+    throw new Error("An error occurred during offer queries: " + error.message);
+  }
+}
+
+async function queryItem(sourceOfferDetails, offerHashInput, jsonFilePath) {
+  if (sourceOfferDetails === "API") {
+    const getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHashInput}`;    
+    return await getOfferInfoFromAPI(getURL);
+  } else if (sourceOfferDetails === "JSON") {   
+    return await getOfferInfoFromJSONFile(jsonFilePath);
+  } else {
+    throw new Error("Invalid sourceOfferDetails provided. Set to API or JSON.");
+  }
 }
 
 main()

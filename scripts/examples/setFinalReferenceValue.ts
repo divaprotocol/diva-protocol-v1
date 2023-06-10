@@ -25,14 +25,14 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x645f2a5924b93b93af4a29c4759422e24d7096c5e16bd72571410efe3cb2bcbd";
+    "0x52a16114f6d8b8213c2a345ce81a7f6d7eb630b7ef25c182817495e2c7d4752e";
   
   // Final reference value expressed as an integer with 18 decimals
-  const finalReferenceValue = parseUnits("2444.8");
+  const finalReferenceValue = parseUnits("1834.66");
 
   // false: first value submitted will automatically be confirmed
   // true: challenge by position token holders is enabled
-  const allowChallenge = true;
+  const allowChallenge = false;
 
 
   // ************************************

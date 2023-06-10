@@ -1,13 +1,19 @@
 /**
- * Script to get and fill an offer to create a contingent pool. 
- * Obtain the offer hash from the API service.
+ * Script to retrieve a create contingent pool offer from the API service
+ * and fill it. Approval for maker and taker is set inside the script for ease of use.
  * Run: `yarn diva::fillOfferCreateContingentPool_from_api --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::postCreateContingentPoolOffer`: Post a create offer to the API server.
+ * 2. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
+ * 3. `yarn diva::fillOfferCreateContingentPool_from_api`: Fill the offer.
+ * 4. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
  */
 
 import fetch from "cross-fetch";
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { formatUnits } from "@ethersproject/units";
+import { parseUnits, formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
   OfferCreateContingentPool,
@@ -20,20 +26,37 @@ import {
 } from "../../constants";
 
 async function main() {
-  // INPUT: offer hash value
-  const offerHash =
-    "0x13a7abccaf4f08ec38d509eedc3ae94582555ed7365c9b1bcbcfaf152dfad173";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Get offer info from api service
+  // Hash of offer to fill
+  const offerHash =
+    "0x365cbf1ca6a19608624d70cef87ebd92bc2a8c86cbe25dc359e536966ebf1e31";
+
+  // Get signers
+  const [, taker] = await ethers.getSigners();
+
+  // Taker fill amount. Conversion into integer happens in the code below as it
+  // depends on the collateral token decimals.
+  const takerFillAmountInput = "1"; 
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Get offer info from API service
+  const getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`;
   const res = await fetch(
-    `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`,
+    getURL,
     {
       method: "GET",
     }
   );
   const offerInfo = await res.json();
 
-  // Connect to ERC20 token that will be used as collateral when creating a contingent pool
+  // Connect to the collateral token to obtain the decimals needed to convert into
+  // integer representation
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
     offerInfo.collateralToken
@@ -51,9 +74,6 @@ async function main() {
     verifyingContract: offerInfo.verifyingContract,
   };
 
-  // Get signers
-  const [maker, taker] = await ethers.getSigners();
-
   // Get offerCreateContingentPool from offer info
   const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
 
@@ -61,10 +81,21 @@ async function main() {
   const signature = offerInfo.signature;
 
   // Set takerFillAmount
-  const takerFillAmount = BigNumber.from(
-    offerCreateContingentPool.takerCollateralAmount
-  );
+  const takerFillAmount = parseUnits(takerFillAmountInput, decimals);
 
+  // Calculate makerFillAmount
+  const makerFillAmount = BigNumber.from(
+    offerCreateContingentPool.makerCollateralAmount
+  )
+    .mul(takerFillAmount)
+    .div(offerCreateContingentPool.takerCollateralAmount);
+
+  // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
+  const maker = await ethers.getSigner(offerCreateContingentPool.maker);
+
+  // The following code checks whether the maker and taker have sufficient allowance and
+  // collateral token balance. It will set the allowance if insufficient.
+  
   // Get maker's and taker's collateral token balance
   const collateralTokenBalanceMakerBefore = await collateralToken.balanceOf(
     maker.address
@@ -105,12 +136,7 @@ async function main() {
       allowanceTaker = allowanceMaker; // because taker = maker
     }
   } else {
-    // Set maker allowance if insufficient
-    const makerFillAmount = BigNumber.from(
-      offerCreateContingentPool.makerCollateralAmount
-    )
-      .mul(takerFillAmount)
-      .div(offerCreateContingentPool.takerCollateralAmount);
+    // Set maker allowance if insufficient    
     if (allowanceMaker.lt(makerFillAmount)) {
       const approveTx = await collateralToken
         .connect(maker)
@@ -147,7 +173,10 @@ async function main() {
     CREATE_POOL_TYPE,
     signature,
     taker.address,
-    takerFillAmount
+    takerFillAmount,
+    makerFillAmount,
+    collateralTokenBalanceTakerBefore,
+    collateralTokenBalanceMakerBefore
   );
 
   // Get taker filled amount before fill offer
@@ -189,8 +218,6 @@ async function main() {
   console.log("DIVA address: ", diva.address);
   console.log("PoolId of newly created pool: ", poolId.toString());
   console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
-  console.log("Signed offer hash: ", offerHash);
-  console.log("Signature: ", signature);
   console.log("Allowance Maker: ", formatUnits(allowanceMaker, decimals));
   console.log("Allowance Taker: ", formatUnits(allowanceTaker, decimals));
   console.log(
@@ -238,7 +265,10 @@ const _checkConditions = async (
   type: Record<string, { type: string; name: string }[]>,
   signature: Signature,
   userAddress: string,
-  takerFillAmount: BigNumber
+  takerFillAmount: BigNumber,
+  makerFillAmount: BigNumber,
+  takerCollateralTokenBalance: BigNumber,
+  makerCollateralTokenBalance: BigNumber,
 ) => {
   // Get information about the state of the create contingent pool offer
   const relevantStateParams =
@@ -270,8 +300,7 @@ const _checkConditions = async (
     throw new Error("Invalid create contingent pool parameters.");
   }
 
-  // Check actual fillable amount. The checks above provide more information on why
-  // actualTakerFillableAmount is smaller than takerCollateralAmount - takerFilledAmount.
+  // Confirm that takerFillAmount does not exceed actualTakerFillableAmount
   if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {
     throw new Error(
       "Actually fillable amount is smaller than takerFillAmount."
@@ -297,12 +326,23 @@ const _checkConditions = async (
     throw new Error("Offer is reserved for a different address.");
   }
 
-  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**. Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
+  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**.
+  // Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
   if (
     relevantStateParams.offerInfo.takerFilledAmount.eq(0) &&
     takerFillAmount.lt(offerCreateContingentPool.minimumTakerFillAmount)
   ) {
     throw new Error("takerFillAmount is smaller than minimumTakerFillAmount.");
+  }
+
+  // Check that the taker has sufficient collateral token balance
+  if (takerCollateralTokenBalance.lt(takerFillAmount)) {
+    throw new Error("Taker has insufficient collateral token balance.");
+  }
+
+  // Check that the maker has sufficient collateral token balance
+  if (makerCollateralTokenBalance.lt(makerFillAmount)) {
+    throw new Error("Maker has insufficient collateral token balance.");
   }
 };
 

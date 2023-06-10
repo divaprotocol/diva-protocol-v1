@@ -265,6 +265,8 @@ const _checkConditions = async (
     throw new Error("Invalid create contingent pool parameters.");
   }
 
+  // @todo add longRecipient OR shortRecipient = 0x address checks
+
   // Check actual fillable amount. The checks above provide more information on why
   // actualTakerFillableAmount is smaller than takerCollateralAmount - takerFilledAmount.
   if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {

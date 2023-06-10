@@ -23,7 +23,9 @@ export const OWNERSHIP_ADDRESS: {
 };
 
 // Used in `stake.ts` example script only
-export const DIVA_TOKEN_ADDRESS: { [key: string]: string } = {
+export const DIVA_TOKEN_ADDRESS: {
+  [key: string]: string
+} = {
   ethMain: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
   sepolia: "0x4B7fFCB2b92fB4890f22f62a52Fb7A180eaB818e",
 };
@@ -86,16 +88,17 @@ export const TELLOR_PLAYGROUND_ADDRESS: {
   arbitrumTestnet: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
 };
 
-// Used in example scripts only
+// Used in example scripts only.
+// Source: https://github.com/makerdao/multicall#multicall-contract-addresses
 export const MULTICALL_ADDRESS: {
   [key: string]: string;
 } = {
-  ethMain: "",
-  polygon: "",
-  gnosis: "",
+  ethMain: "0xeefba1e63905ef1d7acba5a8513c70307c1ce441",
+  polygon: "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
+  gnosis: "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a",
   arbitrumMain: "", // Arbitrum One
   goerli: "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e",
-  mumbai: "",
+  mumbai: "0x08411ADd0b5AA8ee47563b146743C13b3556c9Cc",
   chiado: "",
   sepolia: "",
   arbitrumTestnet: "",

@@ -1,7 +1,15 @@
 /**
- * Script to cancel an offer to create a contingent pool.
+ * Script to cancel a create contingent pool offer.
  * Run: `yarn diva::cancelOfferCreateContingentPool_from_json --network mumbai`
+ * 
+  * Example usage (append corresponding network):
+ * 1. `yarn diva::postCreateContingentPoolOffer`: Post a create offer to the API server.
+ * 2. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
+ * 3. `yarn diva::cancelOfferCreateContingentPool_from_json`: Cancel the offer.
+ * 4. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
  */
+
+// @todo test the example usage
 
 import fs from "fs";
 import { ethers, network } from "hardhat";
@@ -13,8 +21,20 @@ import {
 } from "../../constants";
 
 async function main() {
-  // INPUT: json file path for offer info
-  const jsonFilePath = "./offers/createContingentPoolOffer_1684824667771.json";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // json file path for offer info
+  const jsonFilePath = "./offers/createContingentPoolOffer_1686309422934.json";
+
+  // Note that the maker signer is derived from the offer details. Must be an account
+  // derived from the MNEMONIC stored in `.env`.
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get offer info from json file
   const offerInfo = JSON.parse(fs.readFileSync(jsonFilePath).toString());
@@ -22,11 +42,11 @@ async function main() {
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get signer of maker
-  const [maker] = await ethers.getSigners();
-
   // Get offerCreateContingentPool from offer info
   const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+
+  // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
+  const maker = await ethers.getSigner(offerCreateContingentPool.maker);
 
   // Cancel offer with maker account
   const tx = await diva
@@ -47,11 +67,8 @@ async function main() {
   console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
   console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
-  console.log("Signed offer hash: ", offerInfo.offerHash);
-  console.log("Signature: ", offerInfo.signature);
   console.log(
-    "offerInfo.status === Cancelled: ",
-    relevantStateParams.offerInfo.status === OfferStatus.Cancelled
+    "offerInfo.status: ", OfferStatus[relevantStateParams.offerInfo.status]
   );
 }
 

@@ -1,5 +1,7 @@
 import { BigNumber, ContractTransaction } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
+import fs from "fs";
+import fetch from "cross-fetch";
 
 // Fee in collateral token decimals
 export const calcFee = (
@@ -28,3 +30,39 @@ export const getPoolIdFromTx = async (
 export const getCurrentTimestamp = () => {
   return Math.floor(Date.now() / 1000);
 };
+
+export async function getOfferInfoFromAPI(getURL: string): Promise<any> {
+  let offerInfo;
+
+  console.log("Offer URL: ", getURL);
+
+  // Get offer details from API service
+  try {
+    const res = await fetch(getURL, {
+      method: "GET",
+    });
+    if (res.ok) {
+      offerInfo = await res.json();
+    } else {
+      throw new Error("Request failed with status " + res.status);
+    }
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+
+  return offerInfo;
+}
+
+export async function getOfferInfoFromJSONFile(jsonFilePath: string): Promise<any> {
+  let offerInfo;
+
+  console.log("JSON file path: ", jsonFilePath);
+
+  // Get offer details from JSON file
+  if (!fs.existsSync(jsonFilePath)) {
+    throw new Error("Invalid JSON file path.");
+  }
+  offerInfo = JSON.parse(fs.readFileSync(jsonFilePath).toString());
+
+  return offerInfo;
+}

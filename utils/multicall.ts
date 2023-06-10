@@ -19,7 +19,7 @@ interface MulticallOptions {
 export const getMulticallContract = async (
   network: string
 ): Promise<Contract> => {
-  return await ethers.getContractAt(MULTICALL_ABI, MULTICALL_ADDRESS[network]);
+  return await ethers.getContractAt(MULTICALL_ABI, MULTICALL_ADDRESS[network]);  
 };
 
 export const multicall = async <T = any>(

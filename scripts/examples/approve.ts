@@ -12,14 +12,14 @@ async function main() {
   // ************************************
 
   // Address of token to approve
-  const tokenToApprove = "0xFA158C9B780A4213f3201Ae74Cca013712c8538d";
+  const tokenToApprove = "0x91F13B8da062f9a042dbD37D2e61FBfAcEB267aC";
 
   // Spender address
-  const spenderAddress = "0xb02bbd63545654d55125F98F85F4E691f1a3E207";
+  const spenderAddress = "0x2C9c47E7d254e493f02acfB410864b9a86c28e1D";
   
   // Allowance amount.Conversion into integer happens below in the code
   // as it depends on the decimals of the token to approve.
-  const allowanceString = "10000000000000000";
+  const allowanceString = "100000000000000000000000000";
 
 
   // ************************************
@@ -27,7 +27,7 @@ async function main() {
   // ************************************
 
   // Get signer of user
-  const [, user] = await ethers.getSigners();
+  const [user] = await ethers.getSigners();
 
   // Connect to token to approve
   const erc20 = await ethers.getContractAt("MockERC20", tokenToApprove);

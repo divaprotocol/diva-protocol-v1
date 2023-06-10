@@ -1,5 +1,5 @@
 /**
- * Script to cancel an offer to create a contingent pool.
+ * Script to cancel a create a contingent pool offer.
  * Run: `yarn diva::cancelOfferCreateContingentPool_from_api --network mumbai`
  */
 
@@ -14,13 +14,26 @@ import {
 } from "../../constants";
 
 async function main() {
-  // INPUT: offer hash value
-  const offerHash =
-    "0xe60301f7727289aa88d573ec11edf967b95fd1711c3894a6033251c822fd19e6";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Get offer info from api service
+  // Hash of offer to cancel
+  const offerHash =
+    "0x727ed09b2004e34b0064f60bb20d62f7596aace2919a05ab8d57cab485a173a7";
+
+  // Note that the maker signer is derived from the offer details. Must be an account
+  // derived from the MNEMONIC stored in `.env`.
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Get offer info from API service
+  const getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`;
   const res = await fetch(
-    `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`,
+    getURL,
     {
       method: "GET",
     }
@@ -30,11 +43,11 @@ async function main() {
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get signer of maker
-  const [maker] = await ethers.getSigners();
-
   // Get offerCreateContingentPool from offer info
   const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+
+  // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
+  const maker = await ethers.getSigner(offerCreateContingentPool.maker);
 
   // Cancel offer with maker account
   const tx = await diva
@@ -52,14 +65,11 @@ async function main() {
     );
 
   // Log relevant info
-  console.log("chainId", offerInfo.chainId);
+  console.log("chainId: ", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
   console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
-  console.log("Signed offer hash: ", offerHash);
-  console.log("Signature: ", offerInfo.signature);
   console.log(
-    "offerInfo.status === Cancelled: ",
-    relevantStateParams.offerInfo.status === OfferStatus.Cancelled
+    "offerInfo.status: ", OfferStatus[relevantStateParams.offerInfo.status]
   );
 }
 
