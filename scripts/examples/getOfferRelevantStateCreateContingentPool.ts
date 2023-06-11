@@ -3,17 +3,17 @@
  * can be retrieved from the API server or a JSON file.
  * Run: `yarn diva::getOfferRelevantStateCreateContingentPool --network mumbai`
  */
+// @todo add same getter functions for addLiquidity and removeliquidity offers
 
-import fs from "fs";
-import fetch from "cross-fetch";
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
+import { queryOffer } from "../../utils";
 import {
   DIVA_ADDRESS,
-  EIP712API_URL,
   OfferStatus,
-  OfferCreateContingentPool
+  OfferCreateContingentPool,
+  Offer
 } from "../../constants";
 
 async function main() {
@@ -21,54 +21,27 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
+  // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
   // choose "JSON" as source as it will no longer exist on the API server.
-  const sourceOfferDetails = "JSON"  as "JSON" | "API";
-  
-  // Offer hash to check the relevant state for
-  const offerHashInput =
-    "0xe2acb16a04dfb1e37f48f9ca7d1a974536d1856effdbf495e2cb33a53d3ca719";  
-
-  // Only required if `sourceOfferDetails` = "JSON" was selected
-  const jsonFilePath = "./offers/createContingentPoolOffer_1686316705787.json";
+  // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
+  // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
+  const offer: Offer = {
+    sourceOfferDetails: "API",
+    offerHash: "0xee71a95189b8d0b8e3e61773ee1c6b51d2ac907f11e9b68cc4b7e7c5bbee4a1f",
+    jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
+  };
 
   
   // ************************************
   //              EXECUTION
   // ************************************
 
-  let offerInfo;
-  let getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHashInput}`;
-  if (sourceOfferDetails == "API") {
-    console.log("Offer URL: ", getURL);
-
-    // Get offer details from API service
-    try {
-      const res = await fetch(
-        getURL,
-        {
-          method: "GET",
-        }
-      );    
-      if (res.ok) {
-        offerInfo = await res.json();      
-      } else {
-        throw new Error("Request failed with status " + res.status);
-      }
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  } else if (sourceOfferDetails == "JSON") {
-    console.log("JSON file path: ", jsonFilePath)
-
-    // Get offer details from JSON file
-    if (!fs.existsSync(jsonFilePath)) {
-      throw new Error("Invalid JSON file path.");
-    }
-    offerInfo = JSON.parse(fs.readFileSync(jsonFilePath).toString());
-  } else {
-    throw new Error("Invalid sourceOfferDetails provided. Set to API or JSON.");
-  }
+  // Retrieve offer information from the specified source
+  const offerInfo = await queryOffer(
+    offer.sourceOfferDetails,
+    offer.offerHash,
+    offer.jsonFilePath
+  );
   
   // Get offerCreateContingentPool object from offerInfo
   const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
@@ -91,9 +64,9 @@ async function main() {
   );
 
   // Log relevant info  
-  console.log("Offer hash: ", offerHashInput);
-  console.log("Offer status: ", OfferStatus[offerState.offerInfo[1]]);
-  console.log("Taker filled amount: ", formatUnits(offerState.offerInfo[2], decimals));
+  console.log("Offer hash: ", offer.offerHash);
+  console.log("Offer status: ", OfferStatus[offerState.offerInfo.status]);
+  console.log("Taker filled amount: ", formatUnits(offerState.offerInfo.takerFilledAmount, decimals));
   console.log("Actual taker fillable amount: ", formatUnits(offerState.actualTakerFillableAmount, decimals));
   console.log("Valid signature: ", offerState.isSignatureValid);
   console.log("Valid create contingent pool parameters: ", offerState.isValidInputParamsCreateContingentPool);

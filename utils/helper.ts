@@ -2,6 +2,13 @@ import { BigNumber, ContractTransaction } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import fs from "fs";
 import fetch from "cross-fetch";
+import { network } from "hardhat";
+import { 
+  EIP712API_URL,
+  SourceOfferDetails,
+  Offer
+} from "../constants";
+
 
 // Fee in collateral token decimals
 export const calcFee = (
@@ -65,4 +72,33 @@ export async function getOfferInfoFromJSONFile(jsonFilePath: string): Promise<an
   offerInfo = JSON.parse(fs.readFileSync(jsonFilePath).toString());
 
   return offerInfo;
+}
+
+export async function queryOffers(offers: Offer[]): Promise<any> {
+  const queryPromises = offers.map(async (offer) => {
+    const { sourceOfferDetails, offerHash, jsonFilePath } = offer;
+    return queryOffer(sourceOfferDetails, offerHash, jsonFilePath);
+  });
+
+  try {
+    const offerInfos = await Promise.all(queryPromises);
+    return offerInfos;
+  } catch (error: unknown) {
+    throw new Error("An error occurred during offer queries: " + (error as Error).message);
+  }
+}
+
+export async function queryOffer(
+  sourceOfferDetails: SourceOfferDetails,
+  offerHash: string,
+  jsonFilePath: string
+): Promise<any> {
+  if (sourceOfferDetails === "API") {
+    const getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`;    
+    return await getOfferInfoFromAPI(getURL);
+  } else if (sourceOfferDetails === "JSON") {   
+    return await getOfferInfoFromJSONFile(jsonFilePath);
+  } else {
+    throw new Error("Invalid sourceOfferDetails provided. Set to API or JSON.");
+  }
 }

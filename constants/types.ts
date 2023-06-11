@@ -146,10 +146,10 @@ export type TreasuryInfo = {
   startTimeTreasury: BigNumber;
 };
 
-type SourceOfferDetails = "JSON" | "API";
+export type SourceOfferDetails = "JSON" | "API";
 
 export interface Offer {
   sourceOfferDetails: SourceOfferDetails;
-  offerHashInput?: string;
-  jsonFilePath?: string;
+  offerHash: string;
+  jsonFilePath: string;
 }
