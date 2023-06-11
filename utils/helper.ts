@@ -74,10 +74,10 @@ export async function getOfferInfoFromJSONFile(jsonFilePath: string): Promise<an
   return offerInfo;
 }
 
-export async function queryOffers(offers: Offer[]): Promise<any> {
+export async function queryOffers(offers: Offer[], action: string): Promise<any> {
   const queryPromises = offers.map(async (offer) => {
     const { sourceOfferDetails, offerHash, jsonFilePath } = offer;
-    return queryOffer(sourceOfferDetails, offerHash, jsonFilePath);
+    return queryOffer(sourceOfferDetails, offerHash, jsonFilePath, action);
   });
 
   try {
@@ -91,10 +91,20 @@ export async function queryOffers(offers: Offer[]): Promise<any> {
 export async function queryOffer(
   sourceOfferDetails: SourceOfferDetails,
   offerHash: string,
-  jsonFilePath: string
+  jsonFilePath: string,
+  action: string
 ): Promise<any> {
   if (sourceOfferDetails === "API") {
-    const getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`;    
+    let getURL;
+    if (action === "create") {
+      getURL = `${EIP712API_URL[network.name]}/create_contingent_pool/${offerHash}`;
+    } else if (action === "add") {
+      getURL = `${EIP712API_URL[network.name]}/add_liquidity/${offerHash}`;
+    } else if (action === "remove") {
+      getURL = `${EIP712API_URL[network.name]}/remove_liquidity/${offerHash}`;
+    } else {
+      throw new Error("Invalid action string provided. Can onyl be create, add or remove.")
+    }
     return await getOfferInfoFromAPI(getURL);
   } else if (sourceOfferDetails === "JSON") {   
     return await getOfferInfoFromJSONFile(jsonFilePath);

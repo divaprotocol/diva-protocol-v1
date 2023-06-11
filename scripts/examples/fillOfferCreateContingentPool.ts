@@ -1,95 +1,109 @@
 /**
- * Script to create and fill an offer to create a contingent pool.
+ * Script to retrieve a create contingent pool offer from the API service
+ * and fill it. Approval for maker and taker is set inside the script for ease of use.
  * Run: `yarn diva::fillOfferCreateContingentPool --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::postCreateContingentPoolOffer`: Post a create offer to the API server.
+ * 2. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
+ * 3. `yarn diva::fillOfferCreateContingentPool`: Fill the offer.
+ * 4. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { formatUnits, parseUnits } from "@ethersproject/units";
+import { parseUnits, formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
-import {
-  generateSignatureAndTypedMessageHash,
-  getExpiryTime,
-} from "../../utils";
+import { queryOffer } from "../../utils";
 import {
   OfferCreateContingentPool,
   Signature,
   DivaDomain,
   CREATE_POOL_TYPE,
   DIVA_ADDRESS,
-  COLLATERAL_TOKENS,
   OfferStatus,
+  Offer
 } from "../../constants";
 
 async function main() {
-  // INPUT: collateral token symbol
-  const collateralTokenSymbol = "dUSD";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Lookup collateral token address
-  const collateralTokenAddress =
-    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
+  // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
+  // choose "JSON" as source as it will no longer exist on the API server.
+  // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
+  // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
+  const offer: Offer = {
+    sourceOfferDetails: "JSON",
+    offerHash: "0xee71a95189b8d0b8e3e61773ee1c6b51d2ac907f11e9b68cc4b7e7c5bbee4a1f",
+    jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
+  };
 
-  // Connect to ERC20 token that will be used as collateral when creating a contingent pool
+  // Set taker
+  const [, taker] = await ethers.getSigners();
+
+  // Taker fill amount. Conversion into integer happens in the code below as it
+  // depends on the collateral token decimals.
+  const takerFillAmountInput = "1"; 
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Retrieve offer information from the specified source
+  const offerInfo = await queryOffer(
+    offer.sourceOfferDetails,
+    offer.offerHash,
+    offer.jsonFilePath,
+    "create"
+  );
+
+  // Connect to the collateral token to obtain the decimals needed to convert into
+  // integer representation
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
-    collateralTokenAddress
+    offerInfo.collateralToken
   );
   const decimals = await collateralToken.decimals();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get chainId
-  const chainId = (await diva.getChainId()).toNumber();
-
   // Define DIVA Domain struct
   const divaDomain = {
     name: "DIVA Protocol",
     version: "1",
-    chainId,
-    verifyingContract: DIVA_ADDRESS[network.name],
+    chainId: offerInfo.chainId,
+    verifyingContract: offerInfo.verifyingContract,
   };
 
-  // Get signers
-  const [maker, taker, oracle] = await ethers.getSigners();
+  // Get offerCreateContingentPool from offer info
+  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
 
-  // Generate offerCreateContingentPool with user1 (maker) taking the long side and user2 (taker) the short side
-  const offerCreateContingentPool = {
-    maker: maker.address.toString(),
-    taker: taker.address.toString(),
-    makerCollateralAmount: parseUnits("90", decimals).toString(),
-    takerCollateralAmount: parseUnits("10", decimals).toString(),
-    makerIsLong: true,
-    offerExpiry: await getExpiryTime(10000),
-    minimumTakerFillAmount: parseUnits("10", decimals).toString(),
-    referenceAsset: "Rain amount (ml)",
-    expiryTime: await getExpiryTime(10000),
-    floor: parseUnits("200").toString(),
-    inflection: parseUnits("350").toString(),
-    cap: parseUnits("500").toString(),
-    gradient: parseUnits("0.5", decimals).toString(),
-    collateralToken: collateralTokenAddress,
-    dataProvider: oracle.address,
-    capacity: parseUnits("1000", decimals).toString(),
-    permissionedERC721Token: ethers.constants.AddressZero,
-    salt: Date.now().toString(),
-  };
+  // Get signature from offerInfo
+  const signature = offerInfo.signature;
 
-  // Generate signature and typed message hash
-  const [signature, typedMessageHash] =
-    await generateSignatureAndTypedMessageHash(
-      maker,
-      divaDomain,
-      CREATE_POOL_TYPE,
-      offerCreateContingentPool,
-      "OfferCreateContingentPool"
-    );
+  // Convert `takerFillAmountInput` into big integer
+  const takerFillAmount = parseUnits(takerFillAmountInput, decimals);
 
-  // Set takerFillAmount
-  const takerFillAmount = BigNumber.from(
-    offerCreateContingentPool.takerCollateralAmount
-  );
+  // Calculate makerFillAmount
+  const makerFillAmount = BigNumber.from(
+    offerCreateContingentPool.makerCollateralAmount
+  )
+    .mul(takerFillAmount)
+    .div(offerCreateContingentPool.takerCollateralAmount);
 
+  // Calc total collateral fill amount
+  const totalCollateralFillAmount = takerFillAmount.add(makerFillAmount);
+
+  // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
+  const maker = await ethers.getSigner(offerCreateContingentPool.maker);
+
+  // The following code checks whether the maker and taker have sufficient allowance and
+  // collateral token balance. It will set the allowance if insufficient.
+  
   // Get maker's and taker's collateral token balance
   const collateralTokenBalanceMakerBefore = await collateralToken.balanceOf(
     maker.address
@@ -109,17 +123,12 @@ async function main() {
   );
 
   if (taker.address === offerCreateContingentPool.maker) {
-    // Set allowance to makerCollateralAmount + takerCollateralAmount when taker = maker
-    const totalCollateralFillAmount = BigNumber.from(
-      offerCreateContingentPool.makerCollateralAmount
-    )
-      .add(offerCreateContingentPool.takerCollateralAmount)
-      .mul(takerFillAmount)
-      .div(offerCreateContingentPool.takerCollateralAmount);
+    // Set allowance to makerCollateralAmount + takerCollateralAmount when taker = maker.
+    // Add some tolerance to avoid any issues during fill tx due to rounding.
     if (allowanceMaker.lt(totalCollateralFillAmount)) {
       const approveTx = await collateralToken
         .connect(maker)
-        .approve(diva.address, totalCollateralFillAmount.add(1)); // added a buffer to avoid any issues during fill tx due to rounding
+        .approve(diva.address, totalCollateralFillAmount.add(1));
       await approveTx.wait();
 
       // Get maker's new allowance
@@ -130,16 +139,12 @@ async function main() {
       allowanceTaker = allowanceMaker; // because taker = maker
     }
   } else {
-    // Set maker allowance if insufficient
-    const makerFillAmount = BigNumber.from(
-      offerCreateContingentPool.makerCollateralAmount
-    )
-      .mul(takerFillAmount)
-      .div(offerCreateContingentPool.takerCollateralAmount);
+    // Set maker allowance if insufficient.
+    // Add some tolerance to avoid any issues during fill tx due to rounding. 
     if (allowanceMaker.lt(makerFillAmount)) {
       const approveTx = await collateralToken
         .connect(maker)
-        .approve(diva.address, makerFillAmount.add(1)); // added a buffer to avoid any issues during fill tx due to rounding
+        .approve(diva.address, makerFillAmount.add(1));
       await approveTx.wait();
 
       // Get maker's new allowance
@@ -149,11 +154,12 @@ async function main() {
       );
     }
 
-    // Set taker allowance if insufficient
+    // Set taker allowance if insufficient.
+    // Add some tolerance to avoid any issues during fill tx due to rounding.
     if (allowanceTaker.lt(takerFillAmount)) {
       const approveTx = await collateralToken
         .connect(taker)
-        .approve(diva.address, takerFillAmount.add(1)); // added a buffer to avoid any issues during fill tx due to rounding
+        .approve(diva.address, takerFillAmount.add(1));
       await approveTx.wait();
 
       // Get taker's new allowance
@@ -171,14 +177,15 @@ async function main() {
     offerCreateContingentPool,
     CREATE_POOL_TYPE,
     signature,
-    offerCreateContingentPool.taker,
-    takerFillAmount
+    taker.address,
+    takerFillAmount,
+    makerFillAmount,
+    collateralTokenBalanceTakerBefore,
+    collateralTokenBalanceMakerBefore
   );
 
   // Get taker filled amount before fill offer
-  const takerFilledAmountBefore = await diva.getTakerFilledAmount(
-    typedMessageHash
-  );
+  const takerFilledAmountBefore = await diva.getTakerFilledAmount(offer.offerHash);
 
   // Fill offer with taker account
   const tx = await diva
@@ -207,17 +214,13 @@ async function main() {
   );
 
   // Get taker filled amount after fill offer
-  const takerFilledAmountAfter = await diva.getTakerFilledAmount(
-    typedMessageHash
-  );
+  const takerFilledAmountAfter = await diva.getTakerFilledAmount(offer.offerHash);
 
   // Log relevant info
-  console.log("chainId", chainId);
+  console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId of newly created pool: ", poolId);
+  console.log("PoolId of newly created pool: ", poolId.toString());
   console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
-  console.log("Signed offer hash: ", typedMessageHash);
-  console.log("Signature: ", signature);
   console.log("Allowance Maker: ", formatUnits(allowanceMaker, decimals));
   console.log("Allowance Taker: ", formatUnits(allowanceTaker, decimals));
   console.log(
@@ -265,7 +268,10 @@ const _checkConditions = async (
   type: Record<string, { type: string; name: string }[]>,
   signature: Signature,
   userAddress: string,
-  takerFillAmount: BigNumber
+  takerFillAmount: BigNumber,
+  makerFillAmount: BigNumber,
+  takerCollateralTokenBalance: BigNumber,
+  makerCollateralTokenBalance: BigNumber,
 ) => {
   // Get information about the state of the create contingent pool offer
   const relevantStateParams =
@@ -297,10 +303,7 @@ const _checkConditions = async (
     throw new Error("Invalid create contingent pool parameters.");
   }
 
-  // @todo add longRecipient OR shortRecipient = 0x address checks
-
-  // Check actual fillable amount. The checks above provide more information on why
-  // actualTakerFillableAmount is smaller than takerCollateralAmount - takerFilledAmount.
+  // Confirm that takerFillAmount does not exceed actualTakerFillableAmount
   if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {
     throw new Error(
       "Actually fillable amount is smaller than takerFillAmount."
@@ -326,12 +329,23 @@ const _checkConditions = async (
     throw new Error("Offer is reserved for a different address.");
   }
 
-  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**. Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
+  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**.
+  // Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
   if (
     relevantStateParams.offerInfo.takerFilledAmount.eq(0) &&
     takerFillAmount.lt(offerCreateContingentPool.minimumTakerFillAmount)
   ) {
     throw new Error("takerFillAmount is smaller than minimumTakerFillAmount.");
+  }
+
+  // Check that the taker has sufficient collateral token balance
+  if (takerCollateralTokenBalance.lt(takerFillAmount)) {
+    throw new Error("Taker has insufficient collateral token balance.");
+  }
+
+  // Check that the maker has sufficient collateral token balance
+  if (makerCollateralTokenBalance.lt(makerFillAmount)) {
+    throw new Error("Maker has insufficient collateral token balance.");
   }
 };
 

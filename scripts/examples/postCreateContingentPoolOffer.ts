@@ -171,7 +171,7 @@ async function main() {
   });
 
   // Log relevant info
-  console.log("Offer url: ", getUrl)
+  console.log("Offer url: ", getUrl);
   console.log(
     "Create contingent pool offer returned from server: ",
     await res.json()

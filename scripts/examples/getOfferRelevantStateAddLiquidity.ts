@@ -1,9 +1,8 @@
 /**
- * Script to get the state of a create contingent pool offer. The offer details
+ * Script to get the state of an add liquidity offer. The offer details
  * can be retrieved from the API server or a JSON file.
- * Run: `yarn diva::getOfferRelevantStateCreateContingentPool --network mumbai`
+ * Run: `yarn diva::getOfferRelevantStateAddLiquidity --network mumbai`
  */
-// @todo add same getter functions for addLiquidity and removeliquidity offers
 
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
@@ -12,7 +11,7 @@ import { queryOffer } from "../../utils";
 import {
   DIVA_ADDRESS,
   OfferStatus,
-  OfferCreateContingentPool,
+  OfferAddLiquidity,
   Offer
 } from "../../constants";
 
@@ -27,11 +26,11 @@ async function main() {
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
     sourceOfferDetails: "API",
-    offerHash: "0xee71a95189b8d0b8e3e61773ee1c6b51d2ac907f11e9b68cc4b7e7c5bbee4a1f",
-    jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
+    offerHash: "0x0b95c391a73b64f5903c2df62dbe41dcf74c0bfa46fcaa19612f1fc06a7113a9",
+    jsonFilePath: "./offers/addLiquidityOffer_1686467035892.json",
   };
 
-
+  
   // ************************************
   //              EXECUTION
   // ************************************
@@ -41,11 +40,11 @@ async function main() {
     offer.sourceOfferDetails,
     offer.offerHash,
     offer.jsonFilePath,
-    "create"
+    "add"
   );
   
-  // Get offerCreateContingentPool object from offerInfo
-  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+  // Get offerAddLiquidity object from offerInfo
+  const offerAddLiquidity = offerInfo as OfferAddLiquidity;
   
   // Connect to collateral token to obtain the decimals, needed to convert from integer
   // to decimal representation
@@ -59,8 +58,8 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Read the offer relevant state information
-  const offerState = await diva.getOfferRelevantStateCreateContingentPool(
-    offerCreateContingentPool,
+  const offerState = await diva.getOfferRelevantStateAddLiquidity(
+    offerAddLiquidity,
     offerInfo.signature
   );
 
@@ -70,7 +69,7 @@ async function main() {
   console.log("Taker filled amount: ", formatUnits(offerState.offerInfo.takerFilledAmount, decimals));
   console.log("Actual taker fillable amount: ", formatUnits(offerState.actualTakerFillableAmount, decimals));
   console.log("Valid signature: ", offerState.isSignatureValid);
-  console.log("Valid create contingent pool parameters: ", offerState.isValidInputParamsCreateContingentPool);
+  console.log("Valid create contingent pool parameters: ", offerState.poolExists);
 }
 
 main()

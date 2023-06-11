@@ -18,7 +18,7 @@ async function main() {
   // Pool parameters. Note that the conversion into integer happens
   // below in the code as it depends on the collateral token decimals.
   const referenceAsset = "ETH/USD";
-  const expiryTime = await getExpiryTime(1000); // 100 means expiry in 100 seconds from now
+  const expiryTime = await getExpiryTime(10000); // 100 means expiry in 100 seconds from now
   const floorInput = "2000"; // floorInput <= inflectionInput <= capInput
   const inflectionInput = "2500"; // floorInput <= inflectionInput <= capInput
   const capInput = "3000"; // floorInput <= inflectionInput <= capInput

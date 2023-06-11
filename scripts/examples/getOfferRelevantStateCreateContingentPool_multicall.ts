@@ -54,9 +54,9 @@ async function main() {
   // Retrieve offer infos from specified sources
   let offerInfos;
   try {
-    offerInfos = await queryOffers(offers);
+    offerInfos = await queryOffers(offers, "create");
   } catch (error: unknown) {
-    console.error("An error occurred:", (error as Error).message);
+    throw new Error("An error occurred:", error.message);
   }
   
   // Extract relevant offer details to prepare data for multicall
