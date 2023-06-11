@@ -34,13 +34,13 @@ async function main() {
   // true: challenge by position token holders is enabled
   const allowChallenge = false;
 
+  // Set data provider account
+  const [dataProvider] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get signer of data provider
-  const [dataProvider] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

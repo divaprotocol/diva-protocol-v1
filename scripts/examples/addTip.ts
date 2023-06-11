@@ -30,13 +30,13 @@ async function main() {
   // integer happens below in the code as it depends on the collateral token decimals.
   const tipAmountString = "3";
 
+  // Set tipper account
+  const [tipper] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get tipper's signer
-  const [tipper] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

@@ -15,7 +15,7 @@ async function main() {
   // Input argument for `updateFallbackDataProvider` function
   const newFallbackDataProvider = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
 
-  // Get signers
+  // Set owner account
   const [owner] = await ethers.getSigners();
 
   // Connect to DIVA contract

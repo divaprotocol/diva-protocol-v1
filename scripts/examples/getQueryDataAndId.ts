@@ -19,10 +19,11 @@ async function main() {
   //              EXECUTION
   // ************************************
 
+  // Get queryData and queryId from secondary ownership contract
   const ownershipContractSecondary = await ethers.getContractAt(
     "DIVAOwnershipSecondary",
     ownershipContractAddressSecondary
-)
+  )
   const [queryData, queryId] = await ownershipContractSecondary.getQueryDataAndId();
 
   // Log relevant info

@@ -28,13 +28,13 @@ async function main() {
   // integer happens below in the code as it depends on the collateral token decimals.
   const amountTokensString = "1";
 
+  // Set user account that will remove liquidity
+  const [user] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get signer of account that will remove liquidity
-  const [user] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

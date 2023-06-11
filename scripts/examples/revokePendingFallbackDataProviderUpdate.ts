@@ -16,7 +16,7 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Set owner
+  // Set owner account
   const [owner] = await ethers.getSigners();
 
 

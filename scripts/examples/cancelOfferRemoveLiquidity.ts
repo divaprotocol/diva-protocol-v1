@@ -18,6 +18,7 @@ import {
   DIVA_ADDRESS,
   OfferStatus,
   OfferRemoveLiquidity,
+  OfferRemoveLiquiditySigned,
   Offer
 } from "../../constants";
 
@@ -50,13 +51,13 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "remove"
-  );
+  ) as OfferRemoveLiquiditySigned;
+
+  // Get offerRemoveLiquidity from offer info
+  const offerRemoveLiquidity: OfferRemoveLiquidity = offerInfo.offerRemoveLiquidity;
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-
-  // Get offerRemoveLiquidity from offer info
-  const offerRemoveLiquidity = offerInfo as OfferRemoveLiquidity;
 
   // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
   const maker = await ethers.getSigner(offerRemoveLiquidity.maker);
@@ -78,7 +79,7 @@ async function main() {
   // Log relevant info
   console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", offerInfo.poolId);
+  console.log("PoolId: ", offerRemoveLiquidity.poolId);
   console.log("offerRemoveLiquidity object: ", offerRemoveLiquidity);
   console.log(
     "offerInfo.status: ", OfferStatus[relevantStateParams.offerInfo.status]

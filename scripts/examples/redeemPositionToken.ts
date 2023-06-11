@@ -16,7 +16,6 @@
 import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { formatUnits, parseUnits } from "@ethersproject/units";
-import { MockERC20 } from "../../typechain-types/contracts/mocks/MockERC20";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, LONG_OR_SHORT, Status } from "../../constants";
 import { getCurrentTimestamp } from "../../utils";
@@ -73,15 +72,15 @@ async function main() {
   const redemptionAmount = parseUnits(redemptionAmountInput, decimals);
 
   // Connect to position token
-  let positionTokenInstance: MockERC20;
+  let positionTokenInstance;
   if (sideToRedeem === "short") {
     positionTokenInstance = await ethers.getContractAt(
-      "MockERC20",
+      "PositionToken",
       poolParams.shortToken
     );
   } else if (sideToRedeem === "long") {
     positionTokenInstance = await ethers.getContractAt(
-      "MockERC20",
+      "PositionToken",
       poolParams.longToken
     );
   } else {

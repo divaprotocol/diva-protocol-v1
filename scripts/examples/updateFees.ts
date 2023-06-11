@@ -18,7 +18,7 @@ async function main() {
   const newProtocolFee = parseUnits("0.012"); // 1.2%
   const newSettlementFee = parseUnits("0.01"); // 1%
 
-  // Get signers
+  // Set owner account
   const [owner] = await ethers.getSigners();
 
   // Connect to DIVA contract

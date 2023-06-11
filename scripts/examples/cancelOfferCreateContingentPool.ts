@@ -17,6 +17,7 @@ import {
   DIVA_ADDRESS,
   OfferStatus,
   OfferCreateContingentPool,
+  OfferCreateContingentPoolSigned,
   Offer
 } from "../../constants";
 
@@ -49,13 +50,13 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "create"
-  );
+  ) as OfferCreateContingentPoolSigned;
+
+  // Get offerCreateContingentPool from offer info
+  const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
-
-  // Get offerCreateContingentPool from offer info
-  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
 
   // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
   const maker = await ethers.getSigner(offerCreateContingentPool.maker);

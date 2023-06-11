@@ -20,7 +20,7 @@ async function main() {
   // Stake amount (DIVA token has 18 decimals)
   const stakeAmount = parseUnits("1");
 
-  // Unstaking user
+  // Set unstaking user
   const [user] = await ethers.getSigners();
 
 

@@ -12,6 +12,7 @@ import {
   DIVA_ADDRESS,
   OfferStatus,
   OfferCreateContingentPool,
+  OfferCreateContingentPoolSigned,
   Offer
 } from "../../constants";
 
@@ -41,16 +42,16 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "create"
-  );
+  ) as OfferCreateContingentPoolSigned;
   
   // Get offerCreateContingentPool object from offerInfo
-  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+  const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
   
   // Connect to collateral token to obtain the decimals, needed to convert from integer
   // to decimal representation
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
-    offerInfo.collateralToken
+    offerCreateContingentPool.collateralToken
   );
   const decimals = await collateralToken.decimals();
 

@@ -6,9 +6,11 @@ import { network } from "hardhat";
 import { 
   EIP712API_URL,
   SourceOfferDetails,
-  Offer
+  Offer,
+  OfferCreateContingentPoolSigned,
+  OfferAddLiquiditySigned,
+  OfferRemoveLiquiditySigned
 } from "../constants";
-
 
 // Fee in collateral token decimals
 export const calcFee = (
@@ -38,7 +40,9 @@ export const getCurrentTimestamp = () => {
   return Math.floor(Date.now() / 1000);
 };
 
-export async function getOfferInfoFromAPI(getURL: string): Promise<any> {
+export async function getOfferInfoFromAPI(
+  getURL: string
+): Promise<OfferCreateContingentPoolSigned | OfferAddLiquiditySigned | OfferRemoveLiquiditySigned> {
   let offerInfo;
 
   console.log("Offer URL: ", getURL);
@@ -60,7 +64,9 @@ export async function getOfferInfoFromAPI(getURL: string): Promise<any> {
   return offerInfo;
 }
 
-export async function getOfferInfoFromJSONFile(jsonFilePath: string): Promise<any> {
+export async function getOfferInfoFromJSONFile(
+  jsonFilePath: string
+): Promise<OfferCreateContingentPoolSigned | OfferAddLiquiditySigned | OfferRemoveLiquiditySigned> {
   let offerInfo;
 
   console.log("JSON file path: ", jsonFilePath);
@@ -74,7 +80,9 @@ export async function getOfferInfoFromJSONFile(jsonFilePath: string): Promise<an
   return offerInfo;
 }
 
-export async function queryOffers(offers: Offer[], action: string): Promise<any> {
+export async function queryOffers(
+  offers: Offer[], action: string
+): Promise<OfferCreateContingentPoolSigned[] | OfferAddLiquiditySigned[] | OfferRemoveLiquiditySigned[]> {
   const queryPromises = offers.map(async (offer) => {
     const { sourceOfferDetails, offerHash, jsonFilePath } = offer;
     return queryOffer(sourceOfferDetails, offerHash, jsonFilePath, action);
@@ -82,7 +90,7 @@ export async function queryOffers(offers: Offer[], action: string): Promise<any>
 
   try {
     const offerInfos = await Promise.all(queryPromises);
-    return offerInfos;
+    return offerInfos as OfferCreateContingentPoolSigned[] | OfferAddLiquiditySigned[] | OfferRemoveLiquiditySigned[];;
   } catch (error: unknown) {
     throw new Error("An error occurred during offer queries: " + (error as Error).message);
   }
@@ -93,7 +101,7 @@ export async function queryOffer(
   offerHash: string,
   jsonFilePath: string,
   action: string
-): Promise<any> {
+): Promise<OfferCreateContingentPoolSigned | OfferAddLiquiditySigned | OfferRemoveLiquiditySigned> {
   if (sourceOfferDetails === "API") {
     let getURL;
     if (action === "create") {

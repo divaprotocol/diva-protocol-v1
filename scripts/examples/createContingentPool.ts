@@ -31,6 +31,9 @@ async function main() {
   const shortRecipient = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
   const permissionedERC721Token = ethers.constants.AddressZero;
 
+  // Set creator account
+  const [creator] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
@@ -39,9 +42,6 @@ async function main() {
   // Set ERC20 collateral token address
   const erc20CollateralTokenAddress =
     COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
-
-  // Get signer of creator
-  const [creator] = await ethers.getSigners();
 
   // Connect to ERC20 token that will be used as collateral when creating a contingent pool
   const erc20Contract = await ethers.getContractAt(

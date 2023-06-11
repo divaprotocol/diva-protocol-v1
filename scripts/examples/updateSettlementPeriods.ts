@@ -19,7 +19,7 @@ async function main() {
   const newReviewPeriod = 6 * ONE_DAY;
   const newFallbackSubmissionPeriod = 7 * ONE_DAY;
 
-  // Get signers
+  // Set owner account
   const [owner] = await ethers.getSigners();
 
   // Connect to DIVA contract

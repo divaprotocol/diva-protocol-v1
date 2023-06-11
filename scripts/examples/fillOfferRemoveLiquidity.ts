@@ -20,6 +20,7 @@ import { getCurrentTimestamp } from "../../utils";
 import { queryOffer } from "../../utils";
 import {
   OfferRemoveLiquidity,
+  OfferRemoveLiquiditySigned,
   Signature,
   DivaDomain,
   DIVA_ADDRESS,
@@ -62,7 +63,10 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "remove"
-  );
+  ) as OfferRemoveLiquiditySigned;
+
+  // Get offerRemoveLiquidity from offer info
+  const offerRemoveLiquidity: OfferRemoveLiquidity = offerInfo.offerRemoveLiquidity;
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -76,7 +80,7 @@ async function main() {
   };
 
   // Get pool params
-  const poolParams = await diva.getPoolParameters(offerInfo.poolId);
+  const poolParams = await diva.getPoolParameters(offerRemoveLiquidity.poolId);
 
   // Connect to the collateral token to obtain the decimals needed to convert into
   // integer representation
@@ -85,9 +89,6 @@ async function main() {
     poolParams.collateralToken
   );
   const decimals = await collateralToken.decimals();
-
-  // Get offerRemoveLiquidity from offer info
-  const offerRemoveLiquidity = offerInfo as OfferRemoveLiquidity;
 
   // Set positionTokenFillAmount
   const positionTokenFillAmount = parseUnits(positionTokenFillAmountInput, decimals);
@@ -147,7 +148,7 @@ async function main() {
   // Log relevant info
   console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", offerInfo.poolId);
+  console.log("PoolId: ", offerRemoveLiquidity.poolId);
   console.log("offerRemoveLiquidity object: ", offerRemoveLiquidity);
   console.log(
     "Collateral token balance Maker before: ",

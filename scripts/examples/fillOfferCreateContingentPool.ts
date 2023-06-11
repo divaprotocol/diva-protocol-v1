@@ -17,6 +17,7 @@ import DIVA_ABI from "../../diamondABI/diamond.json";
 import { queryOffer } from "../../utils";
 import {
   OfferCreateContingentPool,
+  OfferCreateContingentPoolSigned,
   Signature,
   DivaDomain,
   CREATE_POOL_TYPE,
@@ -58,13 +59,16 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "create"
-  );
+  ) as OfferCreateContingentPoolSigned;
+
+  // Get offerCreateContingentPool from offer info
+  const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
 
   // Connect to the collateral token to obtain the decimals needed to convert into
   // integer representation
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
-    offerInfo.collateralToken
+    offerCreateContingentPool.collateralToken
   );
   const decimals = await collateralToken.decimals();
 
@@ -78,9 +82,6 @@ async function main() {
     chainId: offerInfo.chainId,
     verifyingContract: offerInfo.verifyingContract,
   };
-
-  // Get offerCreateContingentPool from offer info
-  const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
 
   // Get signature from offerInfo
   const signature = offerInfo.signature;

@@ -14,6 +14,7 @@ import {
   DIVA_ADDRESS,
   OfferInfo,
   OfferCreateContingentPool,
+  OfferCreateContingentPoolSigned,
   Offer,
   OfferStatus
 } from "../../constants";
@@ -54,16 +55,16 @@ async function main() {
   // Retrieve offer infos from specified sources
   let offerInfos;
   try {
-    offerInfos = await queryOffers(offers, "create");
+    offerInfos = await queryOffers(offers, "create") as OfferCreateContingentPoolSigned[];
   } catch (error: unknown) {
-    throw new Error("An error occurred:", error.message);
+    throw new Error("An error occurred:" + (error as Error).message);
   }
   
   // Extract relevant offer details to prepare data for multicall
   const results = await Promise.all(
     offerInfos.map(async (offerInfo) => {
       // Get subset of fields required for `getOfferRelevantStateCreateContingentPool` call
-      const offerCreateContingentPool = offerInfo as OfferCreateContingentPool;
+      const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
       
       // Prepare data for multicall
       const offerRelevantState = {
@@ -75,7 +76,7 @@ async function main() {
       // Get collateral token decimals
       const collateralToken = await ethers.getContractAt(
         "MockERC20",
-        offerInfo.collateralToken
+        offerCreateContingentPool.collateralToken
       );
       const decimals = await collateralToken.decimals();
       

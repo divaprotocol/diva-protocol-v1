@@ -20,6 +20,7 @@ import { getCurrentTimestamp } from "../../utils";
 import { queryOffer } from "../../utils";
 import {
   OfferAddLiquidity,
+  OfferAddLiquiditySigned,
   Signature,
   DivaDomain,
   DIVA_ADDRESS,
@@ -61,7 +62,10 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "add"
-  );
+  ) as OfferAddLiquiditySigned;
+
+  // Get offerAddLiquidity from offer info
+  const offerAddLiquidity: OfferAddLiquidity = offerInfo.offerAddLiquidity;
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -75,7 +79,7 @@ async function main() {
   };
 
   // Get pool params
-  const poolParams = await diva.getPoolParameters(offerInfo.poolId);
+  const poolParams = await diva.getPoolParameters(offerAddLiquidity.poolId);
 
   // Connect to the collateral token to obtain the decimals needed to convert into
   // integer representation
@@ -85,9 +89,6 @@ async function main() {
   );
   const decimals = await collateralToken.decimals();
 
-  // Get offerAddLiquidity from offer info
-  const offerAddLiquidity = offerInfo as OfferAddLiquidity;
-
   // Get signature from offerInfo
   const signature = offerInfo.signature;
 
@@ -96,10 +97,10 @@ async function main() {
 
   // Calculate makerFillAmount
   const makerFillAmount = BigNumber.from(
-    offerInfo.makerCollateralAmount
+    offerAddLiquidity.makerCollateralAmount
   )
     .mul(takerFillAmount)
-    .div(offerInfo.takerCollateralAmount);
+    .div(offerAddLiquidity.takerCollateralAmount);
 
   // Calc total collateral fill amount
   const totalCollateralFillAmount = takerFillAmount.add(makerFillAmount);
@@ -218,7 +219,7 @@ async function main() {
   // Log relevant info
   console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", offerInfo.poolId);
+  console.log("PoolId: ", offerAddLiquidity.poolId);
   console.log("offerAddLiquidity object: ", offerAddLiquidity);
   console.log("Allowance Maker: ", formatUnits(allowanceMaker, decimals));
   console.log("Allowance Taker: ", formatUnits(allowanceTaker, decimals));

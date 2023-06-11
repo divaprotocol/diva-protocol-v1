@@ -33,14 +33,14 @@ async function main() {
   // Proposed final reference value expressed as an integer with 18 decimals
   const proposedFinalReferenceValue = parseUnits("1270");
 
+  // Set position token holder account that will challenge a final value submission
+  const [positionTokenHolder] = await ethers.getSigners();
+  console.log("Position token holder address: " + positionTokenHolder.address);
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get signer of position token holder
-  const [positionTokenHolder] = await ethers.getSigners();
-  console.log("Position token holder address: " + positionTokenHolder.address);
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

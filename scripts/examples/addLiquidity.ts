@@ -34,13 +34,13 @@ async function main() {
   const longRecipient = "0x245B8ABbC1B70B370d1b81398dE0a7920B25E7ca";
   const shortRecipient = "0x2ADdE7aBe04Bc1F14a3c397251A01276344Cc8a8";
 
+  // Set liquidity provider's account
+  const [liquidityProvider] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get liquidity provider's signer
-  const [liquidityProvider] = await ethers.getSigners();
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);

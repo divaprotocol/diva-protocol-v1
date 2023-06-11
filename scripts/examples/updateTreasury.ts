@@ -19,7 +19,7 @@ async function main() {
   // New treasury address
   const newTreasuryAddress = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
 
-  // Set owner
+  // Set owner account
   const [owner] = await ethers.getSigners();
 
 

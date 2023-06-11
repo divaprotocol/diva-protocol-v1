@@ -21,13 +21,13 @@ async function main() {
   // as it depends on the decimals of the token to approve.
   const allowanceString = "100000000000000000000000000";
 
+  // Set user account that will approve
+  const [user] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-
-  // Get signer of user
-  const [user] = await ethers.getSigners();
 
   // Connect to token to approve
   const erc20 = await ethers.getContractAt("MockERC20", tokenToApprove);

@@ -16,13 +16,13 @@ async function main() {
   // Collateral token
   const collateralTokenSymbol = "WAGMI18";
 
+  // Set approving accounts
+  const [user1, user2, user3] = await ethers.getSigners();
+
 
   // ************************************
   //              EXECUTION
   // ************************************
-  
-  // Get signer of users
-  const [user1, user2, user3] = await ethers.getSigners();
 
   const spenderAddress = DIVA_ADDRESS[network.name];
   const tokenAddress = COLLATERAL_TOKENS[network.name][collateralTokenSymbol];

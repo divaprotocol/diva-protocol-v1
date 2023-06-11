@@ -12,6 +12,7 @@ import {
   DIVA_ADDRESS,
   OfferStatus,
   OfferAddLiquidity,
+  OfferAddLiquiditySigned,
   Offer
 } from "../../constants";
 
@@ -41,21 +42,24 @@ async function main() {
     offer.offerHash,
     offer.jsonFilePath,
     "add"
-  );
+  ) as OfferAddLiquiditySigned;
   
   // Get offerAddLiquidity object from offerInfo
-  const offerAddLiquidity = offerInfo as OfferAddLiquidity;
+  const offerAddLiquidity: OfferAddLiquidity = offerInfo.offerAddLiquidity;
   
+  // Connect to deployed DIVA contract
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
+
+  // Get pool params
+  const poolParams = await diva.getPoolParameters(offerAddLiquidity.poolId);
+
   // Connect to collateral token to obtain the decimals, needed to convert from integer
   // to decimal representation
   const collateralToken = await ethers.getContractAt(
     "MockERC20",
-    offerInfo.collateralToken
+    poolParams.collateralToken
   );
   const decimals = await collateralToken.decimals();
-
-  // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Read the offer relevant state information
   const offerState = await diva.getOfferRelevantStateAddLiquidity(
