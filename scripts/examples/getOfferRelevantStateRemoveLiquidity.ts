@@ -1,7 +1,7 @@
 /**
  * Script to get the state of an add liquidity offer. The offer details
  * can be retrieved from the API server or a JSON file.
- * Run: `yarn diva::getOfferRelevantStateAddLiquidity --network mumbai`
+ * Run: `yarn diva::getOfferRelevantStateRemoveLiquidity --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -11,7 +11,7 @@ import { queryOffer } from "../../utils";
 import {
   DIVA_ADDRESS,
   OfferStatus,
-  OfferAddLiquidity,
+  OfferRemoveLiquidity,
   Offer
 } from "../../constants";
 
@@ -26,8 +26,8 @@ async function main() {
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
     sourceOfferDetails: "API",
-    offerHash: "0x0b95c391a73b64f5903c2df62dbe41dcf74c0bfa46fcaa19612f1fc06a7113a9",
-    jsonFilePath: "./offers/addLiquidityOffer_1686467035892.json",
+    offerHash: "0xebc28214ce58d98e49dffa4bb70b3c58a8efb8f1b477d8286c285dff6fef9d64",
+    jsonFilePath: "./offers/removeLiquidityOffer_1686501754610.json",
   };
 
   
@@ -40,11 +40,11 @@ async function main() {
     offer.sourceOfferDetails,
     offer.offerHash,
     offer.jsonFilePath,
-    "add"
+    "remove"
   );
   
-  // Get offerAddLiquidity object from offerInfo
-  const offerAddLiquidity = offerInfo as OfferAddLiquidity;
+  // Get offerRemoveLiquidity object from offerInfo
+  const offerRemoveLiquidity = offerInfo as OfferRemoveLiquidity;
   
   // Connect to collateral token to obtain the decimals, needed to convert from integer
   // to decimal representation
@@ -58,8 +58,8 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Read the offer relevant state information
-  const offerState = await diva.getOfferRelevantStateAddLiquidity(
-    offerAddLiquidity,
+  const offerState = await diva.getOfferRelevantStateRemoveLiquidity(
+    offerRemoveLiquidity,
     offerInfo.signature
   );
 

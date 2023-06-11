@@ -28,10 +28,10 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Specify maker
+  // Maker account
   const [maker] = await ethers.getSigners();
 
-  // Specify collateral token to be used
+  // Collateral token to use
   const collateralTokenSymbol = "WAGMI18";
 
   // Offer terms

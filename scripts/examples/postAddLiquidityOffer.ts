@@ -27,10 +27,10 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Specify maker
+  // Maker account
   const [maker] = await ethers.getSigners();
 
-  // Specify Id of pool to add liquidity to
+  // Id of pool to add liquidity to
   const poolId =
     "0x9f324918873a1cadd70b830cbe6fd164bb777fc955186887f8c28ae80034aede";
 

@@ -43,7 +43,7 @@ async function main() {
     jsonFilePath: "./offers/addLiquidityOffer_1686467035892.json",
   };
 
-  // Set taker
+  // Set taker account
   const [, taker] = await ethers.getSigners();
 
   // Taker fill amount. Conversion into integer happens in the code below as it

@@ -1,8 +1,11 @@
 /**
- * Script to post a remove liquidity offer to the API service.
+* Script to post a remove liquidity offer to the API service.
+ * The offer is also stored in a JSON file located in the "offers" folder.
+ * If the folder does not exist, it will be created automatically.
  * Run: `yarn diva::postRemoveLiquidityOffer --network mumbai`
  */
 
+import fs from "fs";
 import fetch from "cross-fetch";
 import { ethers, network } from "hardhat";
 import { parseUnits } from "@ethersproject/units";
@@ -24,12 +27,28 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // API service URL
-  const apiUrl = `${EIP712API_URL[network.name]}/remove_liquidity`;
+  // Maker account
+  const [maker] = await ethers.getSigners();
 
-
+  // Id of pool to remove liquidity from
   const poolId =
-    "0x5d829fd4c4a7ea6b5854f4f4b22848ced3dcb5a2914ea9d2f4d28e9f4eb9cf6b";
+    "0x8734a4a7006a1dea37a27b0394ae3970fca52395bece11a8947f7ed16fb80bd6";
+
+  // Offer terms
+  const taker = "0x0000000000000000000000000000000000000000";
+  const makerCollateralAmountInput = "1";
+  const positionTokenAmountInput = "1";
+  const makerIsLong = true;
+  const offerExpiry = await getExpiryTime(5000);
+  const minimumTakerFillAmountInput = "1";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Set the API url to post the offer to
+  const apiUrl = `${EIP712API_URL[network.name]}/remove_liquidity`;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -41,26 +60,22 @@ async function main() {
     return;
   }
 
-  // Get collateral token decimals
+  // Get collateral token decimals needed to convert into integer representation
   const erc20Contract = await ethers.getContractAt(
     "MockERC20",
     poolParamsBefore.collateralToken
   );
   const decimals = await erc20Contract.decimals();
 
-  // @todo Move up similar to createContingentPool
-  const maker = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
-  const taker = "0x0000000000000000000000000000000000000000";
-  const makerCollateralAmount = parseUnits("1", decimals).toString();
-  const positionTokenAmount = parseUnits("1", decimals).toString();
-  const makerIsLong = true;
-  const offerExpiry = await getExpiryTime(50);
-  const minimumTakerFillAmount = parseUnits("1", decimals).toString();
+  // Convert inputs into integers
+  const makerCollateralAmount = parseUnits(makerCollateralAmountInput, decimals).toString();
+  const positionTokenAmount = parseUnits(positionTokenAmountInput, decimals).toString();
+  const minimumTakerFillAmount = parseUnits(minimumTakerFillAmountInput, decimals).toString();
   const salt = Date.now().toString();
 
   // Prepare remove liquidity offer
   const offerRemoveLiquidity: OfferRemoveLiquidity = {
-    maker,
+    maker: maker.address,
     taker,
     makerCollateralAmount,
     positionTokenAmount,
@@ -72,7 +87,6 @@ async function main() {
   };
 
   // Prepare data for signing
-  const [signer] = await ethers.getSigners();
   const chainId = (await diva.getChainId()).toNumber();
   const verifyingContract = DIVA_ADDRESS[network.name];
   const divaDomain = {
@@ -84,7 +98,7 @@ async function main() {
 
   // Sign offer
   const [signature] = await generateSignatureAndTypedMessageHash(
-    signer,
+    maker,
     divaDomain,
     REMOVE_LIQUIDITY_TYPE,
     offerRemoveLiquidity,
@@ -98,7 +112,7 @@ async function main() {
   );
   const offerHash = relevantStateParams.offerInfo.typedOfferHash;
 
-  // Prepare data to be posted to the api server
+  // Prepare data to be posted to the API server
   const data = {
     ...offerRemoveLiquidity,
     chainId,
@@ -107,7 +121,7 @@ async function main() {
     offerHash,
   };
 
-  // Post offer data to the api server
+  // Post offer data to the API server
   await fetch(apiUrl, {
     method: "POST",
     headers: {
@@ -116,13 +130,20 @@ async function main() {
     body: JSON.stringify(data),
   });
 
+  // Check if the offers folder exists
+  const offersFolderPath = "offers";
+  if (!fs.existsSync(offersFolderPath)) {
+    // Create the offers folder if it doesn't exist
+    fs.mkdirSync(offersFolderPath);
+    console.log("New folder called 'offers' created to store the offer json files.")
+  }
+
   // Save offer as json
+  const jsonFilePath = `offers/removeLiquidityOffer_${offerRemoveLiquidity.salt}.json`;
   writeFile(
-    `offers/removeLiquidityOffer_${offerRemoveLiquidity.salt}.json`,
+    jsonFilePath,
     JSON.stringify(data)
   );
-
-  console.log("Hash of remove liquidity offer: ", offerHash);
 
   // Get posted offer
   const getUrl = `${apiUrl}/${offerHash}`;
@@ -130,6 +151,8 @@ async function main() {
     method: "GET",
   });
 
+  // Log relevant info
+  console.log("Offer url: ", getUrl);
   console.log(
     "Remove liquidity offer returned from server: ",
     await res.json()

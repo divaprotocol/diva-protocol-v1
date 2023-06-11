@@ -40,7 +40,7 @@ async function main() {
     jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
   };
 
-  // Set taker
+  // Set taker account
   const [, taker] = await ethers.getSigners();
 
   // Taker fill amount. Conversion into integer happens in the code below as it

@@ -24,8 +24,6 @@
     "diva::fillOfferCreateContingentPool": "yarn hardhat run scripts/examples/fillOfferCreateContingentPool.ts",
     "diva::fillOfferAddLiquidity": "yarn hardhat run scripts/examples/fillOfferAddLiquidity.ts",
     "diva::fillOfferRemoveLiquidity": "yarn hardhat run scripts/examples/fillOfferRemoveLiquidity.ts",
-    "diva::fillOfferRemoveLiquidity_from_api": "yarn hardhat run scripts/examples/fillOfferRemoveLiquidity_from_api.ts",
-    "diva::fillOfferRemoveLiquidity_from_json": "yarn hardhat run scripts/examples/fillOfferRemoveLiquidity_from_json.ts",
     "diva::cancelOfferCreateContingentPool": "yarn hardhat run scripts/examples/cancelOfferCreateContingentPool.ts",
     "diva::cancelOfferCreateContingentPool_from_api": "yarn hardhat run scripts/examples/cancelOfferCreateContingentPool_from_api.ts",
     "diva::cancelOfferCreateContingentPool_from_json": "yarn hardhat run scripts/examples/cancelOfferCreateContingentPool_from_json.ts",
