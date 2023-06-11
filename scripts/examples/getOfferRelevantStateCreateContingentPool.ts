@@ -3,7 +3,6 @@
  * can be retrieved from the API server or a JSON file.
  * Run: `yarn diva::getOfferRelevantStateCreateContingentPool --network mumbai`
  */
-// @todo add same getter functions for addLiquidity and removeliquidity offers
 
 import { ethers, network } from "hardhat";
 import { formatUnits } from "@ethersproject/units";
@@ -23,12 +22,12 @@ async function main() {
 
   // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
   // choose "JSON" as source as it will no longer exist on the API server.
-  // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
+  // offerHash: Hash of offer to retrieve. Only required if `sourceOfferDetails` = "API" was selected.
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
-    sourceOfferDetails: "API",
-    offerHash: "0xee71a95189b8d0b8e3e61773ee1c6b51d2ac907f11e9b68cc4b7e7c5bbee4a1f",
-    jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
+    sourceOfferDetails: "JSON",
+    offerHash: "0x8a086324cbf100792f492d858b3e004cfe703406b5c6111c2df165dfbee6e0f6",
+    jsonFilePath: "./offers/createContingentPoolOffer_1686503510947.json",
   };
 
 

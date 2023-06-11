@@ -32,7 +32,7 @@ async function main() {
 
   // Id of pool to remove liquidity from
   const poolId =
-    "0x8734a4a7006a1dea37a27b0394ae3970fca52395bece11a8947f7ed16fb80bd6";
+    "0x7e5b34f6dc058ace5b51b90e4b60d2b8a80df1e6198de89f4c941290b3c7bfc1";
 
   // Offer terms
   const taker = "0x0000000000000000000000000000000000000000";

@@ -25,15 +25,15 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Specify the offers to query. Set the source to "JSON" if an offer
-  // is filled/expired/cancelled/invalid and does no longer exist on the API server.
-  // Specify `offerHash` if `sourceOfferDetails` = "API".
-  // Specify `jsonFilePath` if `sourceOfferDetails` = "JSON".
+  // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
+  // choose "JSON" as source as it will no longer exist on the API server.
+  // offerHash: Hash of offer to retrieve. Only required if `sourceOfferDetails` = "API" was selected.
+  // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offers: Offer[] = [
     {
       sourceOfferDetails: "API",
-      offerHash: "0xd559d140621ff23b3c24bcaf47e03a73afe5c1b53ebd77ac9400d91d8476b4cd",
-      jsonFilePath: "./offers/createContingentPoolOffer_1686464547545.json",
+      offerHash: "0x8a086324cbf100792f492d858b3e004cfe703406b5c6111c2df165dfbee6e0f6",
+      jsonFilePath: "./offers/createContingentPoolOffer_1686503510947.json",
     },
     {
       sourceOfferDetails: "API",

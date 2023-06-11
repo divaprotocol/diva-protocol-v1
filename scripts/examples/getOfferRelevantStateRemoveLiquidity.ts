@@ -22,12 +22,12 @@ async function main() {
 
   // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
   // choose "JSON" as source as it will no longer exist on the API server.
-  // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
+  // offerHash: Hash of offer to retrieve. Only required if `sourceOfferDetails` = "API" was selected.
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
     sourceOfferDetails: "API",
-    offerHash: "0xebc28214ce58d98e49dffa4bb70b3c58a8efb8f1b477d8286c285dff6fef9d64",
-    jsonFilePath: "./offers/removeLiquidityOffer_1686501754610.json",
+    offerHash: "0x072a9a39a4e93d55250a5c7f80d994adfaaba8b8149121f2dc576f134f8cb3d7",
+    jsonFilePath: "./offers/removeLiquidityOffer_1686504610070.json",
   };
 
   

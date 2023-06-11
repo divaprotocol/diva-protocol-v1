@@ -1,72 +1,65 @@
 /**
  * Script to cancel an offer to add liquidity to an existing contingent pool.
  * Run: `yarn diva::cancelOfferAddLiquidity --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::createContingentPool`: Create a contingent pool.
+ * 2. `yarn diva::postAddLiquidityOffer`: Post an add liquidity offer to the API server.
+ * 3. `yarn diva::getOfferRelevantStateAddLiquidity`: Check the offer state.
+ * 4. `yarn diva::cancelOfferAddLiquidity`: Cancel the offer.
+ * 5. `yarn diva::getOfferRelevantStateAddLiquidity`: Check the offer state (read from JSON
+ *    as the offer will no longer exist on the API server).
  */
 
 import { ethers, network } from "hardhat";
-import { parseUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
+import { queryOffer } from "../../utils";
 import {
-  generateSignatureAndTypedMessageHash,
-  getExpiryTime,
-} from "../../utils";
-import { DIVA_ADDRESS, ADD_LIQUIDITY_TYPE, OfferStatus } from "../../constants";
+  DIVA_ADDRESS,
+  OfferStatus,
+  OfferAddLiquidity,
+  Offer
+} from "../../constants";
 
 async function main() {
-  // INPUT: id of an existing pool
-  const poolId =
-    "0xa5d1054bace7510c2fd62d7123163b3674e98af36a17290a0b26d8f61529ce4c";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Get signers
-  const [maker, taker] = await ethers.getSigners();
+  // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
+  // choose "JSON" as source as it will no longer exist on the API server.
+  // offerHash: Hash of offer to cancel. Only required if `sourceOfferDetails` = "API" was selected.
+  // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
+  const offer: Offer = {
+    sourceOfferDetails: "API",
+    offerHash: "0xe03392576478daece24fc61bb763d7871cbe36d9662b6807f4ff760d9ccc3a0c",
+    jsonFilePath: "./offers/addLiquidityOffer_1686504183504.json",
+  };
+
+  // Note that the maker signer is derived from the offer details. Must be an account
+  // derived from the MNEMONIC stored in `.env`.
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Retrieve offer information from the specified source
+  const offerInfo = await queryOffer(
+    offer.sourceOfferDetails,
+    offer.offerHash,
+    offer.jsonFilePath,
+    "add"
+  );
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
-  // Get chainId
-  const chainId = (await diva.getChainId()).toNumber();
+  // Get offerAddLiquidity from offer info
+  const offerAddLiquidity = offerInfo as OfferAddLiquidity;
 
-  // Define DIVA Domain struct
-  const divaDomain = {
-    name: "DIVA Protocol",
-    version: "1",
-    chainId,
-    verifyingContract: DIVA_ADDRESS[network.name],
-  };
-
-  // Get pool params
-  const poolParams = await diva.getPoolParameters(poolId);
-
-  // Connect to collateral token
-  const collateralToken = await ethers.getContractAt(
-    "MockERC20",
-    poolParams.collateralToken
-  );
-  const decimals = await collateralToken.decimals();
-
-  // Generate offerAddLiquidity with user1 (maker) taking the long side and user2 (taker) the short side
-  const offerAddLiquidity = {
-    maker: maker.address.toString(),
-    taker: taker.address.toString(),
-    makerCollateralAmount: parseUnits("2", decimals).toString(),
-    takerCollateralAmount: parseUnits("8", decimals).toString(),
-    makerIsLong: true,
-    offerExpiry: await getExpiryTime(10000),
-    minimumTakerFillAmount: parseUnits("6", decimals).toString(),
-    poolId,
-    salt: Date.now().toString(),
-  };
-
-  // Generate signature and typed message hash
-  const [signature, typedMessageHash] =
-    await generateSignatureAndTypedMessageHash(
-      maker,
-      divaDomain,
-      ADD_LIQUIDITY_TYPE,
-      offerAddLiquidity,
-      "OfferAddLiquidity"
-    );
+  // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
+  const maker = await ethers.getSigner(offerAddLiquidity.maker);
 
   // Cancel offer with maker account
   const tx = await diva
@@ -79,19 +72,16 @@ async function main() {
   // Get information about the state of the add liquidity offer
   const relevantStateParams = await diva.getOfferRelevantStateAddLiquidity(
     offerAddLiquidity,
-    signature
+    offerInfo.signature
   );
 
   // Log relevant info
-  console.log("chainId", chainId);
+  console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", poolId);
+  console.log("PoolId: ", offerInfo.poolId);
   console.log("offerAddLiquidity object: ", offerAddLiquidity);
-  console.log("Signed offer hash: ", typedMessageHash);
-  console.log("Signature: ", signature);
   console.log(
-    "offerInfo.status === Cancelled: ",
-    relevantStateParams.offerInfo.status === OfferStatus.Cancelled
+    "offerInfo.status: ", OfferStatus[relevantStateParams.offerInfo.status]
   );
 }
 

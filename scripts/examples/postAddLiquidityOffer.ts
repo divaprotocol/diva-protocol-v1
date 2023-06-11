@@ -32,7 +32,7 @@ async function main() {
 
   // Id of pool to add liquidity to
   const poolId =
-    "0x9f324918873a1cadd70b830cbe6fd164bb777fc955186887f8c28ae80034aede";
+    "0x7e5b34f6dc058ace5b51b90e4b60d2b8a80df1e6198de89f4c941290b3c7bfc1";
 
   // Offer terms
   const taker = "0x0000000000000000000000000000000000000000";

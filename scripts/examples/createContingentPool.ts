@@ -28,7 +28,7 @@ async function main() {
   const dataProvider = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
   const capacityInput = "200"; // collateralAmountInput <= capacityInput
   const longRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
-  const shortRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
+  const shortRecipient = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
   const permissionedERC721Token = ethers.constants.AddressZero;
 
 
