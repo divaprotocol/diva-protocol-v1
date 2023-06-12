@@ -1,29 +1,32 @@
 /**
  * Script to retrieve a create contingent pool offer from the API service
  * and fill it. Approval for maker and taker is set inside the script for ease of use.
- * Run: `yarn diva::fillOfferCreateContingentPool --network mumbai`
+ * Run: `yarn diva::fillOfferAddLiquidity --network mumbai`
  * 
  * Example usage (append corresponding network):
- * 1. `yarn diva::postCreateContingentPoolOffer`: Post a create offer to the API server.
- * 2. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
- * 3. `yarn diva::fillOfferCreateContingentPool`: Fill the offer.
- * 4. `yarn diva::getOfferRelevantStateCreateContingentPool`: Check the offer state.
+ * 1. `yarn diva::createContingentPool`: Create a contingent pool.
+ * 2. `yarn diva::postAddLiquidityOffer`: Post an add liquidity offer to the API server.
+ * 3. `yarn diva::getOfferRelevantStateAddLiquidity`: Check the offer state.
+ * 4. `yarn diva::fillOfferAddLiquidity`: Fill the offer.
+ * 5. `yarn diva::getOfferRelevantStateAddLiquidity`: Check the offer state.
  */
 
 import { ethers, network } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
+import { LibDIVAStorage } from "../../typechain-types/contracts/facets/GetterFacet";
 import DIVA_ABI from "../../diamondABI/diamond.json";
+import { getCurrentTimestamp } from "../../utils";
 import { queryOffer } from "../../utils";
 import {
-  OfferCreateContingentPool,
-  OfferCreateContingentPoolSigned,
+  OfferAddLiquidity,
+  OfferAddLiquiditySigned,
   Signature,
   DivaDomain,
-  CREATE_POOL_TYPE,
   DIVA_ADDRESS,
+  ADD_LIQUIDITY_TYPE,
   OfferStatus,
-  Offer
+  Offer,
 } from "../../constants";
 
 async function main() {
@@ -36,9 +39,9 @@ async function main() {
   // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
-    sourceOfferDetails: "JSON",
-    offerHash: "0xee71a95189b8d0b8e3e61773ee1c6b51d2ac907f11e9b68cc4b7e7c5bbee4a1f",
-    jsonFilePath: "./offers/createContingentPoolOffer_1686465438670.json",
+    sourceOfferDetails: "API",
+    offerHash: "0x0b95c391a73b64f5903c2df62dbe41dcf74c0bfa46fcaa19612f1fc06a7113a9",
+    jsonFilePath: "./offers/addLiquidityOffer_1686467035892.json",
   };
 
   // Set taker account
@@ -58,19 +61,11 @@ async function main() {
     offer.sourceOfferDetails,
     offer.offerHash,
     offer.jsonFilePath,
-    "create"
-  ) as OfferCreateContingentPoolSigned;
+    "add"
+  ) as OfferAddLiquiditySigned;
 
-  // Get offerCreateContingentPool from offer info
-  const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
-
-  // Connect to the collateral token to obtain the decimals needed to convert into
-  // integer representation
-  const collateralToken = await ethers.getContractAt(
-    "MockERC20",
-    offerCreateContingentPool.collateralToken
-  );
-  const decimals = await collateralToken.decimals();
+  // Get offerAddLiquidity from offer info
+  const offerAddLiquidity: OfferAddLiquidity = offerInfo.offerAddLiquidity;
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -83,6 +78,17 @@ async function main() {
     verifyingContract: offerInfo.verifyingContract,
   };
 
+  // Get pool params
+  const poolParams = await diva.getPoolParameters(offerAddLiquidity.poolId);
+
+  // Connect to the collateral token to obtain the decimals needed to convert into
+  // integer representation
+  const collateralToken = await ethers.getContractAt(
+    "MockERC20",
+    poolParams.collateralToken
+  );
+  const decimals = await collateralToken.decimals();
+
   // Get signature from offerInfo
   const signature = offerInfo.signature;
 
@@ -91,20 +97,20 @@ async function main() {
 
   // Calculate makerFillAmount
   const makerFillAmount = BigNumber.from(
-    offerCreateContingentPool.makerCollateralAmount
+    offerAddLiquidity.makerCollateralAmount
   )
     .mul(takerFillAmount)
-    .div(offerCreateContingentPool.takerCollateralAmount);
+    .div(offerAddLiquidity.takerCollateralAmount);
 
   // Calc total collateral fill amount
   const totalCollateralFillAmount = takerFillAmount.add(makerFillAmount);
 
   // Get maker signer. Must be an account derived from the MNEMONIC stored in `.env`.
-  const maker = await ethers.getSigner(offerCreateContingentPool.maker);
+  const maker = await ethers.getSigner(offerAddLiquidity.maker);
 
   // The following code checks whether the maker and taker have sufficient allowance and
   // collateral token balance. It will set the allowance if insufficient.
-  
+
   // Get maker's and taker's collateral token balance
   const collateralTokenBalanceMakerBefore = await collateralToken.balanceOf(
     maker.address
@@ -123,7 +129,7 @@ async function main() {
     diva.address
   );
 
-  if (taker.address === offerCreateContingentPool.maker) {
+  if (taker.address === offerAddLiquidity.maker) {
     // Set allowance to makerCollateralAmount + takerCollateralAmount when taker = maker.
     // Add some tolerance to avoid any issues during fill tx due to rounding.
     if (allowanceMaker.lt(totalCollateralFillAmount)) {
@@ -141,7 +147,7 @@ async function main() {
     }
   } else {
     // Set maker allowance if insufficient.
-    // Add some tolerance to avoid any issues during fill tx due to rounding. 
+    // Add some tolerance to avoid any issues during fill tx due to rounding.
     if (allowanceMaker.lt(makerFillAmount)) {
       const approveTx = await collateralToken
         .connect(maker)
@@ -175,14 +181,13 @@ async function main() {
   await _checkConditions(
     diva,
     divaDomain,
-    offerCreateContingentPool,
-    CREATE_POOL_TYPE,
+    offerAddLiquidity,
+    ADD_LIQUIDITY_TYPE,
     signature,
     taker.address,
     takerFillAmount,
-    makerFillAmount,
-    collateralTokenBalanceTakerBefore,
-    collateralTokenBalanceMakerBefore
+    poolParams,
+    totalCollateralFillAmount
   );
 
   // Get taker filled amount before fill offer
@@ -191,20 +196,14 @@ async function main() {
   // Fill offer with taker account
   const tx = await diva
     .connect(taker)
-    .fillOfferCreateContingentPool(
-      offerCreateContingentPool,
+    .fillOfferAddLiquidity(
+      offerAddLiquidity,
       signature,
       takerFillAmount
     );
-  const receipt = await tx.wait();
+  await tx.wait();
 
   console.log("Offer successfully filled");
-
-  // Get newly created pool Id via the typedOfferHash emitted via the OfferFilled event
-  const typedOfferHash = receipt.events.find(
-    (x: any) => x.event === "OfferFilled"
-  ).args.typedOfferHash;
-  const poolId = await diva.getPoolIdByTypedCreateOfferHash(typedOfferHash);
 
   // Get maker's and taker's ERC20 token balance after fill offer
   const collateralTokenBalanceMakerAfter = await collateralToken.balanceOf(
@@ -220,8 +219,8 @@ async function main() {
   // Log relevant info
   console.log("chainId", offerInfo.chainId);
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId of newly created pool: ", poolId.toString());
-  console.log("offerCreateContingentPool object: ", offerCreateContingentPool);
+  console.log("PoolId: ", offerAddLiquidity.poolId);
+  console.log("offerAddLiquidity object: ", offerAddLiquidity);
   console.log("Allowance Maker: ", formatUnits(allowanceMaker, decimals));
   console.log("Allowance Taker: ", formatUnits(allowanceTaker, decimals));
   console.log(
@@ -233,12 +232,12 @@ async function main() {
     formatUnits(collateralTokenBalanceTakerBefore, decimals)
   );
   console.log(
-    "offerCreateContingentPool.makerCollateralAmount",
-    formatUnits(offerCreateContingentPool.makerCollateralAmount, decimals)
+    "offerAddLiquidity.makerCollateralAmount",
+    formatUnits(offerAddLiquidity.makerCollateralAmount, decimals)
   );
   console.log(
-    "offerCreateContingentPool.takerCollateralAmount",
-    formatUnits(offerCreateContingentPool.takerCollateralAmount, decimals)
+    "offerAddLiquidity.takerCollateralAmount",
+    formatUnits(offerAddLiquidity.takerCollateralAmount, decimals)
   );
   console.log(
     "Collateral token balance Maker after: ",
@@ -265,24 +264,21 @@ async function main() {
 const _checkConditions = async (
   diva: Contract,
   divaDomain: DivaDomain,
-  offerCreateContingentPool: OfferCreateContingentPool,
+  offerAddLiquidity: OfferAddLiquidity,
   type: Record<string, { type: string; name: string }[]>,
   signature: Signature,
   userAddress: string,
   takerFillAmount: BigNumber,
-  makerFillAmount: BigNumber,
-  takerCollateralTokenBalance: BigNumber,
-  makerCollateralTokenBalance: BigNumber,
+  poolParams: LibDIVAStorage.PoolStructOutput,
+  totalCollateralFillAmount: BigNumber
 ) => {
-  // Get information about the state of the create contingent pool offer
-  const relevantStateParams =
-    await diva.getOfferRelevantStateCreateContingentPool(
-      offerCreateContingentPool,
-      signature
-    );
+  // Get information about the state of the add liquidity offer
+  const relevantStateParams = await diva.getOfferRelevantStateAddLiquidity(
+    offerAddLiquidity,
+    signature
+  );
 
   // Confirm that the offer is fillable
-  // 0: INVALID, 1: CANCELLED, 2: FILLED, 3: EXPIRED, 4: FILLABLE
   if (relevantStateParams.offerInfo.status === OfferStatus.Invalid) {
     throw new Error("Offer is invalid because takerCollateralAmount is zero.");
   }
@@ -299,12 +295,12 @@ const _checkConditions = async (
     throw new Error("Offer is already expired.");
   }
 
-  // Confirm that the contingent pool parameters are valid
-  if (!relevantStateParams.isValidInputParamsCreateContingentPool) {
-    throw new Error("Invalid create contingent pool parameters.");
+  // Confirm that the pool exists
+  if (!relevantStateParams.poolExists) {
+    throw new Error("Pool does not exist.");
   }
 
-  // Confirm that takerFillAmount does not exceed actualTakerFillableAmount
+  // Check actual fillable amount
   if (relevantStateParams.actualTakerFillableAmount.lt(takerFillAmount)) {
     throw new Error(
       "Actually fillable amount is smaller than takerFillAmount."
@@ -315,38 +311,41 @@ const _checkConditions = async (
   const recoveredAddress = ethers.utils.verifyTypedData(
     divaDomain,
     type,
-    offerCreateContingentPool,
+    offerAddLiquidity,
     signature
   );
-  if (recoveredAddress != offerCreateContingentPool.maker) {
+  if (recoveredAddress != offerAddLiquidity.maker) {
     throw new Error("Invalid signature.");
   }
 
   // Check that taker is allowed to fill the offer (relevant if taker specified in the offer is not the zero address)
   if (
-    offerCreateContingentPool.taker != ethers.constants.AddressZero &&
-    userAddress != offerCreateContingentPool.taker
+    offerAddLiquidity.taker != ethers.constants.AddressZero &&
+    userAddress != offerAddLiquidity.taker
   ) {
     throw new Error("Offer is reserved for a different address.");
   }
 
-  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**.
-  // Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
+  // Confirm that takerFillAmount >= minimumTakerFillAmount **on first fill**. Minimum is not relevant on second fill (i.e. when takerFilledAmount > 0)
   if (
     relevantStateParams.offerInfo.takerFilledAmount.eq(0) &&
-    takerFillAmount.lt(offerCreateContingentPool.minimumTakerFillAmount)
+    takerFillAmount.lt(offerAddLiquidity.minimumTakerFillAmount)
   ) {
     throw new Error("takerFillAmount is smaller than minimumTakerFillAmount.");
   }
 
-  // Check that the taker has sufficient collateral token balance
-  if (takerCollateralTokenBalance.lt(takerFillAmount)) {
-    throw new Error("Taker has insufficient collateral token balance.");
+  // Confirm that pool has not expired yet
+  if (poolParams.expiryTime.lte(getCurrentTimestamp())) {
+    throw new Error("Already expired pool.");
   }
 
-  // Check that the maker has sufficient collateral token balance
-  if (makerCollateralTokenBalance.lt(makerFillAmount)) {
-    throw new Error("Maker has insufficient collateral token balance.");
+  // Confirm that new total pool collateral does not exceed the maximum capacity of the pool
+  if (
+    poolParams.collateralBalance
+      .add(totalCollateralFillAmount)
+      .gt(poolParams.capacity)
+  ) {
+    throw new Error("Pool capacity exceeded.");
   }
 };
 

@@ -1,125 +1,130 @@
 /**
- * Script to get relevant states of create contingent pool offers using multicall contract
- * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall`
+ * Script to get the state of multiple create contingent pool offers using multicall contract.
+ * Run: `yarn diva::getOfferRelevantStateCreateContingentPool_multicall --network mumbai`
  */
 
-import { ethers } from "hardhat";
-
+import { ethers, network } from "hardhat";
+import { formatUnits } from "@ethersproject/units";
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import {
-  generateCreateContingentPoolOfferDetails,
-  generateSignatureAndTypedMessageHash,
   multicall,
+  queryOffers
 } from "../../utils";
 import {
   DIVA_ADDRESS,
-  COLLATERAL_TOKENS,
-  CREATE_POOL_TYPE,
   OfferInfo,
+  OfferCreateContingentPool,
+  OfferCreateContingentPoolSigned,
+  Offer,
+  OfferStatus
 } from "../../constants";
-import { parseUnits } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
 
+
 async function main() {
-  // INPUT: network
-  const network = "goerli";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // INPUT: collateral token
-  const collateralTokenSymbol = "dUSD";
-
-  const divaAddress = DIVA_ADDRESS[network];
-  const collateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
-
-  // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
-
-  // Get chainId
-  const chainId = (await diva.getChainId()).toNumber();
-
-  // Define DIVA Domain struct
-  const divaDomain = {
-    name: "DIVA Protocol",
-    version: "1",
-    chainId,
-    verifyingContract: divaAddress,
-  };
-
-  // Get signer of users
-  const [user1, user2, oracle] = await ethers.getSigners();
-
-  // Generate first offerCreateContingentPool with user1 (maker) taking the short side and user2 (taker) the long side
-  const offerCreateContingentPool1 =
-    await generateCreateContingentPoolOfferDetails({
-      maker: user1.address.toString(), // maker
-      taker: user2.address.toString(), // taker
-      makerIsLong: false, // makerIsLong
-      dataProvider: oracle.address,
-      collateralToken: collateralTokenAddress,
-    });
-
-  // Generate first signature
-  const [signature1] = await generateSignatureAndTypedMessageHash(
-    user1,
-    divaDomain,
-    CREATE_POOL_TYPE,
-    offerCreateContingentPool1,
-    "OfferCreateContingentPool"
-  );
-
-  // Generate second offerCreateContingentPool with user1 (maker) taking the short side and user2 (taker) the long side
-  const offerCreateContingentPool2 =
-    await generateCreateContingentPoolOfferDetails({
-      maker: user1.address.toString(), // maker
-      taker: user2.address.toString(), // taker
-      makerCollateralAmount: parseUnits("20").toString(),
-      makerIsLong: false, // makerIsLong
-      dataProvider: oracle.address,
-      collateralToken: collateralTokenAddress,
-    });
-
-  // Generate second signature and typed message hash
-  const [signature2] = await generateSignatureAndTypedMessageHash(
-    user1,
-    divaDomain,
-    CREATE_POOL_TYPE,
-    offerCreateContingentPool2,
-    "OfferCreateContingentPool"
-  );
-
-  const offersCreateContingentPool = [
+  // sourceOfferDetails: Set the source for the offer details. If offer is filled/expired/cancelled/invalid,
+  // choose "JSON" as source as it will no longer exist on the API server.
+  // offerHash: Hash of offer to retrieve. Only required if `sourceOfferDetails` = "API" was selected.
+  // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
+  const offers: Offer[] = [
     {
-      address: divaAddress,
-      name: "getOfferRelevantStateCreateContingentPool",
-      params: [offerCreateContingentPool1, signature1],
+      sourceOfferDetails: "API",
+      offerHash: "0x8a086324cbf100792f492d858b3e004cfe703406b5c6111c2df165dfbee6e0f6",
+      jsonFilePath: "./offers/createContingentPoolOffer_1686503510947.json",
     },
     {
-      address: divaAddress,
-      name: "getOfferRelevantStateCreateContingentPool",
-      params: [offerCreateContingentPool2, signature2],
+      sourceOfferDetails: "API",
+      offerHash: "0xef5f5bfcc00851be7dd00ef76d34f6eb5bbcb647970587011b8886b02853b403",
+      jsonFilePath: "./offers/createContingentPoolOffer_1686464570587.json",
     },
+    // Add more offer objects as needed
   ];
 
-  const offerRelevantStatesCreateContingentPool = await multicall(
-    network,
-    DIVA_ABI,
-    offersCreateContingentPool
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Get DIVA contract address
+  const divaAddress = DIVA_ADDRESS[network.name];
+
+  // Retrieve offer infos from specified sources
+  let offerInfos;
+  try {
+    offerInfos = await queryOffers(offers, "create") as OfferCreateContingentPoolSigned[];
+  } catch (error: unknown) {
+    throw new Error("An error occurred:" + (error as Error).message);
+  }
+  
+  // Extract relevant offer details to prepare data for multicall
+  const results = await Promise.all(
+    offerInfos.map(async (offerInfo) => {
+      // Get subset of fields required for `getOfferRelevantStateCreateContingentPool` call
+      const offerCreateContingentPool: OfferCreateContingentPool = offerInfo.offerCreateContingentPool;
+      
+      // Prepare data for multicall
+      const offerRelevantState = {
+        address: divaAddress,
+        name: "getOfferRelevantStateCreateContingentPool",
+        params: [offerCreateContingentPool, offerInfo.signature],
+      };
+
+      // Get collateral token decimals
+      const collateralToken = await ethers.getContractAt(
+        "MockERC20",
+        offerCreateContingentPool.collateralToken
+      );
+      const decimals = await collateralToken.decimals();
+      
+      return {        
+        offerRelevantState,
+        decimals
+      };
+    })
   );
+
+  const offersRelevantState = results.map((result) => result.offerRelevantState);
+  const decimals = results.map((result) => result.decimals);
+
+  // Execute multicall
+  const offerRelevantStatesCreateContingentPool = await multicall(
+    network.name,
+    DIVA_ABI,
+    offersRelevantState
+  );
+
+  // Log results
   offerRelevantStatesCreateContingentPool.forEach(
     (
       offerRelevantStateCreateContingentPool: {
         offerInfo: OfferInfo;
         actualTakerFillableAmount: BigNumber;
         isSignatureValid: boolean;
-        poolExists: boolean;
+        isValidInputParamsCreateContingentPool: boolean;
       },
       index: number
     ) => {
       console.log(
         `OfferRelevantStateCreateContingentPool for #${
           index + 1
-        } is: ${offerRelevantStateCreateContingentPool}`
+        } is:`
       );
+      console.log(
+        "Offer hash:", offerRelevantStateCreateContingentPool.offerInfo.typedOfferHash
+      )
+      console.log("Offer status: ", OfferStatus[offerRelevantStateCreateContingentPool.offerInfo.status]);
+      console.log("Taker filled amount: ", 
+        formatUnits(
+          offerRelevantStateCreateContingentPool.offerInfo.takerFilledAmount, decimals[index]
+        )
+      );
+      console.log("Actual taker fillable amount: ", formatUnits(offerRelevantStateCreateContingentPool.actualTakerFillableAmount, decimals[index]));
+      console.log("Valid signature: ", offerRelevantStateCreateContingentPool.isSignatureValid);
+      console.log("Valid create contingent pool parameters: ", offerRelevantStateCreateContingentPool.isValidInputParamsCreateContingentPool);
     }
   );
 }

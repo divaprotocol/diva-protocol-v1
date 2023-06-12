@@ -1,67 +1,43 @@
 /**
- * Script to remove liquidity from an existing pool
- * Run: `yarn diva::remove`
+ * Script to remove liquidity from an existing pool.
+ * Run: `yarn diva::removeLiquidity --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::createContingentPool`: Create pool.
+ * 2. `yarn diva::getPoolParameters`: Check the collateral balance before removing liquidity.
+ * 3. `yarn diva::removeLiquidity`: Remove a portion of the collateral deposited.
+ * 4. `yarn diva::getPoolParameters`: Check the updated collateral balance.
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status } from "../../constants";
 
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = (
-  amountTokens: BigNumber,
-  longBalance: BigNumber,
-  shortBalance: BigNumber,
-  statusFinalReferenceValue: Status,
-  pauseReturnCollateralUntil: number,
-  decimals: number
-) => {
-  // Check that `removeLiquidity` function is not paused
-  if (pauseReturnCollateralUntil * 1000 > Date.now()) {
-    throw new Error(
-      "Function is paused. No removal of liquidity possible at the moment."
-    );
-  }
-
-  // Check that pool hasn't been confirmed yet
-  if (statusFinalReferenceValue === Status.Confirmed) {
-    throw new Error(
-      "Pool has already been confirmed. No removal of liquidity possible."
-    );
-  }
-
-  // Check whether user owns enough long and short tokens to perform the operation
-  if (longBalance.lt(amountTokens)) {
-    console.log(
-      "Long token balance user: " + formatUnits(longBalance, decimals)
-    );
-    throw new Error("Insufficient long token amount in wallet.");
-  } else if (shortBalance.lt(amountTokens)) {
-    console.log(
-      "Short token balance user: " + formatUnits(shortBalance, decimals)
-    );
-    throw new Error("Insufficient short token amount in wallet.");
-  }
-};
-
 async function main() {
-  // Set network. Should be the same as in diva::remove command.
-  const network = "goerli";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Input arguments for `removeLiquidity` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
-  const amountTokensNumber = 1; // number of long and short tokens to return to the pool; conversion into large integer happens below in the code
+  // Id of an existing pool
+  const poolId =
+    "0x52a16114f6d8b8213c2a345ce81a7f6d7eb630b7ef25c182817495e2c7d4752e";
 
-  // Get signer of account that will remove liquidity
+  // Number of long and short tokens to return to the pool. Conversion into
+  // integer happens below in the code as it depends on the collateral token decimals.
+  const amountTokensString = "1";
+
+  // Set user account that will remove liquidity
   const [user] = await ethers.getSigners();
 
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get pool parameters before liquidity is removed
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -73,8 +49,8 @@ async function main() {
   );
   const decimals = await erc20Contract.decimals();
 
-  // Convert amountTokens into large integer with collateral token decimals
-  const amountTokens = parseUnits(amountTokensNumber.toString(), decimals);
+  // Convert amountTokens into an integer with collateral token decimals
+  const amountTokens = parseUnits(amountTokensString, decimals);
 
   // Connect to long and short tokens
   const longToken = await ethers.getContractAt(
@@ -144,6 +120,46 @@ async function main() {
     formatUnits(supplyShortAfter, decimals)
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const _checkConditions = (
+  amountTokens: BigNumber,
+  longBalance: BigNumber,
+  shortBalance: BigNumber,
+  statusFinalReferenceValue: Status,
+  pauseReturnCollateralUntil: number,
+  decimals: number
+) => {
+  // Check that `removeLiquidity` function is not paused
+  if (pauseReturnCollateralUntil * 1000 > Date.now()) {
+    throw new Error(
+      "Function is paused. No removal of liquidity possible at the moment."
+    );
+  }
+
+  // Check that pool hasn't been confirmed yet
+  if (statusFinalReferenceValue === Status.Confirmed) {
+    throw new Error(
+      "Pool has already been confirmed. No removal of liquidity possible."
+    );
+  }
+
+  // Check whether user owns enough long and short tokens to perform the operation
+  if (longBalance.lt(amountTokens)) {
+    console.log(
+      "Long token balance user: " + formatUnits(longBalance, decimals)
+    );
+    throw new Error("Insufficient long token amount in wallet.");
+  } else if (shortBalance.lt(amountTokens)) {
+    console.log(
+      "Short token balance user: " + formatUnits(shortBalance, decimals)
+    );
+    throw new Error("Insufficient short token amount in wallet.");
+  }
+};
 
 main()
   .then(() => process.exit(0))

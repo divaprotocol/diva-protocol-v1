@@ -1,115 +1,49 @@
 /**
  * Script to set the final reference price for an already expired pool.
- * Run: `yarn diva::setFinalReferenceValue`
+ * Run: `yarn diva::setFinalReferenceValue --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and a
+ *    data provider account that you control.
+ * 2. `yarn diva::getPoolParameters`: Check the pool status before reporting.
+ * 3. `yarn diva::setFinalReferenceValue`: Report final value.
+ * 4. `yarn diva::getPoolParameters`: Check the updated pool status.
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 import { parseUnits, formatUnits } from "@ethersproject/units";
-
 import { LibDIVAStorage } from "../../typechain-types/contracts/interfaces/IGetter";
-
 import DIVA_ABI from "../../diamondABI/diamond.json";
 import { DIVA_ADDRESS, Status, STATUS } from "../../constants";
-
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const _checkConditions = (
-  poolParams: LibDIVAStorage.PoolStruct,
-  governanceParameters: [
-    LibDIVAStorage.FeesStructOutput,
-    LibDIVAStorage.SettlementPeriodsStructOutput,
-    string,
-    string,
-    BigNumber
-  ] & {
-    currentFees: LibDIVAStorage.FeesStructOutput;
-    currentSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput;
-    treasury: string;
-    fallbackDataProvider: string;
-    pauseReturnCollateralUntil: BigNumber;
-  },
-  callerAddress: string
-) => {
-  // Get current time (proxy for block timestamp)
-  const now = Math.floor(Date.now() / 1000);
-
-  // All periods are expressed in seconds
-  const submissionPeriod =
-    governanceParameters.currentSettlementPeriods.submissionPeriod;
-  const reviewPeriod =
-    governanceParameters.currentSettlementPeriods.reviewPeriod;
-  const fallbackSubmissionPeriod =
-    governanceParameters.currentSettlementPeriods.fallbackSubmissionPeriod;
-  const initialSubmissionPeriodEnd = BigNumber.from(poolParams.expiryTime).add(
-    submissionPeriod
-  ); // Submission period after expiration
-  const fallbackSubmissionPeriodEnd = initialSubmissionPeriodEnd.add(
-    fallbackSubmissionPeriod
-  );
-  const fallbackDataProvider = governanceParameters.fallbackDataProvider;
-
-  // Check that status is either Open (0) or Challenged (2)
-  if (
-    poolParams.statusFinalReferenceValue != 0 &&
-    poolParams.statusFinalReferenceValue != 2
-  ) {
-    throw new Error(
-      "Status is already submitted or confirmed. No submission possible."
-    );
-  }
-
-  if (poolParams.statusFinalReferenceValue === 0) {
-    // Check that pool already expired
-    if (Number(poolParams.expiryTime) >= now) {
-      throw new Error("Pool not yet expired");
-    }
-
-    if (now <= initialSubmissionPeriodEnd.toNumber()) {
-      // Check that caller is the data provider if called within initial submission period
-      if (callerAddress != poolParams.dataProvider) {
-        throw new Error("Caller is not data provider");
-      }
-    } else if (
-      now > initialSubmissionPeriodEnd.toNumber() &&
-      now <= fallbackSubmissionPeriodEnd.toNumber()
-    ) {
-      // Check that caller is the fallbackDataProvider if called within fallback period
-      if (callerAddress === fallbackDataProvider) {
-        throw new Error("Caller is not fallback data provider");
-      }
-    }
-  } else if (poolParams.statusFinalReferenceValue === 2) {
-    // Check that review period didn't expire
-    const reviewPeriodEnd = BigNumber.from(
-      poolParams.statusFinalReferenceValue
-    ).add(reviewPeriod);
-    if (now > reviewPeriodEnd.toNumber()) {
-      throw new Error("Review period expired");
-    }
-
-    // Check that caller is the data provider
-    if (callerAddress != poolParams.dataProvider) {
-      throw new Error("Caller is not data provider");
-    }
-  }
-};
+import { getCurrentTimestamp } from "../../utils";
 
 async function main() {
-  // Set network. Should be the same as in diva::setFinalReferenceValue command.
-  const network = "goerli";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // Input arguments for `setFinalReferenceValue` function
-  const poolId = "0x872feb863492cbe8b7f6e9fa6085cdf9ba38c3553a12b2f9dae499417fbff968"; // id of an existing pool
-  const finalReferenceValue = parseUnits("2444.8"); // 18 decimals
-  const allowChallenge = false; // false: first value submitted will automatically be confirmed; true: challenge by position token holders is enabled
+  // Id of an existing pool
+  const poolId =
+    "0x52a16114f6d8b8213c2a345ce81a7f6d7eb630b7ef25c182817495e2c7d4752e";
+  
+  // Final reference value expressed as an integer with 18 decimals
+  const finalReferenceValue = parseUnits("1834.66");
 
-  // Get signer of data provider
+  // false: first value submitted will automatically be confirmed
+  // true: challenge by position token holders is enabled
+  const allowChallenge = false;
+
+  // Set data provider account
   const [dataProvider] = await ethers.getSigners();
 
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Load pool parameters
   const poolParamsBefore = await diva.getPoolParameters(poolId);
@@ -193,6 +127,90 @@ async function main() {
       collateralTokenSymbol
   );
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts.
+const _checkConditions = (
+  poolParams: LibDIVAStorage.PoolStruct,
+  governanceParameters: [
+    LibDIVAStorage.FeesStructOutput,
+    LibDIVAStorage.SettlementPeriodsStructOutput,
+    string,
+    string,
+    BigNumber
+  ] & {
+    currentFees: LibDIVAStorage.FeesStructOutput;
+    currentSettlementPeriods: LibDIVAStorage.SettlementPeriodsStructOutput;
+    treasury: string;
+    fallbackDataProvider: string;
+    pauseReturnCollateralUntil: BigNumber;
+  },
+  callerAddress: string
+) => {
+  // Get current time (proxy for block timestamp)
+  const now = getCurrentTimestamp();
+
+  // All periods are expressed in seconds
+  const submissionPeriod =
+    governanceParameters.currentSettlementPeriods.submissionPeriod;
+  const reviewPeriod =
+    governanceParameters.currentSettlementPeriods.reviewPeriod;
+  const fallbackSubmissionPeriod =
+    governanceParameters.currentSettlementPeriods.fallbackSubmissionPeriod;
+  const initialSubmissionPeriodEnd = BigNumber.from(poolParams.expiryTime).add(
+    submissionPeriod
+  ); // Submission period after expiration
+  const fallbackSubmissionPeriodEnd = initialSubmissionPeriodEnd.add(
+    fallbackSubmissionPeriod
+  );
+  const fallbackDataProvider = governanceParameters.fallbackDataProvider;
+
+  // Check that status is either Open (0) or Challenged (2)
+  if (
+    poolParams.statusFinalReferenceValue != Status.Open &&
+    poolParams.statusFinalReferenceValue != Status.Challenged
+  ) {
+    throw new Error(
+      "Status is already submitted or confirmed. No submission possible."
+    );
+  }
+
+  if (poolParams.statusFinalReferenceValue === Status.Open) {
+    // Check that pool already expired
+    if (Number(poolParams.expiryTime) >= now) {
+      throw new Error("Pool not yet expired.");
+    }
+
+    if (now <= initialSubmissionPeriodEnd.toNumber()) {
+      // Check that caller is the data provider if called within initial submission period
+      if (callerAddress != poolParams.dataProvider) {
+        throw new Error("Caller is not data provider.");
+      }
+    } else if (
+      now > initialSubmissionPeriodEnd.toNumber() &&
+      now <= fallbackSubmissionPeriodEnd.toNumber()
+    ) {
+      // Check that caller is the fallbackDataProvider if called within fallback period
+      if (callerAddress === fallbackDataProvider) {
+        throw new Error("Caller is not fallback data provider.");
+      }
+    }
+  } else if (poolParams.statusFinalReferenceValue === Status.Challenged) {
+    // Check that review period didn't expire
+    const reviewPeriodEnd = BigNumber.from(
+      poolParams.statusFinalReferenceValue
+    ).add(reviewPeriod);
+    if (now > reviewPeriodEnd.toNumber()) {
+      throw new Error("Review period expired.");
+    }
+
+    // Check that caller is the data provider
+    if (callerAddress != poolParams.dataProvider) {
+      throw new Error("Caller is not data provider.");
+    }
+  }
+};
 
 main()
   .then(() => process.exit(0))

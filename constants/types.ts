@@ -1,4 +1,4 @@
-import { BigNumber, Contract } from "ethers";
+import { BigNumber } from "ethers";
 import { LibDIVAStorage } from "../typechain-types/contracts/facets/GetterFacet";
 
 export type OfferCreateContingentPool = {
@@ -22,6 +22,14 @@ export type OfferCreateContingentPool = {
   salt: string;
 };
 
+export type OfferCreateContingentPoolSigned = {
+  offerCreateContingentPool: OfferCreateContingentPool;
+  signature: Signature;
+  offerHash: string;
+  chainId: number;
+  verifyingContract: string;
+}
+
 export type OfferAddLiquidity = {
   maker: string; // signer of the message
   taker: string; // taker of the offer; if zero address, then everyone can be the taker
@@ -34,6 +42,14 @@ export type OfferAddLiquidity = {
   salt: string;
 };
 
+export type OfferAddLiquiditySigned = {
+  offerAddLiquidity: OfferAddLiquidity;
+  signature: Signature;
+  offerHash: string;
+  chainId: number;
+  verifyingContract: string;
+}
+
 export type OfferRemoveLiquidity = {
   maker: string; // signer of the message
   taker: string; // taker of the offer; if zero address, then everyone can be the taker
@@ -45,6 +61,14 @@ export type OfferRemoveLiquidity = {
   poolId: string; // Id of an existing pool
   salt: string; // Arbitrary number to enforce uniqueness of the offer hash
 };
+
+export type OfferRemoveLiquiditySigned = {
+  offerRemoveLiquidity: OfferRemoveLiquidity;
+  signature: Signature;
+  offerHash: string;
+  chainId: number;
+  verifyingContract: string;
+}
 
 export type Signature = {
   v: number;
@@ -133,3 +157,23 @@ export type Deposit = {
   endTime: BigNumber;
   lastClaimedAt: BigNumber;
 };
+
+export type FallbackDataProviderInfo = {
+  previousFallbackDataProvider: string;
+  fallbackDataProvider: string;
+  startTimeFallbackDataProvider: BigNumber;
+};
+
+export type TreasuryInfo = {
+  previousTreasury: string;
+  treasury: string;
+  startTimeTreasury: BigNumber;
+};
+
+export type SourceOfferDetails = "JSON" | "API";
+
+export interface Offer {
+  sourceOfferDetails: SourceOfferDetails;
+  offerHash: string;
+  jsonFilePath: string;
+}

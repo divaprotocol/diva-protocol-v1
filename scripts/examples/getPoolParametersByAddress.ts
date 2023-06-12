@@ -1,6 +1,6 @@
 /**
- * Script to get the pool parameters for an existing poolId.
- * Run: `yarn diva::getPoolParameters --network mumbai`
+ * Script to get the pool parameters for a position token address.
+ * Run: `yarn diva::getPoolParametersByAddress --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
@@ -13,20 +13,26 @@ async function main() {
   //           INPUT ARGUMENTS
   // ************************************
 
-  // Id of an existing pool
-  const poolId =
-    "0x8734a4a7006a1dea37a27b0394ae3970fca52395bece11a8947f7ed16fb80bd6";
+  // Position token address
+  const positionToken = "0xbe18cc7b67db215d60bad8789afbab91717e308c";
 
 
   // ************************************
   //              EXECUTION
   // ************************************
   
-  // Connect to deployed DIVA contract
+  // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
+  // Get pool id from position token contract
+  const positionTokenContract = await ethers.getContractAt(
+    "PositionToken",
+    positionToken
+  );
+  const poolId = await positionTokenContract.poolId();
+
   // Get pool parameters
-  const poolParams = await diva.getPoolParameters(poolId);
+  const poolParams = await diva.getPoolParametersByAddress(positionToken);
 
   // Get collateral token decimals to perform conversions from integer to decimal. Note that position tokens have the same number of decimals.
   const erc20Contract = await ethers.getContractAt(
@@ -37,7 +43,7 @@ async function main() {
 
   // Log relevant info
   console.log("DIVA address: ", diva.address);
-  console.log("PoolId: ", poolId);
+  console.log("PoolId: ", poolId.toString());
   console.log("Floor: ", formatUnits(poolParams.floor));
   console.log("Inflection: ", formatUnits(poolParams.inflection));
   console.log("Cap: ", formatUnits(poolParams.cap));

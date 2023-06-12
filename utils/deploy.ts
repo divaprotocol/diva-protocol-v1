@@ -7,7 +7,7 @@ const exec = util.promisify(child_process.exec);
 export const writeFile = (fileName: string, content: string) => {
   fs.writeFile(fileName, content, "utf8", (err) => {
     if (err) throw err;
-    console.log(`The ${fileName} has been saved!`);
+    console.log(`The following has been saved: ${fileName}`);
   });
 };
 

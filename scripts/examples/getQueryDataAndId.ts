@@ -1,16 +1,29 @@
 /**
  * Script to get the queryId and the queryId from the secondary ownership contract.
- * Run: `yarn ownershipSecondary::getQueryDataAndId`
+ * This function is only implemented in secondary contracts.
+ * Run: `yarn ownershipSecondary::getQueryDataAndId --network mumbai`
  */
 
 import { ethers, network } from "hardhat";
 
 async function main() {
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // See `addresses.json` file for secondary ownership contract address
   const ownershipContractAddressSecondary = "0x0a7B725F595F44d38b1c16091EDE5945aF4De9FE";
+  
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
+
+  // Get queryData and queryId from secondary ownership contract
   const ownershipContractSecondary = await ethers.getContractAt(
     "DIVAOwnershipSecondary",
     ownershipContractAddressSecondary
-)
+  )
   const [queryData, queryId] = await ownershipContractSecondary.getQueryDataAndId();
 
   // Log relevant info

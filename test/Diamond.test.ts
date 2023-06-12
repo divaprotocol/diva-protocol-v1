@@ -15,6 +15,7 @@ import {
   LiquidityFacet,
   PoolFacet,
   SettlementFacet,
+  TipFacet,
 } from "../typechain-types";
 
 import {
