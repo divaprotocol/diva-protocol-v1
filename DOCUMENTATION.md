@@ -2899,7 +2899,7 @@ The following errors may be emitted when interacting with secondary ownership co
 
 The `DIVADevelopmentFund` contract was created to support the ongoing development of the DIVA Protocol project. Shortly after the deployment of the DIVA system, approximately 60% of the unissued DIVA token supply will be deposited and released gradually over a 30-year period at a rate of 2 million DIVA tokens (2% of total supply) per year, claimable by the DIVA owner.
 
-To allow everyone to contribute to the project's development, the contract accepts a wide range of ERC20 token that are non-rebasable and do not charge fees on transfers, as well as native assets such as ETH on Ethereum.
+To allow everyone to contribute to the project's development, the contract accepts a wide range of ERC20 tokens that are non-rebasable and do not charge fees on transfers, as well as native assets such as ETH on Ethereum.
 
 > **❗Important:** While deposits of tokens that charge fees on transfers will be rejected by the contract, deposits of rebasable tokens won't. When tokens with a flexible supply are considered, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used.
 
