@@ -32,15 +32,15 @@ async function main() {
 
   // Id of pool to add liquidity to
   const poolId =
-    "0x7e5b34f6dc058ace5b51b90e4b60d2b8a80df1e6198de89f4c941290b3c7bfc1";
+    "0x1de191d66c6848d7c0d33d16b5041cd0ac5c46f208650cf63e1f3c96d4b3a521";
 
   // Offer terms
   const taker = "0x0000000000000000000000000000000000000000";
   const makerCollateralAmountInput = "20";
   const takerCollateralAmountInput = "80";
-  const makerIsLong = false;
-  const offerExpiry = await getExpiryTime(5000);
-  const minimumTakerFillAmountInput = "60";
+  const makerIsLong = true;
+  const offerExpiry = await getExpiryTime(500000000);
+  const minimumTakerFillAmountInput = "0";
 
 
   // ************************************
