@@ -17,11 +17,11 @@ async function main() {
 
   // Pool parameters. Note that the conversion into integer happens
   // below in the code as it depends on the collateral token decimals.
-  const referenceAsset = "https://ipfs.io/ipfs/bafybeidtxi5d2u4cr2l6nujfksbfzgapbnv44vxk5tgtgflifutigtrtla/reference_asset_kajiado.json";
+  const referenceAsset = "https://ipfs.io/ipfs/bafybeiba4c4o4rcv7ltthcgy5xrrcfwq3noko42dtcnz4gs67oajpux5q4/reference_asset_laikipia.json";
   const expiryTime = "1749535200"; // 100 means expiry in 100 seconds from now
-  const floorInput = "1.50"; // floorInput <= inflectionInput <= capInput
-  const inflectionInput = "1.56"; // floorInput <= inflectionInput <= capInput
-  const capInput = "1.56"; // floorInput <= inflectionInput <= capInput
+  const floorInput = "1.54"; // floorInput <= inflectionInput <= capInput
+  const inflectionInput = "1.62"; // floorInput <= inflectionInput <= capInput
+  const capInput = "1.62"; // floorInput <= inflectionInput <= capInput
   const gradientInput = "1"; // 0 <= gradientInput <= 1
   const collateralAmountInput = "0"; // collateralAmountInput <= capacityInput
   const collateralTokenSymbol = "RLUSD"; // see `addresses.ts` for available tokens

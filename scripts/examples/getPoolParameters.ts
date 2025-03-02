@@ -15,7 +15,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0xe09fb4e7bf14d9cbd7834ab77e06837deae28a5b5a4629a7ba96b42156089eea";
+    "0xf6fa3418aafff35b34cd2643ea8c84d7f0a11084849624fe0049cccadaa76a34";
 
 
   // ************************************
