@@ -165,6 +165,7 @@ describe("EIP712", async function () {
       verifyingContract: diamondAddress,
     };
   });
+  
 
   beforeEach(async () => {
     // Deploy mock collateral token and mint collateral token to user1
