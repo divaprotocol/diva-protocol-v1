@@ -39,9 +39,9 @@ async function main() {
   // offerHash: Hash of offer to fill. Only required if `sourceOfferDetails` = "API" was selected.
   // jsonFilePath: Only required if `sourceOfferDetails` = "JSON" was selected
   const offer: Offer = {
-    sourceOfferDetails: "API",
-    offerHash: "0x0b95c391a73b64f5903c2df62dbe41dcf74c0bfa46fcaa19612f1fc06a7113a9",
-    jsonFilePath: "./offers/addLiquidityOffer_1686467035892.json",
+    sourceOfferDetails: "JSON",
+    offerHash: "0xd46b4acf82ec3571672d8a99ab071122a23ee9f406e13ed9d14e3318b68e7bd4",
+    jsonFilePath: "./offers/addLiquidityOffer_1700041871042.json",
   };
 
   // Set taker account
@@ -65,7 +65,10 @@ async function main() {
   ) as OfferAddLiquiditySigned;
 
   // Get offerAddLiquidity from offer info
-  const offerAddLiquidity: OfferAddLiquidity = offerInfo.offerAddLiquidity;
+  const offerAddLiquidity: OfferAddLiquidity = (offerInfo as OfferAddLiquiditySigned).offerAddLiquidity;
+
+  console.log('offerAddLiquidity', offerAddLiquidity)
+  console.log('offerAddLiquidity.poolId',offerAddLiquidity.poolId)
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -79,7 +82,7 @@ async function main() {
   };
 
   // Get pool params
-  const poolParams = await diva.getPoolParameters(offerAddLiquidity.poolId);
+  const poolParams = await diva.getPoolParameters(offerInfo.offerAddLiquidity.poolId);
 
   // Connect to the collateral token to obtain the decimals needed to convert into
   // integer representation

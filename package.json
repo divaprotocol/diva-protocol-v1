@@ -60,6 +60,7 @@
     "ownership::unstake": "yarn hardhat run scripts/examples/unstake.ts",
     "erc20::deploy": "yarn hardhat run scripts/examples/deployERC20Token.ts",
     "erc20::approve": "yarn hardhat run scripts/examples/approve.ts",
+    "erc20::balanceOf": "yarn hardhat run scripts/examples/balanceOf.ts",
     "erc20::allowance_multicall": "yarn hardhat run scripts/examples/allowance_multicall.ts",
     "deploy:main:ethereum": "yarn hardhat run scripts/deployMain.ts --network ethMain && yarn verify:main && yarn disableUpgradeability:ethereum",
     "deploy:main:goerli": "yarn hardhat run scripts/deployMain.ts --network goerli && yarn verify:main && yarn disableUpgradeability:goerli",

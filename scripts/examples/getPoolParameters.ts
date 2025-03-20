@@ -15,7 +15,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x8734a4a7006a1dea37a27b0394ae3970fca52395bece11a8947f7ed16fb80bd6";
+    "0xf6fa3418aafff35b34cd2643ea8c84d7f0a11084849624fe0049cccadaa76a34";
 
 
   // ************************************
@@ -63,7 +63,8 @@ async function main() {
     formatUnits(poolParams.payoutLong, decimals)
   );
   console.log("Collateral token: ", poolParams.collateralToken);
-  console.log("Expiry time: ", new Date(poolParams.expiryTime * 1000).toLocaleString());
+  console.log("Expiry time (local timezone): ", new Date(poolParams.expiryTime * 1000).toLocaleString());
+  console.log("Expiry time: ", poolParams.expiryTime);
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "Status final reference value: ",

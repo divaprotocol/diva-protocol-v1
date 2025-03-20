@@ -25,17 +25,19 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x52a16114f6d8b8213c2a345ce81a7f6d7eb630b7ef25c182817495e2c7d4752e";
+    "0x17c8c42eb2944a5ceb4b529f8e2aba342f67a48f881bd5a732d15bd9f065e37c";
   
   // Final reference value expressed as an integer with 18 decimals
-  const finalReferenceValue = parseUnits("1834.66");
+  const finalReferenceValue = parseUnits("40");
 
   // false: first value submitted will automatically be confirmed
   // true: challenge by position token holders is enabled
   const allowChallenge = false;
 
   // Set data provider account
-  const [dataProvider] = await ethers.getSigners();
+  // const [dataProvider] = await ethers.getSigners();
+  const signers = await ethers.getSigners();
+  const dataProvider = signers[0]
 
 
   // ************************************

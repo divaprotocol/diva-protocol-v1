@@ -53,9 +53,17 @@ export const COLLATERAL_TOKENS: {
   arbitrumTestnet: {
     dUSD: "0x7F8c827150FeA992132Ad44Fe3EB58A9A5270490",
   },
+  arbitrumMain: {
+    dUSD: "0xFA158C9B780A4213f3201Ae74Cca013712c8538d",
+    USDT: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+  },
   polygon: {
     PILOT: "0x39e896451487f03dC2489AcAef1788C787885d35",
+    dUSD: "0x40caD342a67Bf49A2c384203025ad1eBEE1E30c5"
   },
+  ethMain: {
+    RLUSD: "0x8292Bb45bf1Ee4d140127049757C2E0fF06317eD"
+  }
 };
 
 // Tellor contract INCLUDING the requirement to stake prior to reporting.

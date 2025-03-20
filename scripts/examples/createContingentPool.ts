@@ -17,23 +17,26 @@ async function main() {
 
   // Pool parameters. Note that the conversion into integer happens
   // below in the code as it depends on the collateral token decimals.
-  const referenceAsset = "ETH/USD";
-  const expiryTime = await getExpiryTime(10000); // 100 means expiry in 100 seconds from now
-  const floorInput = "2000"; // floorInput <= inflectionInput <= capInput
-  const inflectionInput = "2500"; // floorInput <= inflectionInput <= capInput
-  const capInput = "3000"; // floorInput <= inflectionInput <= capInput
-  const gradientInput = "0.5"; // 0 <= gradientInput <= 1
-  const collateralAmountInput = "100"; // collateralAmountInput <= capacityInput
-  const collateralTokenSymbol = "WAGMI18"; // see `addresses.ts` for available tokens
-  const dataProvider = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
-  const capacityInput = "200"; // collateralAmountInput <= capacityInput
-  const longRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
-  const shortRecipient = "0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b";
+  const referenceAsset = "https://ipfs.io/ipfs/bafybeiba4c4o4rcv7ltthcgy5xrrcfwq3noko42dtcnz4gs67oajpux5q4/reference_asset_laikipia.json";
+  const expiryTime = "1749535200"; // 100 means expiry in 100 seconds from now
+  const floorInput = "1.54"; // floorInput <= inflectionInput <= capInput
+  const inflectionInput = "1.62"; // floorInput <= inflectionInput <= capInput
+  const capInput = "1.62"; // floorInput <= inflectionInput <= capInput
+  const gradientInput = "1"; // 0 <= gradientInput <= 1
+  const collateralAmountInput = "0"; // collateralAmountInput <= capacityInput
+  const collateralTokenSymbol = "RLUSD"; // see `addresses.ts` for available tokens
+  const dataProvider = "0x314b0EfcACFD9A9fb7b7834B2a7e47d6325eca23";
+  const capacityInput = ""; // collateralAmountInput <= capacityInput; Leave empty for unlimited capacity
+  const longRecipient = "0xd288B4A23ECc79Eb4bb4661147f3AB3294919F54";
+  const shortRecipient = "0x314b0EfcACFD9A9fb7b7834B2a7e47d6325eca23";
   const permissionedERC721Token = ethers.constants.AddressZero;
 
   // Set creator account
-  const [creator] = await ethers.getSigners();
+  // const [creator] = await ethers.getSigners();
+  const signers = await ethers.getSigners();
+  const creator = signers[0]
 
+  console.log("creator.address", creator.address)
 
   // ************************************
   //              EXECUTION
@@ -57,7 +60,7 @@ async function main() {
   const gradient = parseUnits(gradientInput, decimals);
   const collateralAmount = parseUnits(collateralAmountInput, decimals);
   const collateralToken = erc20CollateralTokenAddress;
-  const capacity = parseUnits(capacityInput, decimals);
+  const capacity = capacityInput ? parseUnits(capacityInput, decimals) : ethers.constants.MaxUint256;
 
   // Get creator's ERC20 token balance
   const balance = await erc20Contract.balanceOf(creator.address);
@@ -142,6 +145,7 @@ async function main() {
     "Expiry time: ",
     new Date(poolParams.expiryTime * 1000).toLocaleString()
   );
+  console.log("Expiry time (UNIX): ", poolParams.expiryTime);
 }
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented

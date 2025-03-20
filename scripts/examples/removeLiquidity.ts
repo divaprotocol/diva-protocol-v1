@@ -22,7 +22,7 @@ async function main() {
 
   // Id of an existing pool
   const poolId =
-    "0x52a16114f6d8b8213c2a345ce81a7f6d7eb630b7ef25c182817495e2c7d4752e";
+    "0x26a3ea71acbffa9bb6cbdba8264c25675033b6316b855e1e4c5a0d42dc115c45";
 
   // Number of long and short tokens to return to the pool. Conversion into
   // integer happens below in the code as it depends on the collateral token decimals.
